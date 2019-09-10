@@ -19,28 +19,13 @@ Different experiment paradigms and external device drivers can be implemented th
     + **SharpBCI.MRCP.Plugin** *Movement related cortical potential paradigm*
     + **SharpBCI.P300.Plugin** *P300 paradigm*
     + **SharpBCI.Speller.Plugin** *BCI speller paradigm, using DirectX to provide stable flicker rendering*
-        + **CCA** *C++ cannonical correlation analysis library*
+        + **CCA** *C\+\+ cannonical correlation analysis library*
     + **SharpBCI.VEP.Plugin**  *Multiple visual evoked potential paradigms included, using DirectX to provide stable flicker rendering*
     + **SharpBCI.WebBrowser.Plugin** *Server side of BCI web browser paradigm, client side is a script running in Chrome*
     + **SharpBCI.BiosignalSamplers.Plugin** *Bio-signal sampler drivers, e.g. Neuroscan, NeuroElectrics, OpenBCI, ...*
     + **SharpBCI.EyeTrackers.Plugin** *Eye-tracker drivers, e.g. Tobii's eye-tracker*
     + **SharpBCI.VideoSources.Plugin** *Video source drivers, e.g. Web-Cam*
  + **SharpBCI.Tests** *Unit tests of SharpBCI*
-
-### Currently Supported Devices
- + ***Biosignal Sampler***
-     + *Generic Oscillator* (Sine wave simulated)
-     + *Data File Reader* (Replay stored file)
-     + *Neuroscan* (via TCP/IP from SCAN 4.5)
-     + *Neuro Electrics* (via TCP/IP from NIC 2)
-     + *OpenBCI* (via serial port)
-     + *Unnamed Device* (via serial port, made by ZJU)
- + ***Eye tracker***
-     + *Cursor Tracker* (PC mouse simulated)
-     + *Tobii's Eye-Tracker* (via Tobii gaming SDK)
- + ***Video Source***
-     + *Screen Capturer* (PC screenshot)
-     + *Web Camera* (via DirectShow)
 
 ### Get Started
 
@@ -74,5 +59,17 @@ You can implement a experiment easily by defining your own [Experiment](https://
 
 See [Demo Plugin](https://github.com/DaleLin93/SharpBCI/tree/master/SharpBCI.Plugins/SharpBCI.Demo.Plugin) for more detail.
 
-
-
+### Currently Supported Devices
+ + ***Biosignal Sampler***
+     + *Generic Oscillator* (Sine wave simulated)
+     + *Data File Reader* (Replay stored file)
+     + *Neuroscan* (via TCP/IP from SCAN 4.5)
+     + *Neuro Electrics* (via TCP/IP from NIC 2)
+     + *OpenBCI* (via serial port)
+     + *Unnamed Device* (via serial port, made by ZJU)
+ + ***Eye tracker***
+     + *Cursor Tracker* (PC mouse simulated)
+     + *Tobii's Eye-Tracker* (via Tobii gaming SDK)
+ + ***Video Source***
+     + *Screen Capturer* (PC screenshot)
+     + *Web Camera* (via DirectShow)
