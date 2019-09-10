@@ -92,7 +92,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib\MarukoLib.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib\MarukoLib.csproj">
       <Project>{2f30247b-bb53-41d0-ad4e-845550366a96}</Project>
       <Name>MarukoLib</Name>
     </ProjectReference>

@@ -98,15 +98,15 @@
     <Compile Include="Staging\StageRecorder.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\MarukoLib-CSharp\MarukoLib.Logging\MarukoLib.Logging.csproj">
+    <ProjectReference Include="..\..\MarukoLib\MarukoLib.Logging\MarukoLib.Logging.csproj">
       <Project>{36B35A27-9E3C-4A7B-870B-9DF3B1FE534B}</Project>
       <Name>MarukoLib.Logging</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\MarukoLib-CSharp\MarukoLib.Persistence\MarukoLib.Persistence.csproj">
+    <ProjectReference Include="..\..\MarukoLib\MarukoLib.Persistence\MarukoLib.Persistence.csproj">
       <Project>{75efb011-f3ac-471d-87e5-c7607f44eb80}</Project>
       <Name>MarukoLib.Persistence</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\MarukoLib-CSharp\MarukoLib\MarukoLib.csproj">
+    <ProjectReference Include="..\..\MarukoLib\MarukoLib\MarukoLib.csproj">
       <Project>{2f30247b-bb53-41d0-ad4e-845550366a96}</Project>
       <Name>MarukoLib</Name>
     </ProjectReference>

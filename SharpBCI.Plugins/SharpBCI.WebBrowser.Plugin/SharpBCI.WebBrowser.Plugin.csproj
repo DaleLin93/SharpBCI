@@ -95,23 +95,23 @@
     <Compile Include="WebBrowserAssistantServer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib.DirectX\MarukoLib.DirectX.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.DirectX\MarukoLib.DirectX.csproj">
       <Project>{e6db120f-4350-484d-99f8-0f159561c391}</Project>
       <Name>MarukoLib.DirectX</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib.Interop\MarukoLib.Interop.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Interop\MarukoLib.Interop.csproj">
       <Project>{1f8d87bf-b42d-4735-be0a-890cc5df927b}</Project>
       <Name>MarukoLib.Interop</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib.Logging\MarukoLib.Logging.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Logging\MarukoLib.Logging.csproj">
       <Project>{36b35a27-9e3c-4a7b-870b-9df3b1fe534b}</Project>
       <Name>MarukoLib.Logging</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib.Persistence\MarukoLib.Persistence.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Persistence\MarukoLib.Persistence.csproj">
       <Project>{75efb011-f3ac-471d-87e5-c7607f44eb80}</Project>
       <Name>MarukoLib.Persistence</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib\MarukoLib.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib\MarukoLib.csproj">
       <Project>{2f30247b-bb53-41d0-ad4e-845550366a96}</Project>
       <Name>MarukoLib</Name>
     </ProjectReference>

@@ -121,11 +121,11 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib.DirectX\MarukoLib.DirectX.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.DirectX\MarukoLib.DirectX.csproj">
       <Project>{e6db120f-4350-484d-99f8-0f159561c391}</Project>
       <Name>MarukoLib.DirectX</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib\MarukoLib.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib\MarukoLib.csproj">
       <Project>{2f30247b-bb53-41d0-ad4e-845550366a96}</Project>
       <Name>MarukoLib</Name>
     </ProjectReference>

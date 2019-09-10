@@ -85,11 +85,11 @@
     <Compile Include="UnnamedDeviceSampler.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib.Logging\MarukoLib.Logging.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Logging\MarukoLib.Logging.csproj">
       <Project>{36b35a27-9e3c-4a7b-870b-9df3b1fe534b}</Project>
       <Name>MarukoLib.Logging</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\MarukoLib-CSharp\MarukoLib\MarukoLib.csproj">
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib\MarukoLib.csproj">
       <Project>{2f30247b-bb53-41d0-ad4e-845550366a96}</Project>
       <Name>MarukoLib</Name>
     </ProjectReference>
