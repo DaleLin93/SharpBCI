@@ -30,8 +30,8 @@ Different experiment paradigms and external device drivers can be implemented th
 ### Get Started
 
 0. Install Visual Studio 2018 or later, clone [MarukoLib](https://github.com/DaleLin93/MarukoLib) and [SharpBCI](https://github.com/DaleLin93/SharpBCI) into same folder.
-1. Create a new Visual Studio solution.
-2. Add all projects in repo [MarukoLib](https://github.com/DaleLin93/MarukoLib) into the created solution.
+1. Create a new empty Visual Studio solution.
+2. Add all projects in repo [MarukoLib](https://github.com/DaleLin93/MarukoLib) except 'MarukoLib.Dragonfly' to the created solution.
 3. Add 'SharpBCI.Core', 'SharpBCI.Extensions', 'SharpBCI' projects into the solution.
 4. (*Optional*) Add any plugin projects into the solution.
 5. Build the solution.
