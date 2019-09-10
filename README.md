@@ -15,13 +15,13 @@ Different experiment paradigms and external device drivers can be implemented th
  + **SharpBCI.Extensions** *Basic extensions*
  + **SharpBCI.Plugins** *SharpBCI plugins*
     + **SharpBCI.CPT.Plugin** *Conners' Continuous Performance Test pradigm*
-    + **SharpBCI.MI.Plugin** *Motor imagery paradigm*
+    + **SharpBCI.MI.Plugin** *User interface of motor imagery paradigm interop with python server*
     + **SharpBCI.MRCP.Plugin** *Movement related cortical potential paradigm*
     + **SharpBCI.P300.Plugin** *P300 paradigm*
     + **SharpBCI.Speller.Plugin** *BCI speller paradigm, using DirectX to provide stable flicker rendering*
         + **CCA** *C++ cannonical correlation analysis library*
     + **SharpBCI.VEP.Plugin**  *Multiple visual evoked potential paradigms included, using DirectX to provide stable flicker rendering*
-    + **SharpBCI.WebBrowser.Plugin** *BCI web browser paradigm*
+    + **SharpBCI.WebBrowser.Plugin** *Server side of BCI web browser paradigm, client side is a script running in Chrome*
     + **SharpBCI.BiosignalSamplers.Plugin** *Bio-signal sampler drivers, e.g. Neuroscan, NeuroElectrics, OpenBCI, ...*
     + **SharpBCI.EyeTrackers.Plugin** *Eye-tracker drivers, e.g. Tobii's eye-tracker*
     + **SharpBCI.VideoSources.Plugin** *Video source drivers, e.g. Web-Cam*
@@ -68,7 +68,7 @@ After the completion of a session, you can see some files that have the same fil
 
 ### How to Create Your Own Paradigm
 
-You can simply defined your own [Experiment](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Core/Experiment/Experiment.cs) with required paramters and corresponding [ExperimentFactory](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Extensions/Experiments/ExperimentFactory.cs).
+You can implement a experiment easily by defining your own [Experiment](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Core/Experiment/Experiment.cs) with desired paramters and corresponding [ExperimentFactory](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Extensions/Experiments/ExperimentFactory.cs).
 
 ![Demo Experiment](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Plugins/SharpBCI.Demo.Plugin/Configuration%20Preview.jpg)
 
