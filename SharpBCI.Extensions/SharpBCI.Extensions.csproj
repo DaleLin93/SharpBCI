@@ -1,0 +1,243 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{AD675D2D-C113-4460-BEDC-C6ABDBE1A929}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SharpBCI.Extensions</RootNamespace>
+    <AssemblyName>SharpBCI.Extensions</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AppEntry.cs" />
+    <Compile Include="Data\AutoParameterizedObject.cs" />
+    <Compile Include="Data\ComplexObject.cs" />
+    <Compile Include="Data\Dimensions.cs" />
+    <Compile Include="Data\Positions.cs" />
+    <Compile Include="Data\RectangleLayout.cs" />
+    <Compile Include="Data\Colors.cs" />
+    <Compile Include="Data\Border.cs" />
+    <Compile Include="Data\Optional.cs" />
+    <Compile Include="Data\Fixation.cs" />
+    <Compile Include="Data\OptionalText.cs" />
+    <Compile Include="Data\ParameterizedObject.cs" />
+    <Compile Include="Data\Margins.cs" />
+    <Compile Include="Data\RandomTargetRate.cs" />
+    <Compile Include="Data\Record.cs" />
+    <Compile Include="Data\RoundedRectangle.cs" />
+    <Compile Include="Data\BaselinePreference.cs" />
+    <Compile Include="Data\TrialPreference.cs" />
+    <Compile Include="Data\Rectangle.cs" />
+    <Compile Include="Data\Path.cs" />
+    <Compile Include="Devices\ScreenCaptureSource.cs" />
+    <Compile Include="Devices\VideoSource.cs" />
+    <Compile Include="Devices\GazeFileReader.cs" />
+    <Compile Include="Devices\Device.cs" />
+    <Compile Include="Devices\CursorTracker.cs" />
+    <Compile Include="Experiments\TextDisplay\TextDisplayExperiment.cs" />
+    <Compile Include="Experiments\TextDisplay\TestWindow.xaml.cs">
+      <DependentUpon>TestWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Experiments\Countdown\CountdownExperiment.cs" />
+    <Compile Include="Experiments\Countdown\TestWindow.xaml.cs">
+      <DependentUpon>TestWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Experiments\ExperimentFactory.cs" />
+    <Compile Include="MarkerDefinitions.cs" />
+    <Compile Include="StageProviders\BaselineStageProvider.cs" />
+    <Compile Include="StageProviders\CountdownStageProvider.cs" />
+    <Compile Include="StageProviders\DelayStageProvider.cs" />
+    <Compile Include="StageProviders\EventWaitingStageProvider.cs" />
+    <Compile Include="StageProviders\MarkedStageProvider.cs" />
+    <Compile Include="StageProviders\PipelinedStageProvider.cs" />
+    <Compile Include="StageProviders\PreparationStageProvider.cs" />
+    <Compile Include="StageProviders\RepeatingStageProvider.cs" />
+    <Compile Include="StageProviders\SegmentedStageProvider.cs" />
+    <Compile Include="Streamers\ConsumerFactory.cs" />
+    <Compile Include="Streamers\VideoFrameStreamer.cs" />
+    <Compile Include="SystemVariables.cs" />
+    <Compile Include="Experiments\ExperimentProperties.cs" />
+    <Compile Include="Experiments\Rest\RestExperiment.cs" />
+    <Compile Include="Experiments\Rest\TestWindow.xaml.cs">
+      <DependentUpon>TestWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Devices\EyeTracker.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="Parameter.cs" />
+    <Compile Include="Patterns\SquarePattern.cs" />
+    <Compile Include="Patterns\LinearPattern.cs" />
+    <Compile Include="Patterns\TemporalPattern.cs" />
+    <Compile Include="Patterns\Pattern.cs" />
+    <Compile Include="Patterns\SinusoidalPattern.cs" />
+    <Compile Include="Patterns\TimeVaryingSinusoidalPattern.cs" />
+    <Compile Include="Presenters\PositionPresenter.cs" />
+    <Compile Include="Presenters\UriPresenter.cs" />
+    <Compile Include="Presenters\MultiValuePresenter.cs" />
+    <Compile Include="Presenters\BooleanPresenter.cs" />
+    <Compile Include="Presenters\ColorPresenter.cs" />
+    <Compile Include="Presenters\OptionalPresenter.cs" />
+    <Compile Include="Presenters\PathPresenter.cs" />
+    <Compile Include="Presenters\ParameterizedObjectPresenter.cs" />
+    <Compile Include="Presenters\PlainTextPresenter.cs" />
+    <Compile Include="Presenters\Presenter.cs" />
+    <Compile Include="Presenters\SelectablePresenter.cs" />
+    <Compile Include="Presenters\TypeConvertedPresenter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Devices\DataFileReader.cs" />
+    <Compile Include="Devices\GenericOscillator.cs" />
+    <Compile Include="Devices\BiosignalSampler.cs" />
+    <Compile Include="Streamers\GazePointStreamer.cs" />
+    <Compile Include="Streamers\MarkerStreamer.cs" />
+    <Compile Include="Streamers\BiosignalStreamer.cs" />
+    <Compile Include="TypeConverters.cs" />
+    <Compile Include="ViewConstants.cs" />
+    <Compile Include="Windows\ContextChangedEventArgs.cs" />
+    <Compile Include="Windows\LayoutChangedEventArgs.cs" />
+    <Compile Include="Windows\SummaryPanel.cs" />
+    <Compile Include="Windows\ParameterPanel.cs" />
+    <Compile Include="Windows\PresentationAdapters.cs" />
+    <Compile Include="Windows\ViewModels.cs" />
+    <Compile Include="Windows\ParameterizedConfigWindow.xaml.cs">
+      <DependentUpon>ParameterizedConfigWindow.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\MarukoLib-CSharp\MarukoLib.Logging\MarukoLib.Logging.csproj">
+      <Project>{36B35A27-9E3C-4A7B-870B-9DF3B1FE534B}</Project>
+      <Name>MarukoLib.Logging</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\MarukoLib-CSharp\MarukoLib.Persistence\MarukoLib.Persistence.csproj">
+      <Project>{75efb011-f3ac-471d-87e5-c7607f44eb80}</Project>
+      <Name>MarukoLib.Persistence</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\MarukoLib-CSharp\MarukoLib\MarukoLib.csproj">
+      <Project>{2f30247b-bb53-41d0-ad4e-845550366a96}</Project>
+      <Name>MarukoLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SharpBCI.Core\SharpBCI.Core.csproj">
+      <Project>{b0dd9d7d-1944-4a32-a7a8-c41f00e350e7}</Project>
+      <Name>SharpBCI.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations">
+      <Version>2019.1.1</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>12.0.2</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="Experiments\TextDisplay\TestWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Experiments\Countdown\TestWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Experiments\Rest\TestWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Windows\ParameterizedConfigWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\MinusButtonHighlighted.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\MinusButtonNormal.png" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

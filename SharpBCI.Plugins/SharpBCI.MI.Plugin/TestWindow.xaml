@@ -1,0 +1,29 @@
+﻿<Window x:Class="SharpBCI.Experiments.MI.TestWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:ClassModifier="internal"
+        mc:Ignorable="d" Height="300" Width="300" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+            Topmost="False" WindowState="Maximized" ResizeMode="NoResize" WindowStyle="None" Background="Black"
+            Loaded="Window_Loaded" SizeChanged="Window_SizeChanged" KeyUp="Window_KeyUp" >
+    <Grid>
+
+        <Grid x:Name="MainGrid">
+            <TextBlock x:Name="CommDebugTextBlock" FontSize="9" TextAlignment="Center" VerticalAlignment="Top" Margin="0 5 0 0"
+                       Foreground="White" Background="Transparent" Focusable="False" />
+            <ProgressBar x:Name="ProgressBar" Margin="5,50,0,50" HorizontalAlignment="Left" Width="40" Minimum="0" Maximum="1" Value="0.1" Orientation="Vertical" Visibility="Hidden" />
+            <TextBlock x:Name="CueText" Text="5" FontSize="70" TextAlignment="Center" VerticalAlignment="Center"
+                       Foreground="Red" Background="Transparent" Focusable="False" Visibility="Hidden" />
+            <Grid x:Name="ImageContainer" Margin="50" />
+            <Grid x:Name="VideoContainer" Margin="50" />
+            <Grid x:Name="AudioContainer" Margin="50" />
+        </Grid>
+
+        <Grid x:Name="FocusIndicationContainer" Margin="20" Visibility="Hidden">
+            <Rectangle x:Name="FocusCircle" Width="200" Height="200" RadiusX="100" RadiusY="100" Fill="Red" />
+            <TextBlock Text="请将视线放在圆球中。" VerticalAlignment="Bottom" HorizontalAlignment="Center" Foreground="Red" />
+        </Grid>
+
+    </Grid>
+</Window>

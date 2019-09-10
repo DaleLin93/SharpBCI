@@ -1,0 +1,45 @@
+﻿<Window x:Class="SharpBCI.Experiments.Speller.SpellerUtilityWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:ClassModifier="internal" Title="Speller Utility"
+        mc:Ignorable="d" Height="340" Width="250" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeMode="CanMinimize">
+    <StackPanel Margin="10">
+        <Grid Margin="0 5 0 5">
+            <TextBlock Text="N"/>
+            <TextBox x:Name="NTextBox" Margin="80 0 0 0" TextAlignment="Center" />
+        </Grid>
+        <Grid Margin="0 5 0 5">
+            <TextBlock Text="P"/>
+            <TextBox x:Name="PTextBox" Margin="80 0 0 0" TextAlignment="Center" />
+        </Grid>
+        <Grid Margin="0 5 0 5">
+            <TextBlock Text="Duration"/>
+            <Grid Margin="80 0 0 0" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="0.25*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" x:Name="DurationTextBox" TextAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="/" TextAlignment="Center" />
+                <TextBox Grid.Column="2" x:Name="DividerTextBox" Text="1" TextAlignment="Center" />
+            </Grid>
+        </Grid>
+        <Button Content="Compute ITR" Margin="0 15 0 0" Height="40" Click="ComputeItrBtn_OnClick" />
+
+        <Rectangle  Height="1" Margin="0 15 0 15" Fill="Gray" />
+
+        <Grid Margin="0 5 0 5">
+            <TextBlock Text="Length"/>
+            <TextBox x:Name="LengthTextBox" Margin="80 0 0 0" TextAlignment="Center" />
+        </Grid>
+        <Grid Margin="0 5 0 5">
+            <TextBlock Text="Distance"/>
+            <TextBox x:Name="DistanceTextBox" Margin="80 0 0 0" TextAlignment="Center" />
+        </Grid>
+        <Button Content="Compute Visual Angle" Margin="0 15 0 0" Height="40" Click="ComputeVisualAngleBtn_OnClick" />
+
+    </StackPanel>
+</Window>

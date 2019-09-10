@@ -1,0 +1,100 @@
+<html>
+<head>
+	<script>
+
+		 function selectFood(foodName) {
+	 	   document.getElementById('selected-food').innerHTML = foodName;
+		 }
+
+		window.onload = function () {
+		 var selections = document.getElementsByClassName('selection');
+		 for (var i = 0; i < selections.length; i++) {
+		   var el = selections[i];
+		   el.setAttribute('href', 'javascript:selectFood("' + el.innerHTML + '");');
+		 }
+		}
+
+	</script>
+	<style>
+
+		body {
+			width: 100%;
+			height: 100%;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: space-around;
+		}
+
+		#selected-food {
+			line-height: 20rem;
+			font-size: 2rem;
+			text-align: center;
+		}
+
+		.content {
+			width: 100%;
+			font-size: 1.5rem;
+			display: flex;
+			flex-flow: row wrap;
+			flex-direction: row;
+			align-items: center;
+			justify-content: flex-start;
+		}
+
+		.selection {
+			width: 100px;
+			height: 50px;
+			margin: 15px;
+			padding: 3px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			white-space: normal;
+			box-sizing: border-box;
+			border: gray 1px solid;
+		}
+
+	</style>
+</head>
+
+<body>
+	<a href="index.html" style="width: 100%; text-align: center">back</a>
+	<span style="font-size: 3rem; font-weight: bold">FOOD</span>
+	<div class="content">
+			<a class="selection">Apple</a>
+			<a class="selection">Pear</a>
+			<a class="selection">Salad</a>
+			<a class="selection">Burger</a>
+			<a class="selection">Pork</a>
+			<a class="selection">Beef</a>
+			<a class="selection">Milk</a>
+			<a class="selection">Pikachu</a>
+			<a class="selection">Tomato</a>
+			<a class="selection">Pineapple</a>
+			<a class="selection">Coconut</a>
+			<a class="selection">Guava</a>
+			<a class="selection">Papaya</a>
+			<a class="selection">Carrot</a>
+			<a class="selection">Egg</a>
+			<a class="selection">Bread</a>
+			<a class="selection">Nuts</a>
+			<a class="selection">Wine</a>
+			<a class="selection">Water</a>
+			<a class="selection">Cracker</a>
+			<a class="selection">Cake</a>
+			<a class="selection">Noodle</a>
+			<a class="selection">Fish</a>
+			<a class="selection">Lobster</a>
+			<a class="selection">Corpse</a>
+			<a class="selection">Pickled</a>
+			<a class="selection">Bacon</a>
+			<a class="selection">Cucumber</a>
+			<a class="selection">Chocolate</a>
+			<a class="selection">Yoghurt</a>
+			<a class="selection">Vodka</a>
+			<a class="selection">Cocktail</a>
+	</div>
+	<div id="selected-food">None</div>
+</body>
+</html>

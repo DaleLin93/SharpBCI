@@ -1,0 +1,30 @@
+﻿<Window x:Class="SharpBCI.Windows.ResultWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:ClassModifier="internal"
+        Title="Result" Height="380" Width="560">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="FontFamily" Value="Consolas" />
+        </Style>
+    </Window.Resources>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="15">
+            <StackPanel x:Name="SessionPanel">
+                <Grid x:Name="MainContainer" Margin="0,10,0,10">
+                    <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" Text="Session:" FontWeight="Black" FontSize="15" VerticalAlignment="Top"/>
+                    <TextBlock x:Name="SessionNameTextBlock" HorizontalAlignment="Left" Margin="150,0,0,0" TextWrapping="NoWrap" FontSize="15" VerticalAlignment="Top" MouseUp="SessionNameTextBlock_OnMouseUp"/>
+                </Grid>
+            </StackPanel>
+            <Grid Margin="0,10,0,10">
+                <Button x:Name="SaveSnapshotBtn" Content="Save Snapshot" HorizontalAlignment="Right" Width="100" Height="35" Click="SaveSnapshotBtn_OnClick"/>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

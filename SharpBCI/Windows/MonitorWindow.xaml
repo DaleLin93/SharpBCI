@@ -1,0 +1,32 @@
+﻿<Window x:Class="SharpBCI.Windows.MonitorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:ClassModifier="public"
+        Title="Monitor" Height="700" Width="800" Topmost="True" Closed="MonitorWindow_OnClosed">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="4*"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
+        <Grid Row="0">
+            <Rectangle x:Name="GazeScreenBounds" Stroke="Black"/>
+            <Rectangle x:Name="GazePoint" RadiusX="10" RadiusY="10" Width="20" Height="20" Fill="Red" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        </Grid>
+        <Grid Row="1">
+            <TextBlock Text="Channel: " Margin="0 2 0 0"/>
+            <ComboBox x:Name="ChannelComboBox" Margin="60 0 0 0" />
+        </Grid>
+        <Grid Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+            <Grid x:Name="SignalContainer" Column="0"/>
+            <Grid x:Name="FrequencyContainer" Column="1" Visibility="Collapsed"/>
+        </Grid>
+    </Grid>
+</Window>

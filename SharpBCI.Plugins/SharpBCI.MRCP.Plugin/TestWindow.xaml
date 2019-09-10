@@ -1,0 +1,47 @@
+﻿<Window x:Class="SharpBCI.Experiments.MRCP.TestWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:ClassModifier="internal"
+        mc:Ignorable="d" Height="300" Width="600" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+            Topmost="False" WindowState="Maximized" ResizeMode="NoResize" WindowStyle="None" Background="Black"
+            Loaded="Window_Loaded" KeyUp="Window_KeyUp" >
+    <Window.Resources>
+        <Style x:Key="DefaultLineStyle" TargetType="Line">
+            <Setter Property="Stroke" Value="Blue"/>
+            <Setter Property="StrokeThickness" Value="1.5"/>
+            <Setter Property="StrokeDashArray" Value="1 5"/>
+        </Style>
+        <Style x:Key="HighlightedLineStyle" TargetType="Line">
+            <Setter Property="Stroke" Value="Red"/>
+            <Setter Property="StrokeThickness" Value="4"/>
+        </Style>
+        <BitmapImage x:Key="RelaxCueImage" UriSource="pack://application:,,,/SharpBCI.MRCP.Plugin;component/Resources/relax.jpg"/>
+        <BitmapImage x:Key="LiftCueImage" UriSource="pack://application:,,,/SharpBCI.MRCP.Plugin;component/Resources/lift.jpg"/>
+    </Window.Resources>
+    <Grid>
+
+        <TextBlock x:Name="CueTextBlock" Text="5" FontSize="84" TextAlignment="Center" VerticalAlignment="Center" 
+                   Foreground="Red" Background="Transparent" Focusable="False"/>
+
+        <Grid x:Name="Container" Visibility="Hidden">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="3*"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0" Margin="20" MaxWidth="700" MaxHeight="500">
+                <Canvas x:Name="PathCanvas" Margin="2"/>
+                <Border BorderBrush="DarkGray" BorderThickness="1"/>
+            </Grid>
+
+            <Grid Grid.Column="1" Margin="20" MaxWidth="900" MaxHeight="500">
+                <Image x:Name="CueImage"/>
+            </Grid>
+
+        </Grid>
+
+    </Grid>
+</Window>

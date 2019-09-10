@@ -1,0 +1,40 @@
+﻿<Application x:Class="SharpBCI.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#55EAEAEA" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#33FFFFFF" />
+        </Style>
+        <Style TargetType="ListView">
+            <Setter Property="Background" Value="#33FFFFFF" />
+        </Style>
+        <ImageBrush x:Key="BackgroundBrush" ImageSource="pack://application:,,,/Resources/pattern.png" Stretch="Fill" 
+                    AlignmentX="Left" AlignmentY="Top" TileMode="Tile" Viewport="0,0,120,96" ViewportUnits="Absolute" />
+        <Style x:Key="ParamGroupSeparator" TargetType="Rectangle">
+            <Setter Property="Fill" Value="#FFE4E4E4" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Height" Value="1"/>
+        </Style>
+        <Style x:Key="ParamGroupHeader" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="FontSize" Value="8"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#FFC3C3C3"/>
+        </Style>
+        <Style x:Key="LabelText" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style x:Key="MenuItem" TargetType="MenuItem">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,117 @@
+﻿<Window x:Class="SharpBCI.Windows.AnalysisWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SharpBCI.Windows"
+        mc:Ignorable="d"
+        Title="Session Analysis" MinWidth="600" Width="600" MinHeight="500" Height="500" Background="{StaticResource BackgroundBrush}"
+        Loaded="AnalysisWindow_OnLoaded" SizeChanged="AnalysisWindow_OnSizeChanged">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="File">
+                <MenuItem Header="Video Frames" Click="MenuItem_OnClick"/>
+            </MenuItem>
+        </Menu>
+        <Grid Margin="5" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel x:Name="HeaderPanel" Grid.Row="0">
+                <Grid>
+                    <TextBlock Text="Data File" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="DataFileDescTextBlock" HorizontalAlignment="Right"/>
+                </Grid>
+            </StackPanel>
+
+            <Grid Grid.Row="1" Margin="0 5 0 0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" BorderBrush="DarkGray" BorderThickness="1" ClipToBounds="True">
+                    <Canvas x:Name="BiosignalCanvas" Background="White">
+                        <local:VisualElement x:Name="BiosignalVisualElement"/>
+                    </Canvas>
+                </Border>
+                <Grid Grid.Row="1" Margin="0 5 0 5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Content="-" Width="60" Click="BiosignalSubWindowSizeButton_OnClick"/>
+                    <TextBlock Grid.Column="1" x:Name="WindowSizeTextBlock" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Button Grid.Column="2" Content="+" Width="60" Click="BiosignalAddWindowSizeButton_OnClick"/>
+
+                    <Button Grid.Column="4" Content="&lt;&lt;" Width="50" Click="BiosignalFirstPageButton_OnClick"/>
+                    <Button Grid.Column="5" Content="&lt;" Width="50" Click="BiosignalPrevPageButton_OnClick"/>
+                    <TextBlock Grid.Column="6" x:Name="PageTextBlock" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Button Grid.Column="7" Content="&gt;" Width="50" Click="BiosignalNextPageButton_OnClick"/>
+                    <Button Grid.Column="8" Content="&gt;&gt;" Width="50" Click="BiosignalLastPageButton_OnClick"/>
+                </Grid>
+            </Grid>
+
+            <Grid Grid.Row="2" Margin="0 5 0 0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Orientation="Vertical" Grid.Row="0" Margin="0 0 0 5">
+                    <TextBlock Text="Select Module" Margin="0 0 0 3"/>
+                    <ComboBox x:Name="MarkerPluginComboBox" SelectionChanged="PluginComboBox_OnSelectionChanged" />
+                </StackPanel>
+
+                <ListView x:Name="MarkerRecordListView" Grid.Row="1" Margin="0 0 0 5">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Marker" DisplayMemberBinding="{Binding Marker}" />
+                            <GridViewColumn Header="Definition" DisplayMemberBinding="{Binding Definition}" />
+                            <GridViewColumn Header="Timestamp" DisplayMemberBinding="{Binding Timestamp}" />
+                            <GridViewColumn Header="△T" DisplayMemberBinding="{Binding DeltaT}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+
+                <StackPanel Orientation="Vertical" Grid.Row="2" Margin="0">
+                    <Grid Margin="0 0 0 5" >
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="0.4*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="0.4*"/>
+                            <ColumnDefinition Width="15"/>
+                            <ColumnDefinition Width="0.3*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Start Marker" TextAlignment="Left" FontSize="8" Grid.Row="0" Grid.Column="0"/>
+                        <TextBox x:Name="StartMarkerTextBox" TextAlignment="Left" Grid.Row="1" Grid.Column="0"/>
+
+                        <TextBlock Text="-" Grid.Row="1" Grid.Column="1"/>
+
+                        <TextBlock Text="End Marker" TextAlignment="Right" FontSize="8" Grid.Row="0" Grid.Column="2"/>
+                        <TextBox x:Name="EndMarkerTextBox" TextAlignment="Right" Grid.Row="1" Grid.Column="2"/>
+
+                        <TextBlock Text="Delay(ms)" TextAlignment="Center" FontSize="8" Grid.Row="0" Grid.Column="4"/>
+                        <TextBox x:Name="DelayTextBox" Text="0" TextAlignment="Center" Grid.Row="1" Grid.Column="4"/>
+                    </Grid>
+                    <Button Content="Generate Epochs" Height="24" FontWeight="Black"  Click="GenerateEpochs_OnClick"/>
+                </StackPanel>
+
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>
