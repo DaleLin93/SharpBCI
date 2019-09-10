@@ -56,7 +56,7 @@ You can simply defined your own [Experiment](https://github.com/DaleLin93/SharpB
 
 ![Demo Experiment](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Plugins/SharpBCI.Demo.Plugin/Configuration%20Preview.jpg)
 
-See [Demo Plugin]() for more detail.
+See [Demo Plugin](https://github.com/DaleLin93/SharpBCI/tree/master/SharpBCI.Plugins/SharpBCI.Demo.Plugin) for more detail.
 
 
 
