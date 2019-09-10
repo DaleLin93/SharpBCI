@@ -21,7 +21,7 @@ Different experiment paradigms and external device drivers can be implemented th
     + **SharpBCI.Speller.Plugin** *BCI speller paradigm, using DirectX to provide stable flicker rendering*
         + **CCA** *C++ cannonical correlation analysis library*
     + **SharpBCI.VEP.Plugin**  *Multiple visual evoked potential paradigms included, using DirectX to provide stable flicker rendering*
-    + **SharpBCI.WebBrowser.Plugin** *BCI web browser paradigm *
+    + **SharpBCI.WebBrowser.Plugin** *BCI web browser paradigm*
     + **SharpBCI.BiosignalSamplers.Plugin** *Bio-signal sampler drivers, e.g. Neuroscan, NeuroElectrics, OpenBCI, ...*
     + **SharpBCI.EyeTrackers.Plugin** *Eye-tracker drivers, e.g. Tobii's eye-tracker*
     + **SharpBCI.VideoSources.Plugin** *Video source drivers, e.g. Web-Cam*
