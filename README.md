@@ -39,16 +39,16 @@ Different experiment paradigms and external device drivers can be implemented th
 ### Data Files
 
 After the completion of a session, you can see some files that have the same filename but different suffixes in the data folder: 
- + **.mrk** Experiment marker with timestamp with timestamp (ASCII; Comma-separated).
- + **.dat** Biosignal data with timestamp (ASCII; Comma-separated). 
- + **.gaz** Eye gaze point data with timestamp (ASCII; Comma-separated).
- + **.vfs** Video frames with timestamp (Binary).
- + **.scfg** Session configuration, can be used to restart the experiment (ASCII; Json).
- + **.session** Session information (ASCII; Json).
- + **.result** Result of the experiment (ASCII; Json).
+ + **.mrk** *Experiment marker with timestamp with timestamp (ASCII; Comma-separated).*
+ + **.dat** *Biosignal data with timestamp (ASCII; Comma-separated).*
+ + **.gaz** *Eye gaze point data with timestamp (ASCII; Comma-separated).*
+ + **.vfs** *Video frames with timestamp (Binary).*
+ + **.scfg** *Session configuration, can be used to restart the experiment (ASCII; Json).*
+ + **.session** *Session information (ASCII; Json).*
+ + **.result** *Result of the experiment (ASCII; Json).*
  
 ### Command-line
- + **.\SharpBCI.exe xxx.scfg** Directly run the predefined experiment. 
+ + **.\SharpBCI.exe xxx.scfg** *Directly run the predefined experiment.*
 
 ### How to Create Your Own Paradigm
 
