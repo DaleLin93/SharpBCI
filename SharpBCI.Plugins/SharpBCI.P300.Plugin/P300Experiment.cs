@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using MarukoLib.Lang;
+using MarukoLib.Lang.Exceptions;
 using MarukoLib.UI;
 using Newtonsoft.Json;
 using SharpBCI.Core.Experiment;
@@ -238,7 +239,7 @@ namespace SharpBCI.Experiments.P300
             if (configuration.Test.Paradigm == Configuration.TestConfig.P300Paradigm.DoubleFlash)
             {
                 if (configuration.Test.SubTrialDuration == 0)
-                    throw new ExperimentInitiationException("'sub-trial duration' be positive");
+                    throw new UserException("'sub-trial duration' be positive");
                 //                if (configuration.Test.FlashingDuration > configuration.Test.DoubleFlashTargetDelay)
                 //                    throw new ExperimentInitiationException("'Flashing duration' must shorter than 'Double flash target delay");
                 //                if (configuration.Test.SubTrialDuration + configuration.Test.DoubleFlashTargetDelay > configuration.Test.TrialInterval)

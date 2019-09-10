@@ -33,13 +33,25 @@ namespace SharpBCI.Extensions.Experiments
 
     }
 
+    /// <summary>
+    /// Interface of experiment factories.
+    /// </summary>
     public interface IExperimentFactory
     {
 
+        /// <summary>
+        /// Target type of the experiment.
+        /// </summary>
         Type ExperimentType { get; }
 
+        /// <summary>
+        /// The definitions of parameters used to create the experiment.
+        /// </summary>
         IReadOnlyCollection<ParameterGroup> ParameterGroups { get; }
 
+        /// <summary>
+        /// The summaries used to peek the information of experiment while creating.
+        /// </summary>
         IReadOnlyCollection<ISummary> Summaries { get; }
 
         /// <summary>
@@ -54,7 +66,6 @@ namespace SharpBCI.Extensions.Experiments
         /// Create experiment instance.
         /// </summary>
         /// <param name="context">Experiment parameters</param>
-        /// <exception cref="ExperimentInitiationException"></exception>
         /// <returns></returns>
         IExperiment Create(IReadonlyContext context);
 

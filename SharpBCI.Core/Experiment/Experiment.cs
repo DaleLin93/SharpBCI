@@ -1,22 +1,13 @@
 ﻿using SharpBCI.Core.Staging;
-using System;
 using MarukoLib.Lang;
 using Newtonsoft.Json;
 
 namespace SharpBCI.Core.Experiment
 {
 
-    public class ExperimentInitiationException : Exception
-    {
-
-        public ExperimentInitiationException() { }
-
-        public ExperimentInitiationException(string message) : base(message) { }
-
-        public ExperimentInitiationException(string message, Exception innerException) : base(message, innerException) { }
-
-    }
-
+    /// <summary>
+    /// Interface of Experiment.
+    /// </summary>
     public interface IExperiment
     {
 
@@ -38,6 +29,9 @@ namespace SharpBCI.Core.Experiment
 
     }
 
+    /// <summary>
+    /// An abstract basic experiment.
+    /// </summary>
     public abstract class Experiment : IExperiment
     {
 
@@ -51,6 +45,10 @@ namespace SharpBCI.Core.Experiment
 
     }
 
+    /// <summary>
+    /// An experiment that can be abstracted into several different stages.
+    /// Using <see cref="StageProgram"/> as timeline. 
+    /// </summary>
     public abstract class StagedExperiment : Experiment
     {
 

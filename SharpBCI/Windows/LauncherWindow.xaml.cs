@@ -286,7 +286,7 @@ namespace SharpBCI.Windows
         {
             var sessionPanel = HeaderPanel.AddGroupPanel("Session", "General Session Information");
             sessionPanel.AddRow("Subject", _subjectTextBox = new TextBox { Text = "Anonymous", MaxLength = 32});
-            sessionPanel.AddRow("Session Descriptor", _sessionDescriptorTextBox = new TextBox { Text = "Untitled", MaxLength = 64 });
+            sessionPanel.AddRow("Session Descriptor", _sessionDescriptorTextBox = new TextBox { Text = "Unnamed", MaxLength = 64 });
             sessionPanel.AddRow("", _sessionFullNameTextBlock = new TextBlock {FontSize = 10, Foreground = Brushes.DarkGray, Margin = new Thickness {Top = 3}});
             void OnSessionInfoChanged(object sender, TextChangedEventArgs e) => UpdateFullSessionName(_currentExperiment, ExperimentParamPanel.Context);
             _subjectTextBox.TextChanged += OnSessionInfoChanged;

@@ -78,7 +78,7 @@ namespace SharpBCI
         public static void SaveSystemVariables() => SystemVariables.Serialize(SystemVariableFilePath);
 
         /// <summary>
-        /// Open a config window to modify the system variabes.
+        /// Open a config window to modify the system variables.
         /// </summary>
         public static void ConfigSystemVariables()
         {
@@ -287,9 +287,9 @@ namespace SharpBCI
                 experiment = registrableExperiment.Factory.Create(context);
                 return true;
             }
-            catch (ExperimentInitiationException ex)
+            catch (Exception ex)
             {
-                if (msgBox) MessageBox.Show(ex.Message);
+                if (msgBox) ShowErrorMessage(ex);
                 return false;
             }
         }
