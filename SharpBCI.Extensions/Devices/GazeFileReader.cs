@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using MarukoLib.IO;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Presenters;
+using SharpBCI.Extensions.Streamers;
 using Path = SharpBCI.Extensions.Data.Path;
 
 namespace SharpBCI.Extensions.Devices
@@ -12,14 +14,14 @@ namespace SharpBCI.Extensions.Devices
     public class GazeFileReader : EyeTracker
     {
 
-        public const string DeviceName = "Gaze File Reader (*.gaze)";
+        public static readonly string DeviceName = $"Gaze File Reader (*{GazePointFileWriter.FileSuffix})";
 
         public class Factory : DeviceFactory<GazeFileReader>
         {
 
             public static readonly Parameter<Path> GazeFileParam = Parameter<Path>.CreateBuilder("Gaze File", new Path(""))
                 .SetMetadata(PathPresenter.PathTypeProperty, PathPresenter.PathType.File)
-                .SetMetadata(PathPresenter.FilterProperty, "Gaze File (*.gaze)|*.gaze")
+                .SetMetadata(PathPresenter.FilterProperty, FileUtils.GetFileFilter("Gaze File", GazePointFileWriter.FileSuffix))
                 .SetMetadata(PathPresenter.CheckExistenceProperty, true)
                 .Build();
 

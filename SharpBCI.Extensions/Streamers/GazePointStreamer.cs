@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
 using JetBrains.Annotations;
 using MarukoLib.IO;
 using MarukoLib.Lang;
@@ -63,7 +59,7 @@ namespace SharpBCI.Extensions.Streamers
 
         }
 
-        public const string FileSuffix = ".gaze";
+        public const string FileSuffix = ".gaz";
 
         public GazePointFileWriter([NotNull] string fileName, long baseTime = 0, int bufferSize = 2048) : base(fileName, bufferSize, baseTime) { }
 
@@ -71,9 +67,9 @@ namespace SharpBCI.Extensions.Streamers
         {
             var point = data.Value;
             stream.WriteAscii(point.X);
-            stream.WriteByte((byte)';');
+            stream.WriteByte((byte)',');
             stream.WriteAscii(point.Y);
-            stream.WriteByte((byte)';');
+            stream.WriteByte((byte)',');
             stream.WriteAscii(data.TimeStamp - BaseTime);
             stream.WriteByte((byte)'\n');
         }

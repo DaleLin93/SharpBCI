@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using MarukoLib.IO;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Presenters;
+using SharpBCI.Extensions.Streamers;
 using Path = SharpBCI.Extensions.Data.Path;
 
 namespace SharpBCI.Extensions.Devices
@@ -12,14 +14,14 @@ namespace SharpBCI.Extensions.Devices
     public class DataFileReader : BiosignalSampler
     {
 
-        public const string DeviceName = "Data File Reader (*.dat)";
+        public static readonly string DeviceName = $"Data File Reader (*{BiosignalDataFileWriter.FileSuffix})";
 
         public class Factory : DeviceFactory<DataFileReader>
         {
 
             public static readonly Parameter<Path> DataFileParam = Parameter<Path>.CreateBuilder("Data File", new Path(""))
                 .SetMetadata(PathPresenter.PathTypeProperty, PathPresenter.PathType.File)
-                .SetMetadata(PathPresenter.FilterProperty, "Data File (*.dat)|*.dat")
+                .SetMetadata(PathPresenter.FilterProperty, FileUtils.GetFileFilter("Biosignal Data File", BiosignalDataFileWriter.FileSuffix))
                 .SetMetadata(PathPresenter.CheckExistenceProperty, true)
                 .Build();
 
