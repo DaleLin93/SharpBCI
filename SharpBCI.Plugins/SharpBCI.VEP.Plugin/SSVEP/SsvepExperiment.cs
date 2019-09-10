@@ -1,7 +1,6 @@
 ﻿using MarukoLib.Lang;
 using Newtonsoft.Json;
 using SharpBCI.Core.Experiment;
-using SharpBCI.Core.Shared;
 using SharpBCI.Core.Staging;
 using System;
 using System.Collections.Generic;
@@ -117,7 +116,7 @@ namespace SharpBCI.Experiments.VEP.SSVEP
 
             // GUI
 
-            private static readonly Parameter<ScreenParams> Screen = Parameter<ScreenParams>.CreateBuilder("Screen").SetSelectableValues(ScreenParams.All, true).Build();
+            private static readonly Parameter<ScreenInfo> Screen = Parameter<ScreenInfo>.CreateBuilder("Screen").SetSelectableValues(ScreenInfo.All, true).Build();
 
             private static readonly Parameter<Color> BackgroundColor = new Parameter<Color>("Background Color", Color.Black);
 

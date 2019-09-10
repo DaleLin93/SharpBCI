@@ -7,7 +7,7 @@ using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using Newtonsoft.Json;
 using SharpBCI.Core.IO;
-using SharpBCI.Core.Shared;
+using MarukoLib.UI;
 
 namespace SharpBCI.Core.Experiment
 {
@@ -51,7 +51,7 @@ namespace SharpBCI.Core.Experiment
             Experiment = experiment ?? throw new ArgumentNullException(nameof(experiment));
             StreamerCollection = streamerCollection ?? throw new ArgumentNullException(nameof(streamerCollection));
 
-            Screens = ScreenParams.All;
+            Screens = ScreenInfo.All;
             DataFilePrefix = Path.Combine(dataFolder, GetFullSessionName(CreateTimestamp, subject, descriptor));
         }
 
@@ -139,7 +139,7 @@ namespace SharpBCI.Core.Experiment
         /// <summary>
         /// Screen parameters.
         /// </summary>
-        [NotNull] public ScreenParams[] Screens { get; }
+        [NotNull] public ScreenInfo[] Screens { get; }
 
         /// <summary>
         /// The experiment of current session.
@@ -240,7 +240,7 @@ namespace SharpBCI.Core.Experiment
 
         public long EndTime { get; set; }
 
-        public ScreenParams[] Screens { get; set; }
+        public ScreenInfo[] Screens { get; set; }
 
         public bool UserInterrupted { get; set; }
 

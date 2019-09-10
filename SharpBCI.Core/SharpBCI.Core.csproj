@@ -85,7 +85,6 @@
     <Compile Include="Experiment\Experiment.cs" />
     <Compile Include="IO\Markable.cs" />
     <Compile Include="Experiment\Result.cs" />
-    <Compile Include="Shared\ScreenParams.cs" />
     <Compile Include="Experiment\Session.cs" />
     <Compile Include="Experiment\Summary.cs" />
     <Compile Include="IO\Consumer.cs" />

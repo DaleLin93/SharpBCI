@@ -1,5 +1,4 @@
 ﻿using MarukoLib.Lang;
-using SharpBCI.Core.IO;
 using SharpBCI.Extensions.Streamers;
 
 namespace SharpBCI.Extensions.Devices

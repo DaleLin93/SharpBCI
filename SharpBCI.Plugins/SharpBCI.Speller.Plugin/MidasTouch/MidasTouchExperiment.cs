@@ -7,7 +7,6 @@ using MarukoLib.Lang;
 using MarukoLib.UI;
 using Newtonsoft.Json;
 using SharpBCI.Core.Experiment;
-using SharpBCI.Core.Shared;
 using SharpBCI.Core.Staging;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
@@ -128,7 +127,7 @@ namespace SharpBCI.Experiments.Speller.MidasTouch
 
             // GUI
 
-            private static readonly Parameter<ScreenParams> Screen = Parameter<ScreenParams>.CreateBuilder("Screen").SetSelectableValues(ScreenParams.All, true).Build();
+            private static readonly Parameter<ScreenInfo> Screen = Parameter<ScreenInfo>.CreateBuilder("Screen").SetSelectableValues(ScreenInfo.All, true).Build();
 
             private static readonly Parameter<Colors> ColorScheme = new Parameter<Colors>("Color Scheme", new Colors(Color.Black, Color.White));
 
