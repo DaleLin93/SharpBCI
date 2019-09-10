@@ -343,7 +343,7 @@ namespace SharpBCI
                 new RegistrableDevice(null, DeviceType.FromType<IEyeTracker>(), new GazeFileReader.Factory()),
                 new RegistrableDevice(null, DeviceType.FromType<IBiosignalSampler>(), new GenericOscillator.Factory()),
                 new RegistrableDevice(null, DeviceType.FromType<IBiosignalSampler>(), new DataFileReader.Factory()),
-                new RegistrableDevice(null, DeviceType.FromType<IVideoSource>(), new ScreenCaptureSource.Factory()));
+                new RegistrableDevice(null, DeviceType.FromType<IVideoSource>(), new ScreenCapturer.Factory()));
 
             Registries.Registry<RegistrableConsumer>().RegisterAll(
                 new RegistrableConsumer(null, new BiosignalDataFileWriter.Factory()),
