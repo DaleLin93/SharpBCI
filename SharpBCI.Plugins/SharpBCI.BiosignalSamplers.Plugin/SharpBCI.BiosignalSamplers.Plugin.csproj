@@ -85,9 +85,17 @@
     <Compile Include="UnnamedDeviceSampler.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Lang\MarukoLib.Lang.csproj">
+      <Project>{cdc6516e-2114-4e81-8ba0-9d3e93f8da15}</Project>
+      <Name>MarukoLib.Lang</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Logging\MarukoLib.Logging.csproj">
       <Project>{36b35a27-9e3c-4a7b-870b-9df3b1fe534b}</Project>
       <Name>MarukoLib.Logging</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Threading\MarukoLib.Threading.csproj">
+      <Project>{334d2ca4-eba9-4977-a3ca-2badffa0c9bb}</Project>
+      <Name>MarukoLib.Threading</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\MarukoLib\MarukoLib\MarukoLib.csproj">
       <Project>{2f30247b-bb53-41d0-ad4e-845550366a96}</Project>

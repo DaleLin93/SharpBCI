@@ -143,6 +143,10 @@
       <Project>{1f8d87bf-b42d-4735-be0a-890cc5df927b}</Project>
       <Name>MarukoLib.Interop</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Lang\MarukoLib.Lang.csproj">
+      <Project>{cdc6516e-2114-4e81-8ba0-9d3e93f8da15}</Project>
+      <Name>MarukoLib.Lang</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Logging\MarukoLib.Logging.csproj">
       <Project>{36B35A27-9E3C-4A7B-870B-9DF3B1FE534B}</Project>
       <Name>MarukoLib.Logging</Name>
@@ -150,6 +154,10 @@
     <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Persistence\MarukoLib.Persistence.csproj">
       <Project>{75efb011-f3ac-471d-87e5-c7607f44eb80}</Project>
       <Name>MarukoLib.Persistence</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Threading\MarukoLib.Threading.csproj">
+      <Project>{334d2ca4-eba9-4977-a3ca-2badffa0c9bb}</Project>
+      <Name>MarukoLib.Threading</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\MarukoLib\MarukoLib\MarukoLib.csproj">
       <Project>{2f30247b-bb53-41d0-ad4e-845550366a96}</Project>
