@@ -4,6 +4,7 @@ using System.Threading;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Concurrent;
+using MarukoLib.Lang.Events;
 using MarukoLib.Threading;
 
 namespace SharpBCI.Core.Staging
@@ -91,7 +92,7 @@ namespace SharpBCI.Core.Staging
 
         [NotNull] private readonly IStageProvider _stageProvider;
 
-        [NotNull] private readonly AsyncRepeatingRunner _repeatingRunner;
+        [NotNull] private readonly AsyncCyclicExecutor _cyclicExecutor;
 
         [NotNull] private readonly AtomicBool _stageSkipped;
 
@@ -135,16 +136,16 @@ namespace SharpBCI.Core.Staging
             FreezableClock.Frozen += (sender, e) => _pausedEvent.Set();
             FreezableClock.Unfrozen += (sender, e) => _pausedEvent.Reset();
             _stageProvider = preferPreloaded && stageProvider.TryPreload(out var preloaded) ? preloaded : stageProvider;
-            _repeatingRunner = new AsyncRepeatingRunner("StageProgram Worker", DoRun, true, ThreadPriority.Highest, null, StoppingAction.Abort);
-            _repeatingRunner.Starting += (sender, e) =>
+            _cyclicExecutor = new AsyncCyclicExecutor("StageProgram Worker", DoWork, true, ThreadPriority.Highest, null, StoppingAction.Abort);
+            _cyclicExecutor.Starting += (sender, e) =>
             {
                 CurrentStage = null;
                 _pausedEvent.Set();
                 StartTime = Time;
                 _nextUpdateTime = 0;
             };
-            _repeatingRunner.Started += (sender, e) => Started?.Invoke(this, EventArgs.Empty);
-            _repeatingRunner.Stopped += (sender, e) => Stopped?.Invoke(this, EventArgs.Empty);
+            _cyclicExecutor.Started += (sender, e) => Started?.Invoke(this, EventArgs.Empty);
+            _cyclicExecutor.Stopped += (sender, e) => Stopped?.Invoke(this, EventArgs.Empty);
             _stageSkipped = new AtomicBool(false);
             _pausedEvent = new ManualResetEvent(false);
         }
@@ -177,7 +178,7 @@ namespace SharpBCI.Core.Staging
         /// <summary>
         /// Whether the stage program is started or not.
         /// </summary>
-        public bool IsStarted => _repeatingRunner.IsStarted;
+        public bool IsStarted => _cyclicExecutor.IsStarted;
 
         /// <summary>
         /// Whether the stage program is paused or not.
@@ -195,7 +196,7 @@ namespace SharpBCI.Core.Staging
         /// Start program.
         /// </summary>
         /// <returns>Successfully started</returns>
-        public bool Start() => _repeatingRunner.Start();
+        public bool Start() => _cyclicExecutor.Start();
 
         /// <summary>
         /// Stop program.
@@ -203,7 +204,7 @@ namespace SharpBCI.Core.Staging
         /// <returns>Successfully stopped</returns>
         public bool Stop()
         {
-            if (_repeatingRunner.Stop(false))
+            if (_cyclicExecutor.Stop(false))
             {
                 CurrentStage = null;
                 FreezableClock.Unfreeze();
@@ -230,7 +231,7 @@ namespace SharpBCI.Core.Staging
         /// <returns>Successfully set</returns>
         public bool Skip() => _stageSkipped.Set();
 
-        private void DoRun()
+        private void DoWork()
         {
             /* Check frozen. */
             if (FreezableClock.IsFrozen && !_pausedEvent.WaitOne()) return; 
