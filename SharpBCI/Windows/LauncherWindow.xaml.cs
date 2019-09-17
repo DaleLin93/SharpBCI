@@ -257,17 +257,21 @@ namespace SharpBCI.Windows
 
         private void UpdateFullSessionName(RegistrableExperiment experiment, IReadonlyContext @params)
         {
-            try
+            if (experiment != null)
             {
-                _sessionFullNameTextBlock.Foreground = Brushes.DarkGray;
-                _sessionFullNameTextBlock.Text = GetSessionExperimentPart(experiment, @params).GetFullSessionName();
+                try
+                {
+                    _sessionFullNameTextBlock.Foreground = Brushes.DarkGray;
+                    _sessionFullNameTextBlock.Text = GetSessionExperimentPart(experiment, @params).GetFullSessionName();
+                    return;
+                }
+                catch (Exception e)
+                {
+                    Logger.Warn("UpdateFullSessionName - update full session name", e, "sessionDescriptor", _sessionDescriptorTextBox.Text);
+                }
             }
-            catch (Exception e)
-            {
-                Logger.Warn("UpdateFullSessionName - update full session name", e, "sessionDescriptor", _sessionDescriptorTextBox.Text);
-                _sessionFullNameTextBlock.Text = "<ERR>";
-                _sessionFullNameTextBlock.Foreground = Brushes.DarkRed;
-            }
+            _sessionFullNameTextBlock.Text = "<ERR>";
+            _sessionFullNameTextBlock.Foreground = Brushes.DarkRed;
         }
 
         private void OnExperimentParamsUpdated()
@@ -336,6 +340,8 @@ namespace SharpBCI.Windows
 
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();
+
+            _currentExperiment = experiment;
             OnExperimentParamsUpdated();
             _needResizeWindow = true;
         }
@@ -589,7 +595,6 @@ namespace SharpBCI.Windows
             SerializeExperimentConfig();
             var registrableExperiment = (RegistrableExperiment) _experimentComboBox.SelectedItem;
             InitializeExperimentConfigurationPanel(registrableExperiment);
-            _currentExperiment = registrableExperiment;
             DeserializeExperimentConfig();
         }
 

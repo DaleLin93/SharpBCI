@@ -79,7 +79,7 @@ namespace SharpBCI
         }
 
         private static T Initiate<T>(Type type) => 
-            (T)(type.  GetNoArgConstructor() ?? throw new ProgrammingException($"No-arg constructor not found: {type.FullName}")).Invoke(EmptyArray<object>.Instance);
+            (T)(type.GetNoArgConstructor() ?? throw new ProgrammingException($"No-arg constructor not found: {type.FullName}")).Invoke(EmptyArray<object>.Instance);
 
         public string Name => Path.GetFileName(Assembly.Location).Trim("SharpBCI.", ".Plugin.dll", StringComparison.OrdinalIgnoreCase);
 

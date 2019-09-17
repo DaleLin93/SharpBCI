@@ -116,6 +116,7 @@ namespace SharpBCI.Windows
             ConsumerConfigurationPanel.Descriptors = AsGroup("", consumer?.Factory.Parameters.Cast<IDescriptor>().ToArray() ?? EmptyArray<IDescriptor>.Instance);
             ConsumerConfigurationPanel.Adapter = consumer?.Factory as IParameterPresentAdapter;
 
+            _currentConsumer = consumer;
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();
             _needResizeWindow = true;
@@ -179,7 +180,6 @@ namespace SharpBCI.Windows
 
             InitializeConsumerConfigurationPanel(registrableConsumer);
             ConsumerConfigurationPanel.Context = eventArgs.NewConsumerParams ?? EmptyContext.Instance;
-            _currentConsumer = registrableConsumer;
         }
 
         private void OkBtn_Click(object sender, RoutedEventArgs e) => Confirm();
