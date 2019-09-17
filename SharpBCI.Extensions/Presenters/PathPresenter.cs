@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using MarukoLib.IO;
 using MarukoLib.Lang;
+using SharpBCI.Extensions.Windows;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Path = SharpBCI.Extensions.Data.Path;
 

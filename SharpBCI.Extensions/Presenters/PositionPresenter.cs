@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Data;
+using SharpBCI.Extensions.Windows;
 using Rectangle = System.Windows.Shapes.Rectangle;
 
 namespace SharpBCI.Extensions.Presenters

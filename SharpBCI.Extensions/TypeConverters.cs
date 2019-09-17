@@ -66,42 +66,57 @@ namespace SharpBCI.Extensions
             return false;
         }
 
+        public static Parameter<T>.Builder SetTypeConverters<T>(this Parameter<T>.Builder builder, ITypeConverter typeConverter)
+        {
+            if (!(typeConverter?.IsMatch(typeof(T), null) ?? true)) throw new ArgumentException("invalid type converter");
+            return builder.SetRawMetadata(Presenters.Presenters.PresentTypeConverterProperty, typeConverter)
+                .SetRawMetadata(PersistenceHelper.PersistentTypeConverterProperty, typeConverter);
+        }
+
+        public static Parameter<T>.Builder SetTypeConverters<T>(this Parameter<T>.Builder builder, ITypeConverter present, ITypeConverter persistent)
+        {
+            if (!(present?.IsMatch(typeof(T), null) ?? true)) throw new ArgumentException("invalid present type converter");
+            if (!(persistent?.IsMatch(typeof(T), null) ?? true)) throw new ArgumentException("invalid persistent type converter");
+            return builder.SetRawMetadata(Presenters.Presenters.PresentTypeConverterProperty, present)
+                .SetRawMetadata(PersistenceHelper.PersistentTypeConverterProperty, persistent);
+        }
+
         public static Parameter<ArrayQuery>.Builder SetDefaultQuery(this Parameter<ArrayQuery>.Builder builder, string query)
         {
             var converter = ArrayQuery.TypeConverter;
-            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverter(converter);
+            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverters(converter);
         }
 
         public static Parameter<ArrayQuery<double>>.Builder SetDefaultQuery(this Parameter<ArrayQuery<double>>.Builder builder, string query)
         {
             var converter = ArrayQuery<double>.CreateTypeConverter(IdentityTypeConverter<double>.Instance);
-            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverter(converter);
+            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverters(converter);
         }
 
         public static Parameter<ArrayQuery<T>>.Builder SetDefaultQuery<T>(this Parameter<ArrayQuery<T>>.Builder builder, string query,
             ITypeConverter<double, T> numberConverter)
         {
             var converter = ArrayQuery<T>.CreateTypeConverter(numberConverter);
-            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverter(converter);
+            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverters(converter);
         }
 
         public static Parameter<MatrixQuery>.Builder SetDefaultQuery(this Parameter<MatrixQuery>.Builder builder, string query)
         {
             var converter = MatrixQuery.TypeConverter;
-            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverter(converter);
+            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverters(converter);
         }
 
         public static Parameter<MatrixQuery<double>>.Builder SetDefaultQuery(this Parameter<MatrixQuery<double>>.Builder builder, string query)
         {
             var converter = MatrixQuery<double>.CreateTypeConverter(IdentityTypeConverter<double>.Instance);
-            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverter(converter);
+            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverters(converter);
         }
 
         public static Parameter<MatrixQuery<T>>.Builder SetDefaultQuery<T>(this Parameter<MatrixQuery<T>>.Builder builder, string query,
             ITypeConverter<double, T> numberConverter)
         {
             var converter = MatrixQuery<T>.CreateTypeConverter(numberConverter);
-            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverter(converter);
+            return builder.SetDefaultValue(converter.ConvertBackward(query)).SetTypeConverters(converter);
         }
 
     }

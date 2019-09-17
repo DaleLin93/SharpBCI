@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using MarukoLib.UI;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Presenters
 {

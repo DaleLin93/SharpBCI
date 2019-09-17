@@ -1,6 +1,5 @@
 ﻿using MarukoLib.Lang;
 using MarukoLib.UI;
-using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Streamers;
 using SharpBCI.Registrables;
@@ -11,6 +10,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Windows
 {

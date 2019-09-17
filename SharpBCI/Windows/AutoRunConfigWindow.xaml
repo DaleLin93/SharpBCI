@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SharpBCI.Windows"
-        xmlns:extensions="clr-namespace:SharpBCI.Extensions;assembly=SharpBCI.Extensions"
+        xmlns:windows="clr-namespace:SharpBCI.Extensions.Windows;assembly=SharpBCI.Extensions"
         mc:Ignorable="d"
         Title="Auto Run Configuration" MinWidth="500" Width="500" MinHeight="400" Height="400" Background="{StaticResource BackgroundBrush}" Loaded="Window_OnLoaded" 
         AllowDrop="True" DragOver="ExperimentListView_OnDragOver" Drop="ExperimentListView_OnDrop" >
@@ -33,9 +33,9 @@
                 </MenuItem>
             </Menu>
             <Rectangle Style="{StaticResource ParamGroupSeparator}" Fill="#FFE2E2E2" />
-            <extensions:GroupHeader SeparatorStyle="{StaticResource ParamGroupSeparator}" HeaderTextStyle="{StaticResource ParamGroupHeader}" Header="Subject"/>
+            <windows:GroupHeader SeparatorStyle="{StaticResource ParamGroupSeparator}" HeaderTextStyle="{StaticResource ParamGroupHeader}" Header="Subject"/>
             <TextBox x:Name="SubjectTextBox" Margin="2 3 2 3" />
-            <extensions:GroupHeader SeparatorStyle="{StaticResource ParamGroupSeparator}" HeaderTextStyle="{StaticResource ParamGroupHeader}" Header="Experiments"/>
+            <windows:GroupHeader SeparatorStyle="{StaticResource ParamGroupSeparator}" HeaderTextStyle="{StaticResource ParamGroupHeader}" Header="Experiments"/>
         </StackPanel>
 
         <StackPanel DockPanel.Dock="Bottom" >

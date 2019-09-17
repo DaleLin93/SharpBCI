@@ -35,8 +35,6 @@ namespace SharpBCI.Extensions.Presenters
 
             public override IEnumerable SelectableValues => EmptyArray<object>.Instance;
 
-            public override ITypeConverter TypeConverter => null;
-
             public override IReadonlyContext Metadata => OriginalParameter.Metadata;
 
             public override bool IsValid(object value) => OriginalParameter.IsValid(value);

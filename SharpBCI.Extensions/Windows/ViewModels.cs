@@ -2,11 +2,58 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using MarukoLib.Logging;
 using SharpBCI.Extensions.Presenters;
 
 namespace SharpBCI.Extensions.Windows
 {
+
+    public class GroupHeader : Grid
+    {
+
+        private readonly Rectangle _separatorRectangle;
+
+        private readonly TextBlock _headerTextBlock;
+
+        public GroupHeader()
+        {
+            Height = ViewConstants.SeparatorRowHeight;
+            Background = new SolidColorBrush(ViewConstants.GroupHeaderColor);
+            Children.Add(_separatorRectangle = new Rectangle { Margin = new Thickness { Left = 10, Right = 10, Top = 7 } });
+            Children.Add(_headerTextBlock = new TextBlock { Margin = new Thickness { Left = 15, Top = 2 }, IsHitTestVisible = false, Visibility = Visibility.Hidden });
+        }
+
+        public Style SeparatorStyle
+        {
+            get => _separatorRectangle.Style;
+            set => _separatorRectangle.Style = value;
+        }
+
+        public Style HeaderTextStyle
+        {
+            get => _headerTextBlock.Style;
+            set => _headerTextBlock.Style = value;
+        }
+
+        public string Header
+        {
+            get => _headerTextBlock.Text;
+            set
+            {
+                _headerTextBlock.Text = value;
+                _headerTextBlock.Visibility = string.IsNullOrWhiteSpace(value) ? Visibility.Hidden : Visibility.Visible;
+            }
+        }
+
+        public string Description
+        {
+            get => ToolTip?.ToString();
+            set => ToolTip = value;
+        }
+
+    }
 
     public class ParamGroupHolder
     {

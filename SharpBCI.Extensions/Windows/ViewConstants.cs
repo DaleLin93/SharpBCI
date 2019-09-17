@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Media;
 
-namespace SharpBCI.Extensions
+namespace SharpBCI.Extensions.Windows
 {
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]

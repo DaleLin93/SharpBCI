@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using MarukoLib.Lang;
 using Microsoft.Win32;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Presenters
 {

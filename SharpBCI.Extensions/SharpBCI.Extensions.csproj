@@ -138,7 +138,7 @@
       <DependentUpon>TestWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Devices\EyeTracker.cs" />
-    <Compile Include="Helpers.cs" />
+    <Compile Include="PersistenceHelper.cs" />
     <Compile Include="Parameter.cs" />
     <Compile Include="Patterns\SquarePattern.cs" />
     <Compile Include="Patterns\LinearPattern.cs" />
@@ -171,12 +171,13 @@
     <Compile Include="Streamers\MarkerStreamer.cs" />
     <Compile Include="Streamers\BiosignalStreamer.cs" />
     <Compile Include="TypeConverters.cs" />
-    <Compile Include="ViewConstants.cs" />
+    <Compile Include="Windows\ViewConstants.cs" />
     <Compile Include="Windows\ContextChangedEventArgs.cs" />
     <Compile Include="Windows\LayoutChangedEventArgs.cs" />
     <Compile Include="Windows\SummaryPanel.cs" />
     <Compile Include="Windows\ParameterPanel.cs" />
     <Compile Include="Windows\PresentationAdapters.cs" />
+    <Compile Include="Windows\ViewHelper.cs" />
     <Compile Include="Windows\ViewModels.cs" />
     <Compile Include="Windows\ParameterizedConfigWindow.xaml.cs">
       <DependentUpon>ParameterizedConfigWindow.xaml</DependentUpon>

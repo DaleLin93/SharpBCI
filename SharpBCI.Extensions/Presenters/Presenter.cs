@@ -105,6 +105,8 @@ namespace SharpBCI.Extensions.Presenters
 
         public static ContextProperty<IPresenter> PresenterProperty = new ContextProperty<IPresenter>();
 
+        public static ContextProperty<ITypeConverter> PresentTypeConverterProperty = new ContextProperty<ITypeConverter>();
+
         private static readonly IDictionary<Type, IPresenter> TypePresenters = new Dictionary<Type, IPresenter>
         {
             {typeof(bool), BooleanPresenter.Instance},
@@ -117,11 +119,14 @@ namespace SharpBCI.Extensions.Presenters
             {typeof(Position2D), PositionPresenter.Instance},
         };
 
+        public static bool TryGetPresentTypeConverter(this IParameterDescriptor parameter, out ITypeConverter converter) =>
+            PresentTypeConverterProperty.TryGet(parameter.Metadata, out converter) && converter != null;
+
         [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public static IPresenter GetPresenter(this IParameterDescriptor param)
         {
             if (PresenterProperty.TryGet(param.Metadata, out var presenter)) return presenter;
-            if (param.TypeConverter != null) return TypeConvertedPresenter.Instance;
+            if (TryGetPresentTypeConverter(param, out _)) return TypeConvertedPresenter.Instance;
             if (param.IsSelectable()) return SelectablePresenter.Instance;
             if (param.IsMultiValue()) return MultiValuePresenter.Instance;
             return GetPresenter(param.ValueType) ?? throw new NotSupportedException($"presenter not found for type '{param.ValueType}'");

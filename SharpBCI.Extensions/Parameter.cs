@@ -31,8 +31,6 @@ namespace SharpBCI.Extensions
 
         IEnumerable SelectableValues { get; }
 
-        ITypeConverter TypeConverter { get; }
-
         IReadonlyContext Metadata { get; }
 
         bool IsValid(object value);
@@ -150,8 +148,6 @@ namespace SharpBCI.Extensions
 
         public abstract IEnumerable SelectableValues { get; }
 
-        public abstract ITypeConverter TypeConverter { get; }
-
         public abstract IReadonlyContext Metadata { get; }
 
         public abstract bool IsValid(object value);
@@ -173,10 +169,9 @@ namespace SharpBCI.Extensions
     public sealed class TypeConvertedParameter : RoutedParameter
     {
 
-        public TypeConvertedParameter(IParameterDescriptor originalParameter) : base(originalParameter)
-        {
-            if (originalParameter.TypeConverter == null) throw new ArgumentException("'TypeConverter' is not defined in original parameter");
-        }
+        public TypeConvertedParameter(IParameterDescriptor originalParameter, ITypeConverter typeConverter) : base(originalParameter) => TypeConverter = typeConverter;
+
+        public ITypeConverter TypeConverter { get; }
 
         public override string Key => OriginalParameter.Key;
 
@@ -186,20 +181,18 @@ namespace SharpBCI.Extensions
 
         public override string Description => OriginalParameter.Description;
 
-        public override Type ValueType => OriginalParameter.TypeConverter.OutputType;
+        public override Type ValueType => TypeConverter.OutputType;
 
         public override bool IsNullable => OriginalParameter.IsNullable;
 
-        public override object DefaultValue => OriginalParameter.TypeConverter.ConvertForward(OriginalParameter.DefaultValue);
+        public override object DefaultValue => TypeConverter.ConvertForward(OriginalParameter.DefaultValue);
 
         public override IEnumerable SelectableValues => OriginalParameter.SelectableValues?
-            .Cast<object>().Select(value => OriginalParameter.TypeConverter.ConvertForward(value));
-
-        public override ITypeConverter TypeConverter => null;
+            .Cast<object>().Select(value => TypeConverter.ConvertForward(value));
 
         public override IReadonlyContext Metadata => OriginalParameter.Metadata;
 
-        public override bool IsValid(object value) => OriginalParameter.IsValid(OriginalParameter.TypeConverter.ConvertBackward(value));
+        public override bool IsValid(object value) => OriginalParameter.IsValid(TypeConverter.ConvertBackward(value));
 
     }
 
@@ -228,8 +221,6 @@ namespace SharpBCI.Extensions
         public override object DefaultValue => OriginalParameter.DefaultValue;
 
         public override IEnumerable SelectableValues => OriginalParameter.SelectableValues;
-
-        public override ITypeConverter TypeConverter => OriginalParameter.TypeConverter;
 
         public override IReadonlyContext Metadata => OriginalParameter.Metadata;
 
@@ -277,8 +268,6 @@ namespace SharpBCI.Extensions
             public T DefaultValue;
 
             public IEnumerable<T> SelectableValues;
-
-            public ITypeConverter TypeConverter;
 
             public Predicate<T> Validator;
 
@@ -334,13 +323,6 @@ namespace SharpBCI.Extensions
                 SelectableValues = selectableValues;
                 if (setFirstAsDefault)
                     DefaultValue = selectableValues.First();
-                return this;
-            }
-
-            public Builder SetTypeConverter(ITypeConverter typeConverter)
-            {
-                if (!typeConverter.IsMatch(typeof(T), null)) throw new ArgumentException("invalid type converter");
-                TypeConverter = typeConverter;
                 return this;
             }
 
@@ -425,7 +407,6 @@ namespace SharpBCI.Extensions
             IsNullable = builder.Nullable;
             DefaultValue = builder.DefaultValue;
             SelectableValues = builder.SelectableValues;
-            TypeConverter = builder.TypeConverter;
             Validator = builder.Validator;
             Metadata = builder.Metadata ?? EmptyContext.Instance;
         }
@@ -472,8 +453,6 @@ namespace SharpBCI.Extensions
 
         public Predicate<T> Validator { get; }
 
-        public ITypeConverter TypeConverter { get; }
-
         public IReadonlyContext Metadata { get; } = EmptyContext.Instance;
 
         public bool IsValid(object val)
@@ -506,8 +485,6 @@ namespace SharpBCI.Extensions
         public static bool IsSelectable(this IParameterDescriptor parameter) => parameter.SelectableValues != null;
 
         public static bool IsMultiValue(this IParameterDescriptor parameter) => parameter.ValueType.IsArray && parameter.ValueType.GetArrayRank() == 1;
-
-        public static IParameterDescriptor GetTypeConvertedParameter(this IParameterDescriptor parameter) => new TypeConvertedParameter(parameter);
 
     }
 

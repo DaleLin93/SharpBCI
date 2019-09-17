@@ -308,12 +308,12 @@ namespace SharpBCI.Experiments.Speller
 
             private static readonly Parameter<KeyboardLayout> Layout = Parameter<KeyboardLayout>.CreateBuilder("Layout")
                 .SetSelectableValues(KeyboardLayout.Layouts.Values, true)
-                .SetTypeConverter(KeyboardLayout.TypeConverter)
+                .SetTypeConverters(KeyboardLayout.TypeConverter)
                 .Build();
 
             private static readonly Parameter<SpellerParadigm> Paradigm = Parameter<SpellerParadigm>.CreateBuilder("Paradigm")
                 .SetSelectableValuesForEnum(true)
-                .SetTypeConverter(SpellerParadigmExt.TypeConverter)
+                .SetTypeConverters(SpellerParadigmExt.TypeConverter)
                 .Build();
 
             private static readonly Parameter<SpellerActivationMode> ActivationMode = Parameter<SpellerActivationMode>.OfEnum("Activation Mode", SpellerActivationMode.TwoByTwoBlock);
