@@ -9,6 +9,7 @@ using SharpBCI.Core.IO;
 using SharpBCI.Core.Experiment;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using MarukoLib.IO;
 using MarukoLib.Lang.Exceptions;
@@ -47,12 +48,14 @@ namespace SharpBCI
 
         private static readonly Logger Logger = Logger.GetLogger(typeof(App));
 
+        private static readonly StringBuilder ErrorMessageBuilder = new StringBuilder(1024);
+
         public readonly Registries Registries = new Registries();
 
         static App()
         {
-            Process.GetCurrentProcess().PriorityBoostEnabled = true;
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.RealTime;
+            log4net.Config.XmlConfigurator.Configure();
+            SetRealTimePriority();
         }
 
         public App()
@@ -66,6 +69,12 @@ namespace SharpBCI
         public static App Instance { get; private set; }
 
         public static string SystemVariableFilePath => Path.Combine(FileUtils.ExecutableDirectory, SystemVariableFile);
+
+        public static void SetRealTimePriority()
+        {
+            Process.GetCurrentProcess().PriorityBoostEnabled = true;
+            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.RealTime;
+        }
 
         /// <summary>
         /// Load system variables from file.
@@ -121,17 +130,23 @@ namespace SharpBCI
         public static void ShowErrorMessage(Exception ex, string message = null)
         {
             if (ex == null) return;
-            if (message?.IsBlank() ?? true)
-                message = ex.Message;
-            else
-                message += "\n\nException: " + ex.Message;
-            if (message == null) message = "";
-            if (!(ex is ProgrammingException || ex is UserException))
+            lock (ErrorMessageBuilder)
             {
-                if (!message.IsBlank()) message += "\n";
-                message = message + "StackTrace: " + ex.StackTrace;
+                if (message?.Any() ?? false) ErrorMessageBuilder.Append(message);
+                if (!(ex is ProgrammingException || ex is UserException))
+                {
+                    var currentEx = ex;
+                    do
+                    {
+                        if (ErrorMessageBuilder.Length > 0) ErrorMessageBuilder.Append("\n\n");
+                        ErrorMessageBuilder.Append("Exception: ").Append(currentEx.Message)
+                            .Append("\n").Append("StackTrace: ").Append(currentEx.StackTrace);
+                        currentEx = currentEx.InnerException;
+                    } while (currentEx != null);
+                }
+                if (ErrorMessageBuilder.Length == 0) ErrorMessageBuilder.Append(ex.GetType().Name);
+                message = ErrorMessageBuilder.ToString();
             }
-            if (message.IsBlank()) message = ex.GetType().Name;
             MessageBox.Show(message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
@@ -323,6 +338,7 @@ namespace SharpBCI
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            Logger.Info("OnStartup", "params", e.Args.Join(" "));
             base.OnStartup(e);
             LoadSystemVariables();
 
