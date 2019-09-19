@@ -6,6 +6,10 @@ This is a easy-to-use platform to run BCI experiments.
 This platform provides basic functions such as experimental configuration, data streaming, and offline analysis.
 Different experiment paradigms and external device drivers can be implemented through plug-in development.
 
+### System Design
+![Modules & Interfaces](https://github.com/DaleLin93/SharpBCI/blob/master/Modules%20%26%20Interfaces.jpg)
+
+
 ### Repository Organisation
 
 \ 
