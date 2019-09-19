@@ -9,7 +9,7 @@ using SharpBCI.Extensions.Devices;
 namespace SharpBCI.Experiments.Speller.SSVEP
 {
 
-    public interface ISsvepClassifier : IConsumer<Timestamped<ISample>>
+    public interface ISsvepClassifier : IStreamConsumer<Timestamped<ISample>>
     {
 
         bool Actived { get; set; }
@@ -18,7 +18,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
 
     }
 
-    internal abstract class AbstractSsvepClassifier : Consumer<Timestamped<ISample>>, ISsvepClassifier
+    internal abstract class AbstractSsvepClassifier : StreamConsumer<Timestamped<ISample>>, ISsvepClassifier
     {
 
         protected readonly IClock Clock;

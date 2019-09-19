@@ -16,7 +16,7 @@ using RenderForm = MarukoLib.DirectX.RenderForm;
 namespace SharpBCI.Windows
 {
 
-    internal class GazePointVisualizationWindow : RenderForm, IConsumer<Timestamped<IGazePoint>>
+    internal class GazePointVisualizationWindow : RenderForm, IStreamConsumer<Timestamped<IGazePoint>>
     {
 
         private readonly GazePointStreamer _streamer;
@@ -103,11 +103,11 @@ namespace SharpBCI.Windows
             if (e.KeyCode == Keys.Escape) Close();
         }
 
-        Type IConsumer.AcceptType => typeof(Timestamped<IGazePoint>);
+        Type IStreamConsumer.AcceptType => typeof(Timestamped<IGazePoint>);
 
-        ConsumerPriority IConsumer.Priority => ConsumerPriority.Highest;
+        StreamConsumerPriority IStreamConsumer.Priority => StreamConsumerPriority.Highest;
 
-        void IConsumer.Accept(object value) => Accept((Timestamped<IGazePoint>)value);
+        void IStreamConsumer.Accept(object value) => Accept((Timestamped<IGazePoint>)value);
 
     }
 }

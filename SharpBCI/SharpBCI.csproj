@@ -113,7 +113,7 @@
     </ApplicationDefinition>
     <Compile Include="Registrables\RegistrableAppEntry.cs" />
     <Compile Include="Registrables\ParameterizedRegistrable.cs" />
-    <Compile Include="Registrables\RegistrableConsumer.cs" />
+    <Compile Include="Registrables\RegistrableStreamConsumer.cs" />
     <Compile Include="Registrables\RegistrableExperiment.cs" />
     <Compile Include="Configs.cs" />
     <Compile Include="Plugin.cs" />

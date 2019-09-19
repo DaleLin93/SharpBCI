@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using JetBrains.Annotations;
 using MarukoLib.IO;
 using MarukoLib.Lang;
@@ -16,7 +17,8 @@ namespace SharpBCI.Extensions.Streamers
 
         public MarkerStreamer(IClock clock) : base(nameof(MarkerStreamer), clock) { }
 
-        public MarkerStreamer(IClock clock, IConsumer<Timestamped<int>> consumer) : this(clock) => Attach(consumer);
+        [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
+        public MarkerStreamer(IClock clock, IStreamConsumer<Timestamped<int>> consumer) : this(clock) => Attach(consumer);
 
         public long Mark(int marker)
         {

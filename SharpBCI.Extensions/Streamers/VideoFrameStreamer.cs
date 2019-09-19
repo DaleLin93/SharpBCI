@@ -36,7 +36,7 @@ namespace SharpBCI.Extensions.Streamers
             Stopped += (sender, e) => videoSource.Shutdown();
         }
 
-        public VideoFrameStreamer(IVideoSource videoSource, IClock clock, IConsumer<Timestamped<IVideoFrame>> consumer) : this(videoSource, clock) => Attach(consumer);
+        public VideoFrameStreamer(IVideoSource videoSource, IClock clock, IStreamConsumer<Timestamped<IVideoFrame>> consumer) : this(videoSource, clock) => Attach(consumer);
 
         protected override Timestamped<IVideoFrame> Acquire() => WithTimestamp(VideoSource.Read() ?? throw new EndOfStreamException());
 
@@ -46,12 +46,12 @@ namespace SharpBCI.Extensions.Streamers
     public class VideoFramesFileWriter : TimestampedFileWriter<IVideoFrame>
     {
 
-        public sealed class Factory : ConsumerFactory<Timestamped<IVideoFrame>>
+        public sealed class Factory : StreamConsumerFactory<Timestamped<IVideoFrame>>
         {
 
             public Factory() : base($"Video Frames File Writer (*{FileSuffix})") { }
 
-            public override IConsumer<Timestamped<IVideoFrame>> Create(Session session, IReadonlyContext context, byte? num) =>
+            public override IStreamConsumer<Timestamped<IVideoFrame>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new VideoFramesFileWriter(session.GetDataFileName(FileSuffix), session.CreateTimestamp);
 
         }

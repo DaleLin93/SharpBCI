@@ -14,7 +14,7 @@ using RenderForm = MarukoLib.DirectX.RenderForm;
 namespace SharpBCI.Windows
 {
 
-    internal class VideoFramePresentationWindow : RenderForm, IConsumer<Timestamped<IVideoFrame>>
+    internal class VideoFramePresentationWindow : RenderForm, IStreamConsumer<Timestamped<IVideoFrame>>
     {
 
         private readonly VideoFrameStreamer _streamer;
@@ -91,11 +91,11 @@ namespace SharpBCI.Windows
             if (e.KeyCode == Keys.Escape) Close();
         }
 
-        Type IConsumer.AcceptType => typeof(Timestamped<IVideoFrame>);
+        Type IStreamConsumer.AcceptType => typeof(Timestamped<IVideoFrame>);
 
-        ConsumerPriority IConsumer.Priority => ConsumerPriority.Highest;
+        StreamConsumerPriority IStreamConsumer.Priority => StreamConsumerPriority.Highest;
 
-        void IConsumer.Accept(object value) => Accept((Timestamped<IVideoFrame>)value);
+        void IStreamConsumer.Accept(object value) => Accept((Timestamped<IVideoFrame>)value);
 
     }
 }

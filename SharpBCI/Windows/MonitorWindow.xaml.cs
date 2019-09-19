@@ -17,7 +17,7 @@ namespace SharpBCI.Windows
     public partial class MonitorWindow
     {
 
-        private class MonitorGazePointConsumer : Consumer<Timestamped<IGazePoint>>
+        private class MonitorGazePointStreamConsumer : StreamConsumer<Timestamped<IGazePoint>>
         {
 
             public Action<Point> Callback;
@@ -26,7 +26,7 @@ namespace SharpBCI.Windows
 
         }
 
-        private class MonitorSampleConsumer : Consumer<Timestamped<ISample>>
+        private class MonitorSampleStreamConsumer : StreamConsumer<Timestamped<ISample>>
         {
 
             public Action<double[]> Callback;
@@ -44,7 +44,7 @@ namespace SharpBCI.Windows
 
         private static readonly WeakReference<MonitorWindow> Instance = new WeakReference<MonitorWindow>(null);
         
-        private MonitorGazePointConsumer _monitorGazePointConsumer;
+        private MonitorGazePointStreamConsumer _monitorGazePointConsumer;
 
         //private MonitorSampleConsumer _monitorSampleConsumer;
 
@@ -75,7 +75,7 @@ namespace SharpBCI.Windows
 
             if (streamerCollection.TryFindFirst<GazePointStreamer>(out var gazeStream))
             {
-                _monitorGazePointConsumer = new MonitorGazePointConsumer
+                _monitorGazePointConsumer = new MonitorGazePointStreamConsumer
                 { Callback = point => this.DispatcherInvoke(() => GazePoint.Margin = new Thickness(point.X / 10, point.Y / 10, 0, 0)) };
                 gazeStream.Attach(_monitorGazePointConsumer);
             }

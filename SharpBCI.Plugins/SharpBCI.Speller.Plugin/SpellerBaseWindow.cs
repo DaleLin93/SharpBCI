@@ -31,7 +31,7 @@ using Timer = System.Threading.Timer;
 namespace SharpBCI.Experiments.Speller
 {
 
-    internal class GazePointHandler : Consumer<Timestamped<IGazePoint>>
+    internal class GazePointHandler : StreamConsumer<Timestamped<IGazePoint>>
     {
 
         public event EventHandler<Point?> Point;

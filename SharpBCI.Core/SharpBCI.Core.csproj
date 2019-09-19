@@ -85,7 +85,7 @@
     <Compile Include="Experiment\Result.cs" />
     <Compile Include="Experiment\Session.cs" />
     <Compile Include="Experiment\Summary.cs" />
-    <Compile Include="IO\Consumer.cs" />
+    <Compile Include="IO\StreamConsumer.cs" />
     <Compile Include="IO\Streamer.cs" />
     <Compile Include="IO\StreamerCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

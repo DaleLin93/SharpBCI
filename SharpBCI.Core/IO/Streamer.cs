@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace SharpBCI.Core.IO
@@ -29,18 +30,18 @@ namespace SharpBCI.Core.IO
 
         void Stop();
 
-        void Attach(IConsumer consumer);
+        void Attach(IStreamConsumer consumer);
 
-        bool Detach(IConsumer consumer);
+        bool Detach(IStreamConsumer consumer);
 
-        IEnumerable<T> FindConsumers<T>() where T : IConsumer;
+        IEnumerable<T> FindConsumers<T>() where T : IStreamConsumer;
 
     }
 
     public abstract class Streamer : IStreamer
     {
 
-        private readonly LinkedList<IConsumer> _consumers = new LinkedList<IConsumer>();
+        private readonly LinkedList<IStreamConsumer> _consumers = new LinkedList<IStreamConsumer>();
 
         private readonly ReaderWriterLockSlim _consumersLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
@@ -62,7 +63,7 @@ namespace SharpBCI.Core.IO
 
         public abstract void Stop();
 
-        public void Attach(IConsumer consumer)
+        public void Attach(IStreamConsumer consumer)
         {
             if (!consumer.AcceptType.IsAssignableFrom(ValueType)) 
                 throw new ArgumentException($"Type not match, streamer value type: {ValueType}, consumer accept type: {consumer.AcceptType}");
@@ -92,7 +93,7 @@ namespace SharpBCI.Core.IO
             }
         }
 
-        public bool Detach(IConsumer consumer)
+        public bool Detach(IStreamConsumer consumer)
         {
             if (!consumer.AcceptType.IsAssignableFrom(ValueType)) return false;
             try
@@ -106,16 +107,15 @@ namespace SharpBCI.Core.IO
             }
         }
 
-        public IEnumerable<TC> FindConsumers<TC>() where TC : IConsumer
+        public IEnumerable<TC> FindConsumers<TC>() where TC : IStreamConsumer
         {
             var consumers = new LinkedList<TC>();
             var type = typeof(TC);
             try
             {
                 _consumersLock.EnterReadLock();
-                foreach (var consumer in _consumers)
-                    if (type.IsInstanceOfType(consumer))
-                        consumers.AddLast((TC)consumer);
+                foreach (var consumer in _consumers.Where(consumer => type.IsInstanceOfType(consumer)))
+                    consumers.AddLast((TC)consumer);
             }
             finally
             {

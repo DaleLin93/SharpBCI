@@ -16,7 +16,7 @@ using SharpBCI.Extensions.Streamers;
 namespace SharpBCI.Experiments.WebBrowser
 {
 
-    internal class GazePointProvider : Consumer<Timestamped<IGazePoint>>
+    internal class GazePointProvider : StreamConsumer<Timestamped<IGazePoint>>
     {
 
         public Point? CurrentPosition { get; private set; }

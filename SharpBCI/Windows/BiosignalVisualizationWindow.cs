@@ -17,7 +17,7 @@ using RenderForm = MarukoLib.DirectX.RenderForm;
 namespace SharpBCI.Windows
 {
 
-    internal class BiosignalVisualizationWindow : RenderForm, IConsumer<Timestamped<ISample>>
+    internal class BiosignalVisualizationWindow : RenderForm, IStreamConsumer<Timestamped<ISample>>
     {
 
         private readonly BiosignalStreamer _streamer;
@@ -150,11 +150,11 @@ namespace SharpBCI.Windows
             if (e.KeyCode == Keys.Escape) Close();
         }
 
-        Type IConsumer.AcceptType => typeof(Timestamped<ISample>);
+        Type IStreamConsumer.AcceptType => typeof(Timestamped<ISample>);
 
-        ConsumerPriority IConsumer.Priority => ConsumerPriority.Highest;
+        StreamConsumerPriority IStreamConsumer.Priority => StreamConsumerPriority.Highest;
 
-        void IConsumer.Accept(object value) => Accept((Timestamped<ISample>)value);
+        void IStreamConsumer.Accept(object value) => Accept((Timestamped<ISample>)value);
 
     }
 }

@@ -9,7 +9,7 @@ using MarukoLib.Logging;
 namespace SharpBCI.Core.IO
 {
 
-    public enum ConsumerPriority : byte
+    public enum StreamConsumerPriority : byte
     {
         Highest = 0,
         High = 1,
@@ -21,12 +21,12 @@ namespace SharpBCI.Core.IO
     /// <summary>
     /// Base interface of consumer.
     /// </summary>
-    public interface IConsumer
+    public interface IStreamConsumer
     {
 
         Type AcceptType { get; }
 
-        ConsumerPriority Priority { get; }
+        StreamConsumerPriority Priority { get; }
 
         void Accept(object value);
 
@@ -35,57 +35,58 @@ namespace SharpBCI.Core.IO
     /// <summary>
     /// The consumer interface with generic type.
     /// </summary>
-    public interface IConsumer<in T> : IConsumer
+    public interface IStreamConsumer<in T> : IStreamConsumer
     {
 
         void Accept(T value);
 
     }
 
-    public abstract class Consumer<T> : IConsumer<T>
+    public abstract class StreamConsumer<T> : IStreamConsumer<T>
     {
 
         public Type AcceptType => typeof(T);
 
-        public virtual ConsumerPriority Priority { get; } = ConsumerPriority.Normal;
+        public virtual StreamConsumerPriority Priority { get; } = StreamConsumerPriority.Normal;
 
         public abstract void Accept(T value);
 
-        void IConsumer.Accept(object value) => Accept((T)value);
+        void IStreamConsumer.Accept(object value) => Accept((T)value);
 
     }
 
-    public abstract class TransformedConsumer<TIn, TOut> : IConsumer<TIn>
+    public abstract class TransformedStreamConsumer<TIn, TOut> : IStreamConsumer<TIn>
     {
 
         private readonly Func<TIn, TOut> _transformer;
 
-        protected TransformedConsumer(Func<TIn, TOut> transformer) => _transformer = transformer ?? throw new ArgumentNullException(nameof(transformer));
+        protected TransformedStreamConsumer(Func<TIn, TOut> transformer) => 
+            _transformer = transformer ?? throw new ArgumentNullException(nameof(transformer));
 
         public Type AcceptType => typeof(TIn);
 
-        public virtual ConsumerPriority Priority { get; } = ConsumerPriority.Normal;
+        public virtual StreamConsumerPriority Priority { get; } = StreamConsumerPriority.Normal;
 
         public abstract void Accept(TOut value);
 
         public void Accept(TIn value) => Accept(_transformer(value));
 
-        void IConsumer.Accept(object value) => Accept((TIn)value);
+        void IStreamConsumer.Accept(object value) => Accept((TIn)value);
 
     }
 
-    public sealed class DelegatedConsumer<T> : Consumer<T>
+    public sealed class DelegatedStreamConsumer<T> : StreamConsumer<T>
     {
 
         [NotNull] private readonly Action<T> _delegate;
 
-        public DelegatedConsumer([NotNull] Action<T> @delegate, ConsumerPriority priority = ConsumerPriority.Normal)
+        public DelegatedStreamConsumer([NotNull] Action<T> @delegate, StreamConsumerPriority priority = StreamConsumerPriority.Normal)
         {
             _delegate = @delegate ?? throw new ArgumentNullException(nameof(@delegate));
             Priority = priority;
         }
 
-        public override ConsumerPriority Priority { get; }
+        public override StreamConsumerPriority Priority { get; }
 
         public override void Accept(T value) => _delegate(value);
 
@@ -93,25 +94,25 @@ namespace SharpBCI.Core.IO
 
     }
 
-    public class CachedConsumer<T> : Consumer<T>
+    public class CachedStreamConsumer<T> : StreamConsumer<T>
     {
 
-        public CachedConsumer(ConsumerPriority priority = ConsumerPriority.Lowest) => Priority = priority;
+        public CachedStreamConsumer(StreamConsumerPriority priority = StreamConsumerPriority.Lowest) => Priority = priority;
 
         public T Value { get; set; }
 
-        public override ConsumerPriority Priority { get; }
+        public override StreamConsumerPriority Priority { get; }
 
         public override void Accept(T value) => Value = value;
 
     } 
 
-    public class RecordingConsumer<T> : Consumer<T>
+    public class RecordingStreamConsumer<T> : StreamConsumer<T>
     {
 
         private readonly LinkedList<T> _list = new LinkedList<T>();
 
-        public RecordingConsumer(uint capacity, ConsumerPriority priority = ConsumerPriority.Lowest)
+        public RecordingStreamConsumer(uint capacity, StreamConsumerPriority priority = StreamConsumerPriority.Lowest)
         {
             if (capacity == 0) throw new ArgumentException("'capacity' must be positive");
             Capacity = capacity;
@@ -120,7 +121,7 @@ namespace SharpBCI.Core.IO
 
         public uint Capacity { get; }
 
-        public override ConsumerPriority Priority { get; }
+        public override StreamConsumerPriority Priority { get; }
 
         public T[] Values
         {
@@ -160,7 +161,7 @@ namespace SharpBCI.Core.IO
 
     }
 
-    public sealed class LogWriter<T> : Consumer<T>
+    public sealed class LogWriter<T> : StreamConsumer<T>
     {
 
         private static readonly Logger Logger = Logger.GetLogger(typeof(LogWriter<T>));
@@ -172,13 +173,13 @@ namespace SharpBCI.Core.IO
 
         public LogWriter([NotNull] Func<T, string> serializer) => _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override StreamConsumerPriority Priority => StreamConsumerPriority.Lowest;
 
         public override void Accept(T data) => Logger.Info("Accept", "data", _serializer(data));
 
     }
 
-    public abstract class FileWriter<T> : Consumer<T>, IDisposable
+    public abstract class FileWriter<T> : StreamConsumer<T>, IDisposable
     {
 
         private readonly object _streamLock = new object();
@@ -187,7 +188,7 @@ namespace SharpBCI.Core.IO
 
         protected FileWriter([NotNull] string fileName, int bufferSize) => _stream = new BufferedStream(File.OpenWrite(fileName), bufferSize);
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override StreamConsumerPriority Priority => StreamConsumerPriority.Lowest;
 
         public override void Accept(T data)
         {
@@ -220,8 +221,8 @@ namespace SharpBCI.Core.IO
     public static class ConsumerExt
     {
 
-        public static DelegatedConsumer<TIn> Map<TIn, TOut>(this IConsumer<TOut> consumer, Func<TIn, TOut> mapFunc) => 
-            new DelegatedConsumer<TIn>(input => consumer.Accept(mapFunc(input)), consumer.Priority);
+        public static DelegatedStreamConsumer<TIn> Map<TIn, TOut>(this IStreamConsumer<TOut> consumer, Func<TIn, TOut> mapFunc) => 
+            new DelegatedStreamConsumer<TIn>(input => consumer.Accept(mapFunc(input)), consumer.Priority);
 
     }
 

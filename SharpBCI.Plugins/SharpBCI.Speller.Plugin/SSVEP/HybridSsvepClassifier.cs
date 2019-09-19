@@ -126,7 +126,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
 
         }
 
-        internal interface IInitializer : IConsumer<Timestamped<ISample>>
+        internal interface IInitializer : IStreamConsumer<Timestamped<ISample>>
         {
 
             void Accept(ISample sample);
@@ -137,7 +137,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
 
         }
 
-        internal sealed class NoOpInitializer : Consumer<Timestamped<ISample>>, IInitializer
+        internal sealed class NoOpInitializer : StreamConsumer<Timestamped<ISample>>, IInitializer
         {
 
             public override void Accept(Timestamped<ISample> value) { }
@@ -150,7 +150,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
 
         }
 
-        internal sealed class DistributionInitializer : Consumer<Timestamped<ISample>>, IInitializer
+        internal sealed class DistributionInitializer : StreamConsumer<Timestamped<ISample>>, IInitializer
         {
 
             private class StatisticsPredictor : IPredictor
@@ -419,7 +419,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
             return index < half ? half + index + reminder : index - half;
         }
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override StreamConsumerPriority Priority => StreamConsumerPriority.Lowest;
 
         public IInitializer CreateInitializer() => new NoOpInitializer();//new DistributionInitializer(this);
 

@@ -400,14 +400,14 @@ namespace SharpBCI.Windows
             device == null ? EmptyContext.Instance : (IReadonlyContext)device.DeserializeParams(_config.GetDevice(device.Identifier).Params) ?? EmptyContext.Instance;
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private void SerializeConsumerConfig(RegistrableConsumer consumer, IReadonlyContext @params)
+        private void SerializeConsumerConfig(RegistrableStreamConsumer consumer, IReadonlyContext @params)
         {
             if (consumer == null) return;
             _config.SetConsumer(new ParameterizedEntity(consumer.Identifier, consumer.SerializeParams(@params)));
         }
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private IReadonlyContext DeserializeConsumerConfig(RegistrableConsumer consumer) =>
+        private IReadonlyContext DeserializeConsumerConfig(RegistrableStreamConsumer consumer) =>
             consumer == null ? EmptyContext.Instance : (IReadonlyContext)consumer.DeserializeParams(_config.GetConsumer(consumer.Identifier).Params) ?? EmptyContext.Instance;
 
         private bool ValidateExperimentParams(bool msgBox = true)

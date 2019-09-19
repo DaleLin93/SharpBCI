@@ -129,7 +129,7 @@
     <Compile Include="StageProviders\PreparationStageProvider.cs" />
     <Compile Include="StageProviders\RepeatingStageProvider.cs" />
     <Compile Include="StageProviders\SegmentedStageProvider.cs" />
-    <Compile Include="Streamers\ConsumerFactory.cs" />
+    <Compile Include="Streamers\StreamConsumerFactory.cs" />
     <Compile Include="Streamers\VideoFrameStreamer.cs" />
     <Compile Include="SystemVariables.cs" />
     <Compile Include="Experiments\ExperimentProperties.cs" />

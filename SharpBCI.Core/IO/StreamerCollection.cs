@@ -98,7 +98,7 @@ namespace SharpBCI.Core.IO
         /// </summary>
         public void Start()
         {
-            if (!_state.SetIf(0, 1)) return;
+            if (!_state.CompareAndSet(0, 1)) return;
             foreach (var streamer in _streamers)
                 streamer.Start();
         }
@@ -108,7 +108,7 @@ namespace SharpBCI.Core.IO
         /// </summary>
         public void Stop()
         {
-            if (!_state.SetIf(1, 2)) return;
+            if (!_state.CompareAndSet(1, 2)) return;
             foreach (var streamer in _streamers)
                 streamer.Stop();
         }

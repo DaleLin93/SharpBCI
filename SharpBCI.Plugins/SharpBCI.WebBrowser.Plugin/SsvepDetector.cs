@@ -24,7 +24,7 @@ namespace SharpBCI.Experiments.WebBrowser
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
-    internal sealed class SsvepDetector : Consumer<Timestamped<ISample>>
+    internal sealed class SsvepDetector : StreamConsumer<Timestamped<ISample>>
     {
 
         public struct FbccaSubBandMixingParams 
@@ -167,7 +167,7 @@ namespace SharpBCI.Experiments.WebBrowser
 
         }
 
-        internal interface IInitializer : IConsumer<Timestamped<ISample>>
+        internal interface IInitializer : IStreamConsumer<Timestamped<ISample>>
         {
 
             void Accept(ISample sample);
@@ -178,7 +178,7 @@ namespace SharpBCI.Experiments.WebBrowser
 
         }
 
-        internal sealed class NoOpInitializer : Consumer<Timestamped<ISample>>, IInitializer
+        internal sealed class NoOpInitializer : StreamConsumer<Timestamped<ISample>>, IInitializer
         {
 
             public override void Accept(Timestamped<ISample> value) { }
@@ -191,7 +191,7 @@ namespace SharpBCI.Experiments.WebBrowser
 
         }
 
-        internal sealed class DistributionInitializer : Consumer<Timestamped<ISample>>, IInitializer
+        internal sealed class DistributionInitializer : StreamConsumer<Timestamped<ISample>>, IInitializer
         {
 
             private class StatisticsPredictor : IPredictor

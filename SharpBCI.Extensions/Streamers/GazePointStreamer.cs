@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using JetBrains.Annotations;
 using MarukoLib.IO;
@@ -35,7 +36,8 @@ namespace SharpBCI.Extensions.Streamers
             Stopped += (sender, e) => eyeTracker.Shutdown();
         }
 
-        public GazePointStreamer(IEyeTracker eyeTracker, IClock clock, IConsumer<Timestamped<IGazePoint>> consumer) : this(eyeTracker, clock) => Attach(consumer);
+        [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
+        public GazePointStreamer(IEyeTracker eyeTracker, IClock clock, IStreamConsumer<Timestamped<IGazePoint>> consumer) : this(eyeTracker, clock) => Attach(consumer);
 
         protected override Timestamped<IGazePoint> Acquire() => WithTimestamp(EyeTracker.Read() ?? throw new EndOfStreamException());
 
@@ -49,12 +51,12 @@ namespace SharpBCI.Extensions.Streamers
     public class GazePointFileWriter : TimestampedFileWriter<IGazePoint>
     {
 
-        public sealed class Factory : ConsumerFactory<Timestamped<IGazePoint>>
+        public sealed class Factory : StreamConsumerFactory<Timestamped<IGazePoint>>
         {
 
             public Factory() : base($"Gaze Point File Writer (*{FileSuffix})") { }
 
-            public override IConsumer<Timestamped<IGazePoint>> Create(Session session, IReadonlyContext context, byte? num) => 
+            public override IStreamConsumer<Timestamped<IGazePoint>> Create(Session session, IReadonlyContext context, byte? num) => 
                 new GazePointFileWriter(session.GetDataFileName(FileSuffix), session.CreateTimestamp);
 
         }

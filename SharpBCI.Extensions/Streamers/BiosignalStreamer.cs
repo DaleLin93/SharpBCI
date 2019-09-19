@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
@@ -39,7 +40,8 @@ namespace SharpBCI.Extensions.Streamers
             _channelIndices = channelSelector?.Enumerate(1, biosignalSampler.ChannelNum).Select(val => (uint) (val - 1)).ToArray();
         }
 
-        public BiosignalStreamer(IBiosignalSampler biosignalSampler, IClock clock, IConsumer<Timestamped<ISample>> consumer, ArrayQuery channelSelector = null) 
+        [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
+        public BiosignalStreamer(IBiosignalSampler biosignalSampler, IClock clock, IStreamConsumer<Timestamped<ISample>> consumer, ArrayQuery channelSelector = null) 
             : this(biosignalSampler, clock, channelSelector) => Attach(consumer);
 
         public uint[] SelectedChannelIndices => (uint[]) _channelIndices?.Clone();
@@ -61,12 +63,12 @@ namespace SharpBCI.Extensions.Streamers
     public class BiosignalDataFileWriter : TimestampedFileWriter<ISample>
     {
 
-        public sealed class Factory : ConsumerFactory<Timestamped<ISample>>
+        public sealed class Factory : StreamConsumerFactory<Timestamped<ISample>>
         {
 
             public Factory() : base($"Biosignal Data File Writer (*{FileSuffix})") { }
 
-            public override IConsumer<Timestamped<ISample>> Create(Session session, IReadonlyContext context, byte? num) =>
+            public override IStreamConsumer<Timestamped<ISample>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new BiosignalDataFileWriter(session.GetDataFileName(FileSuffix, num), session.CreateTimestamp);
 
         }

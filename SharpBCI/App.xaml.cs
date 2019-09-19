@@ -184,17 +184,17 @@ namespace SharpBCI
             }
 
             /* Parse consumer configurations. */
-            var deviceConsumerLists = new Dictionary<DeviceType, IList<Tuple<RegistrableConsumer, IReadonlyContext>>>();
+            var deviceConsumerLists = new Dictionary<DeviceType, IList<Tuple<RegistrableStreamConsumer, IReadonlyContext>>>();
             foreach (var deviceType in Instance.Registries.Registry<DeviceType>().Registered)
             {
                 if (!devicePart.TryGetValue(deviceType.Name, out var deviceParams) || deviceParams.Device.Id == null) continue;
-                var list = new List<Tuple<RegistrableConsumer, IReadonlyContext>>();
+                var list = new List<Tuple<RegistrableStreamConsumer, IReadonlyContext>>();
                 deviceConsumerLists[deviceType] = list;
                 foreach (var consumerConf in deviceParams.Consumers)
                 {
-                    if (!Instance.Registries.Registry<RegistrableConsumer>().LookUp(consumerConf.Id, out var registrableConsumer))
+                    if (!Instance.Registries.Registry<RegistrableStreamConsumer>().LookUp(consumerConf.Id, out var registrableConsumer))
                         throw new ArgumentException($"Cannot find specific consumer by id: {consumerConf.Params}");
-                    list.Add(new Tuple<RegistrableConsumer, IReadonlyContext>(registrableConsumer, registrableConsumer.DeserializeParams(consumerConf.Params)));
+                    list.Add(new Tuple<RegistrableStreamConsumer, IReadonlyContext>(registrableConsumer, registrableConsumer.DeserializeParams(consumerConf.Params)));
                 }
             }
 
@@ -361,10 +361,10 @@ namespace SharpBCI
                 new RegistrableDevice(null, DeviceType.FromType<IBiosignalSampler>(), new DataFileReader.Factory()),
                 new RegistrableDevice(null, DeviceType.FromType<IVideoSource>(), new ScreenCapturer.Factory()));
 
-            Registries.Registry<RegistrableConsumer>().RegisterAll(
-                new RegistrableConsumer(null, new BiosignalDataFileWriter.Factory()),
-                new RegistrableConsumer(null, new GazePointFileWriter.Factory()),
-                new RegistrableConsumer(null, new VideoFramesFileWriter.Factory()));
+            Registries.Registry<RegistrableStreamConsumer>().RegisterAll(
+                new RegistrableStreamConsumer(null, new BiosignalDataFileWriter.Factory()),
+                new RegistrableStreamConsumer(null, new GazePointFileWriter.Factory()),
+                new RegistrableStreamConsumer(null, new VideoFramesFileWriter.Factory()));
 
             Plugin.ScanPlugins(Registries, (file, ex) => ShowErrorMessage(ex, "Failed to load plugin: " + file));
 

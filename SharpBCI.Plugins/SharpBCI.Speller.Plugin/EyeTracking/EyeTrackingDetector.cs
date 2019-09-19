@@ -12,7 +12,7 @@ namespace SharpBCI.Experiments.Speller.EyeTracking
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
-    internal sealed class EyeTrackingDetector : TransformedConsumer<Timestamped<Point>, Point>
+    internal sealed class EyeTrackingDetector : TransformedStreamConsumer<Timestamped<Point>, Point>
     {
 
         private static readonly Logger Logger = Logger.GetLogger(typeof(EyeTrackingDetector));
@@ -27,7 +27,7 @@ namespace SharpBCI.Experiments.Speller.EyeTracking
 
         public EyeTrackingDetector() : base(t => t.Value) { }
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override StreamConsumerPriority Priority => StreamConsumerPriority.Lowest;
 
         public void Active(RawRectangleF container)
         {

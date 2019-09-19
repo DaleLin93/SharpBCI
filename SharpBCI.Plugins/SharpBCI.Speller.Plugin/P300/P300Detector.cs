@@ -9,7 +9,7 @@ using SharpBCI.Extensions.Devices;
 namespace SharpBCI.Experiments.Speller.P300
 {
 
-    internal sealed class P300Detector : Consumer<Timestamped<ISample>>
+    internal sealed class P300Detector : StreamConsumer<Timestamped<ISample>>
     {
 
         private static readonly Logger Logger = Logger.GetLogger(typeof(P300Detector));
@@ -53,7 +53,7 @@ namespace SharpBCI.Experiments.Speller.P300
             }
         }
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override StreamConsumerPriority Priority => StreamConsumerPriority.Lowest;
 
         public override void Accept(Timestamped<ISample> data)
         {

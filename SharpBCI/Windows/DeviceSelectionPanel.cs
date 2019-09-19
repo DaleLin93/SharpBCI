@@ -121,7 +121,7 @@ namespace SharpBCI.Windows
         public sealed class SelectedConsumer
         {
 
-            public RegistrableConsumer Consumer { get; set; }
+            public RegistrableStreamConsumer Consumer { get; set; }
 
             public IReadonlyContext Params { get; set; } = EmptyContext.Instance;
 
@@ -159,7 +159,7 @@ namespace SharpBCI.Windows
                 var selectedDevice = SelectedDevices[deviceType];
                 var device = RegistrableDevice.CreateParameterizedEntity(selectedDevice.Device, selectedDevice.Params);
                 var selectedConsumer = SelectedConsumers[deviceType];
-                var consumer = RegistrableConsumer.CreateParameterizedEntity(selectedConsumer.Consumer, selectedConsumer.Params);
+                var consumer = RegistrableStreamConsumer.CreateParameterizedEntity(selectedConsumer.Consumer, selectedConsumer.Params);
                 return new DeviceParams { Device = device, Consumers = new[] { consumer } };
             }
             set
@@ -170,7 +170,7 @@ namespace SharpBCI.Windows
                     selectedDevice.Params = selectedDevice.Device?.DeserializeParams(value.Device.Params) ?? (IReadonlyContext)EmptyContext.Instance;
                 }
                 var consumerEntity = value.Consumers.Length > 0 ? value.Consumers[0] : new ParameterizedEntity();
-                App.Instance.Registries.Registry<RegistrableConsumer>().LookUp(consumerEntity.Id ?? NoneIdentifier, out var registrableConsumer);
+                App.Instance.Registries.Registry<RegistrableStreamConsumer>().LookUp(consumerEntity.Id ?? NoneIdentifier, out var registrableConsumer);
                 SelectedConsumers[deviceType].Consumer = registrableConsumer;
                 SelectedConsumers[deviceType].Params = registrableConsumer?.DeserializeParams(consumerEntity.Params) ?? (IReadonlyContext)EmptyContext.Instance;
             }
