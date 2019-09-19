@@ -343,7 +343,7 @@ namespace SharpBCI
             base.OnStartup(e);
             LoadSystemVariables();
 
-            MarukoLib.DirectX.DirectX.CreateIndependentResource();
+            MarukoLib.DirectX.Direct2D.CreateIndependentResource();
 
             Registries.Registry<PluginDeviceType>().RegisterAll(
                 new PluginDeviceType(null, DeviceType.Of(typeof(IBiosignalSampler))),
@@ -399,7 +399,7 @@ namespace SharpBCI
         protected override void OnExit(ExitEventArgs e)
         {
             SaveSystemVariables();
-            MarukoLib.DirectX.DirectX.ReleaseIndependentResource();
+            MarukoLib.DirectX.Direct2D.ReleaseIndependentResource();
             base.OnExit(e);
         }
 

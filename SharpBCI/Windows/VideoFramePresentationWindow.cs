@@ -9,12 +9,11 @@ using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Streamers;
 using SharpDX.Mathematics.Interop;
 using Color = SharpDX.Color;
-using RenderForm = MarukoLib.DirectX.RenderForm;
 
 namespace SharpBCI.Windows
 {
 
-    internal class VideoFramePresentationWindow : RenderForm, IStreamConsumer<Timestamped<IVideoFrame>>
+    internal class VideoFramePresentationWindow : Direct2DForm, IStreamConsumer<Timestamped<IVideoFrame>>
     {
 
         private readonly VideoFrameStreamer _streamer;

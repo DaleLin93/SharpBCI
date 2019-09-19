@@ -11,12 +11,11 @@ using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Streamers;
 using SharpDX.Mathematics.Interop;
 using Color = SharpDX.Color;
-using RenderForm = MarukoLib.DirectX.RenderForm;
 
 namespace SharpBCI.Windows
 {
 
-    internal class GazePointVisualizationWindow : RenderForm, IStreamConsumer<Timestamped<IGazePoint>>
+    internal class GazePointVisualizationWindow : Direct2DForm, IStreamConsumer<Timestamped<IGazePoint>>
     {
 
         private readonly GazePointStreamer _streamer;

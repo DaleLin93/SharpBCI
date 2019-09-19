@@ -11,12 +11,11 @@ using SharpDX;
 using SharpDX.Mathematics.Interop;
 using DW = SharpDX.DirectWrite;
 using D2D1 = SharpDX.Direct2D1;
-using RenderForm = MarukoLib.DirectX.RenderForm;
 
 namespace SharpBCI.Experiments.VEP.MAVEP
 {
 
-    internal class MavepTestWindow : RenderForm
+    internal class MavepTestWindow : Direct2DForm
     {
 
         private readonly Session _session;

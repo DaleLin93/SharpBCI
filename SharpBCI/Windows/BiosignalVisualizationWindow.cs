@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using MarukoLib.DirectX;
 using MarukoLib.Lang;
 using MarukoLib.UI;
 using DW = SharpDX.DirectWrite;
@@ -12,12 +13,11 @@ using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Streamers;
 using SharpDX.Mathematics.Interop;
 using Color = SharpDX.Color;
-using RenderForm = MarukoLib.DirectX.RenderForm;
 
 namespace SharpBCI.Windows
 {
 
-    internal class BiosignalVisualizationWindow : RenderForm, IStreamConsumer<Timestamped<ISample>>
+    internal class BiosignalVisualizationWindow : Direct2DForm, IStreamConsumer<Timestamped<ISample>>
     {
 
         private readonly BiosignalStreamer _streamer;
