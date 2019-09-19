@@ -32,7 +32,7 @@ namespace SharpBCI.Windows
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    partial class LauncherWindow
+    partial class LauncherWindow : Bootstrap.ISessionListener
     {
 
         [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
@@ -165,7 +165,6 @@ namespace SharpBCI.Windows
                 MessageBox.Show("'Session Name' cannot be empty.", "SharpBCI");
                 return;
             }
-            Session session = null;
             try
             {
                 lock (StartBtn)
@@ -175,11 +174,7 @@ namespace SharpBCI.Windows
                     StartBtn.IsEnabled = false;
                     Visibility = Visibility.Hidden;
                 }
-                App.StartExperiment(GetSessionConfig(), MonitorWindow.IsShown, current =>
-                {
-                    AddRecentExperimentItems(current.DataFilePrefix);
-                    SaveConfig();
-                }, currentSession => session = currentSession);
+                Bootstrap.StartSession(GetSessionConfig(), MonitorWindow.IsShown, this);
             }
             catch (Exception ex)
             {
@@ -194,7 +189,6 @@ namespace SharpBCI.Windows
                     Visibility = Visibility.Visible;
                 }
             }
-            if (session?.Result != null) new ResultWindow(session).Show();
         }
 
         public SessionConfig.Experiment GetSessionExperimentPart(PluginExperiment experiment, IReadonlyContext @params) =>
@@ -276,13 +270,13 @@ namespace SharpBCI.Windows
 
         private void OnExperimentParamsUpdated()
         {
-            var registrableExperiment = _currentExperiment;
-            if (registrableExperiment == null) return;
+            var pluginExperiment = _currentExperiment;
+            if (pluginExperiment == null) return;
             if (!ValidateExperimentParams(false)) return;
 
             var context = ExperimentParamPanel.Context;
-            UpdateFullSessionName(registrableExperiment, context);
-            App.TryInitiateExperiment(registrableExperiment, context, out var experiment, false);
+            UpdateFullSessionName(pluginExperiment, context);
+            Bootstrap.TryInitiateExperiment(pluginExperiment, context, out var experiment, false);
             ExperimentSummaryPanel.Update(context, experiment);
         }
 
@@ -611,15 +605,15 @@ namespace SharpBCI.Windows
         private void ExperimentComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             SerializeExperimentConfig();
-            var registrableExperiment = (PluginExperiment) _experimentComboBox.SelectedItem;
-            InitializeExperimentConfigurationPanel(registrableExperiment);
+            var experiment = (PluginExperiment) _experimentComboBox.SelectedItem;
+            InitializeExperimentConfigurationPanel(experiment);
             DeserializeExperimentConfig();
         }
 
         private void ExperimentResetBtn_OnClick(object sender, RoutedEventArgs e)
         {
-            var registrableExperiment = _currentExperiment;
-            if (registrableExperiment == null) return;
+            var experiment = _currentExperiment;
+            if (experiment == null) return;
             ExperimentParamPanel.ResetToDefault();
             OnExperimentParamsUpdated();
         }
@@ -716,6 +710,22 @@ namespace SharpBCI.Windows
         }
 
         private void StartBtn_OnClick(object sender, RoutedEventArgs e) => StartExperiment();
+
+        void Bootstrap.ISessionListener.BeforeStart(int index, Session session)
+        {
+            AddRecentExperimentItems(session.DataFilePrefix);
+            SaveConfig();
+            throw new NotImplementedException();
+        }
+
+        void Bootstrap.ISessionListener.AfterCompleted(int index, Session session) { }
+
+        void Bootstrap.ISessionListener.AfterAllCompleted(Session[] sessions)
+        {
+            foreach (var session in sessions)
+                if (session?.Result != null)
+                    new ResultWindow(session).Show();
+        }
 
     }
 

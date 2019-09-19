@@ -39,7 +39,7 @@ namespace SharpBCI.Windows
     /// </summary>
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    partial class MultiSessionConfigWindow
+    partial class MultiSessionConfigWindow : Bootstrap.ISessionListener
     {
 
         public class FileItem<T>
@@ -145,9 +145,7 @@ namespace SharpBCI.Windows
                 return;
             }
             Close();
-            Action<Session[]> completeAction = null;
-            if (IsKillOnFinish) completeAction = sessions => App.Kill();
-            App.StartExperiment(_experiments.Select(item => item.Value).ToArray(), DeviceConfigPanel.DeviceConfig, false, null, completeAction);
+            Bootstrap.StartSession(_experiments.Select(item => item.Value).ToArray(), DeviceConfigPanel.DeviceConfig, false, this);
         }
 
         private void UpdateTitle() => Title = string.IsNullOrWhiteSpace(_multiSessionConfigFile) 
@@ -345,6 +343,15 @@ namespace SharpBCI.Windows
         {
             if (ExperimentListView.SelectedIndex >= 0 && ExperimentListView.SelectedIndex < _experiments.Count - 1)
                 _experiments.Move(ExperimentListView.SelectedIndex, ExperimentListView.SelectedIndex + 1);
+        }
+
+        void Bootstrap.ISessionListener.BeforeStart(int index, Session session) { }
+
+        void Bootstrap.ISessionListener.AfterCompleted(int index, Session session) { }
+
+        void Bootstrap.ISessionListener.AfterAllCompleted(Session[] sessions)
+        {
+            if (IsKillOnFinish) App.Kill();
         }
 
     }

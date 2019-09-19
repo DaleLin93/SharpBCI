@@ -173,12 +173,12 @@ namespace SharpBCI.Windows
 
         private void ConsumerComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var registrableConsumer = _consumerComboBox.SelectedItem as PluginStreamConsumer;
+            var streamConsumer = _consumerComboBox.SelectedItem as PluginStreamConsumer;
 
-            var eventArgs = new ConsumerChangedEventArgs(_currentConsumer, registrableConsumer, ConsumerConfigurationPanel.Context);
+            var eventArgs = new ConsumerChangedEventArgs(_currentConsumer, streamConsumer, ConsumerConfigurationPanel.Context);
             ConsumerChanged?.Invoke(this, eventArgs);
 
-            InitializeConsumerConfigurationPanel(registrableConsumer);
+            InitializeConsumerConfigurationPanel(streamConsumer);
             ConsumerConfigurationPanel.Context = eventArgs.NewConsumerParams ?? EmptyContext.Instance;
         }
 

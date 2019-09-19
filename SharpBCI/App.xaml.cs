@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using MarukoLib.Lang;
 using SharpBCI.Windows;
-using SharpBCI.Core.IO;
-using SharpBCI.Core.Experiment;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -22,7 +19,6 @@ using MarukoLib.Persistence;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Apps;
 using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Experiments;
 using SharpBCI.Extensions.Experiments.TextDisplay;
 using SharpBCI.Extensions.Experiments.Countdown;
 using SharpBCI.Extensions.Windows;
@@ -156,157 +152,12 @@ namespace SharpBCI
             if (args.IsEmpty())
                 new LauncherWindow().Show();
             else if (args[0].EndsWith(MultiSessionConfig.FileSuffix, StringComparison.OrdinalIgnoreCase))
-                new MultiSessionConfigWindow(args[0]).Show();
+                new MultiSessionConfigWindow(args[0]){IsKillOnFinish = true}.Show();
             else if (args[0].EndsWith(SessionConfig.FileSuffix, StringComparison.OrdinalIgnoreCase))
             {
                 if (!JsonUtils.TryDeserializeFromFile<SessionConfig>(args[0], out var config))
                     throw new IOException($"Failed to load session config file: {args[0]}");
-                StartExperiment(config, false, null, session => Kill());
-            }
-        }
-
-        public static void StartExperiment(SessionConfig config, bool monitor = false, Action<Session> preStartAction = null, Action<Session> completeAction = null) =>
-            StartExperiment(new[] { config.ExperimentPart }, config.DevicePart, monitor, preStartAction, sessions => completeAction?.Invoke(sessions[0]));
-
-        public static void StartExperiment(IReadOnlyList<SessionConfig.Experiment> experimentParts, IDictionary<string, DeviceParams> devicePart, bool monitor = false, 
-            Action<Session> preStartAction = null, Action<Session[]> completeAction = null)
-        {
-            /* Constructs experiment instances. */
-            var experiments = new IExperiment[experimentParts.Count];
-            var formattedSessionDescriptors = new string[experimentParts.Count];
-            for (var i = 0; i < experimentParts.Count; i++)
-            {
-                var expConf = experimentParts[i];
-                if (!Instance.Registries.Registry<PluginExperiment>().LookUp(expConf.Params.Id, out var registrableExperiment))
-                    throw new ArgumentException($"Cannot find specific experiment by id: {expConf.Params.Id}");
-                if (!TryInitiateExperiment(registrableExperiment, registrableExperiment.DeserializeParams(expConf.Params.Params), out var experiment)) return;
-                experiments[i] = experiment;
-                formattedSessionDescriptors[i] = expConf.GetFormattedSessionDescriptor();
-            }
-
-            /* Parse consumer configurations. */
-            var deviceConsumerLists = new Dictionary<DeviceType, IList<Tuple<PluginStreamConsumer, IReadonlyContext>>>();
-            foreach (var deviceType in Instance.Registries.Registry<PluginDeviceType>().Registered)
-            {
-                if (!devicePart.TryGetValue(deviceType.DeviceType.Name, out var deviceParams) || deviceParams.Device.Id == null) continue;
-                var list = new List<Tuple<PluginStreamConsumer, IReadonlyContext>>();
-                deviceConsumerLists[deviceType.DeviceType] = list;
-                foreach (var consumerConf in deviceParams.Consumers)
-                {
-                    if (!Instance.Registries.Registry<PluginStreamConsumer>().LookUp(consumerConf.Id, out var registrableConsumer))
-                        throw new ArgumentException($"Cannot find specific consumer by id: {consumerConf.Params}");
-                    list.Add(new Tuple<PluginStreamConsumer, IReadonlyContext>(registrableConsumer, registrableConsumer.DeserializeParams(consumerConf.Params)));
-                }
-            }
-
-            /* IMPORTANT: ALL EXPERIMENT RELATED CONFIG SHOULD BE CHECKED BEFORE STEAMERS WERE INITIALIZED */
-
-            var sessions = new Session[experimentParts.Count];
-            var baseClock = Clock.SystemMillisClock;
-            var streamers = CreateStreamerCollection(devicePart, baseClock, out var deviceStreamers);
-            var monitorWindow = monitor ? MonitorWindow.Show() : null;
-            var disposablePool = new DisposablePool();
-
-            try
-            {
-                streamers.Start();
-                monitorWindow?.Bind(streamers);
-
-                for (var i = 0; i < experimentParts.Count; i++)
-                {
-                    var experimentPart = experimentParts[i];
-                    var experiment = experiments[i];
-                    var sessionName = formattedSessionDescriptors[i];
-                    var session = sessions[i] = new Session(Instance.Dispatcher, experimentPart.Subject, sessionName, baseClock, experiment, streamers, DataDir);
-
-                    new SessionConfig { ExperimentPart = experimentPart, DevicePart = devicePart }
-                        .JsonSerializeToFile(session.GetDataFileName(SessionConfig.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
-
-                    var writerBaseTime = session.CreateTimestamp;
-
-                    if (ExperimentProperties.RecordMarkers.Get(experiment.Metadata) && streamers.TryFindFirst<MarkerStreamer>(out var markerStreamer))
-                    {
-                        var markerFileWriter = new MarkerFileWriter(session.GetDataFileName(MarkerFileWriter.FileSuffix), writerBaseTime);
-                        disposablePool.Add(markerFileWriter);
-                        markerStreamer.Attach(markerFileWriter);
-                        disposablePool.Add(new DelegatedDisposable(() => markerStreamer.Detach(markerFileWriter)));
-                    }
-
-                    foreach (var entry in deviceConsumerLists)
-                        if (deviceStreamers.TryGetValue(entry.Key, out var deviceStreamer))
-                        {
-                            var deviceConsumerList = entry.Value;
-                            var indexed = deviceConsumerList.Count > 1;
-                            byte num = 1;
-
-                            foreach (var tuple in deviceConsumerList)
-                            {
-                                var consumer = tuple.Item1.NewInstance(session, tuple.Item2, indexed ? num++ : (byte?)null);
-                                if (consumer is IDisposable disposable) disposablePool.Add(disposable);
-                                deviceStreamer.Attach(consumer);
-                                disposablePool.Add(new DelegatedDisposable(() => deviceStreamer.Detach(consumer)));
-                            }
-                        }
-
-                    preStartAction?.Invoke(session);
-                    var result = session.Run();
-
-                    disposablePool.DisposeAll(); // Release resources.
-
-                    new SessionInfo(session).JsonSerializeToFile(session.GetDataFileName(SessionInfo.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
-                    result?.Save(session);
-
-                    if (session.UserInterrupted && i < experimentParts.Count - 1
-                        && MessageBox.Show("Continue following sessions?", "User Exit", MessageBoxButton.YesNo,
-                            MessageBoxImage.Question, MessageBoxResult.No, MessageBoxOptions.None) == MessageBoxResult.No)
-                        break;
-                }
-            }
-            finally
-            {
-                streamers.Stop();
-                monitorWindow?.Release(); // Detach session from monitor.
-            }
-
-            completeAction?.Invoke(sessions);
-        }
-
-        /// <summary>
-        /// Create streamer collection by given device params.
-        /// </summary>
-        public static StreamerCollection CreateStreamerCollection(IDictionary<string, DeviceParams> devices, IClock clock, 
-            out IDictionary<DeviceType, IStreamer> deviceStreamers)
-        {
-            deviceStreamers = new Dictionary<DeviceType, IStreamer>();
-            var streamers = new StreamerCollection();
-            streamers.Add(new MarkerStreamer(clock));
-            foreach (var deviceType in Instance.Registries.Registry<PluginDeviceType>().Registered)
-            {
-                if (!devices.TryGetValue(deviceType.DeviceType.Name, out var entity) || entity.Device.Id == null) continue;
-                if (!Instance.Registries.Registry<PluginDevice>().LookUp(entity.Device.Id, out var device))
-                    throw new ArgumentException($"Cannot find device by id: {entity.Device.Id}");
-                var deviceInstance = device.NewInstance(device.DeserializeParams(entity.Device.Params));
-                var streamer = device.Factory.DeviceType.StreamerFactory?.Create(deviceInstance, clock);
-                if (streamer != null) streamers.Add(deviceStreamers[deviceType.DeviceType] = streamer);
-            }
-            return streamers;
-        }
-
-        /// <summary>
-        /// Try initiate experiment experiment under specific context.
-        /// </summary>
-        public static bool TryInitiateExperiment(PluginExperiment registrableExperiment, IReadonlyContext context, out IExperiment experiment, bool msgBox = true)
-        {
-            experiment = null;
-            try
-            {
-                experiment = registrableExperiment.Factory.Create(context);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                if (msgBox) ShowErrorMessage(ex);
-                return false;
+                Bootstrap.StartSession(config, false, null, session => Kill());
             }
         }
 

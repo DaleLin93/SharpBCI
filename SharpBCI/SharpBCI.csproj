@@ -119,6 +119,7 @@
     <Compile Include="Configs.cs" />
     <Compile Include="Plugins\Plugin.cs" />
     <Compile Include="Plugins\PluginDevice.cs" />
+    <Compile Include="Bootstrap.cs" />
     <Compile Include="Windows\MultiSessionConfigWindow.xaml.cs">
       <DependentUpon>MultiSessionConfigWindow.xaml</DependentUpon>
     </Compile>

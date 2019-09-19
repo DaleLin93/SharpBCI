@@ -170,9 +170,9 @@ namespace SharpBCI.Windows
                     selectedDevice.Params = selectedDevice.Device?.DeserializeParams(value.Device.Params) ?? (IReadonlyContext)EmptyContext.Instance;
                 }
                 var consumerEntity = value.Consumers.Length > 0 ? value.Consumers[0] : new ParameterizedEntity();
-                App.Instance.Registries.Registry<PluginStreamConsumer>().LookUp(consumerEntity.Id ?? NoneIdentifier, out var registrableConsumer);
-                SelectedConsumers[deviceType].Consumer = registrableConsumer;
-                SelectedConsumers[deviceType].Params = registrableConsumer?.DeserializeParams(consumerEntity.Params) ?? (IReadonlyContext)EmptyContext.Instance;
+                App.Instance.Registries.Registry<PluginStreamConsumer>().LookUp(consumerEntity.Id ?? NoneIdentifier, out var streamConsumer);
+                SelectedConsumers[deviceType].Consumer = streamConsumer;
+                SelectedConsumers[deviceType].Params = streamConsumer?.DeserializeParams(consumerEntity.Params) ?? (IReadonlyContext)EmptyContext.Instance;
             }
         }
 
