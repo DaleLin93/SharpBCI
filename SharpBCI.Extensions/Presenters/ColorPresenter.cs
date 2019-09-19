@@ -14,7 +14,7 @@ namespace SharpBCI.Extensions.Presenters
         public static readonly ColorPresenter Instance = new ColorPresenter();
 
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             var isSdColor = param.ValueType == typeof(System.Drawing.Color) || param.ValueType == typeof(System.Drawing.Color?);
             var rectangle = new Rectangle { Stroke = new SolidColorBrush(ViewConstants.SeparatorColor), MinHeight = 15 };

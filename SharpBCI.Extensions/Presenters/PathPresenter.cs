@@ -32,7 +32,7 @@ namespace SharpBCI.Extensions.Presenters
         public static readonly PathPresenter Instance = new PathPresenter();
 
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             var pathType = PathTypeProperty.Get(param.Metadata);
             var checkExistence = CheckExistenceProperty.Get(param.Metadata);
@@ -59,7 +59,7 @@ namespace SharpBCI.Extensions.Presenters
                                 Filter = FilterProperty.Get(param.Metadata),
                             };
                             if (!textBox.Text.IsBlank()) openFileDialog.InitialDirectory = new FileInfo(textBox.Text).Directory?.FullName ?? "";
-                            if ((bool) openFileDialog.ShowDialog(window)) textBox.Text = openFileDialog.FileName;
+                            if ((bool) openFileDialog.ShowDialog(Window.GetWindow(button))) textBox.Text = openFileDialog.FileName;
                             break;
                         case PathType.Directory:
                             using (var dialog = new System.Windows.Forms.FolderBrowserDialog())

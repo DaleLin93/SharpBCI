@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Controls;
 using MarukoLib.Lang;
 
@@ -8,26 +9,43 @@ namespace SharpBCI.Extensions.Windows
     public static class ViewHelper
     {
 
-        public static GroupHeader CreateGroupHeader(this FrameworkElement element, string header, string description) =>
+        public const string SharedResourceUri = "pack://application:,,,/SharpBCI.Extensions;component/Resources/SharedResourceDictionary.xaml";
+
+        public static readonly ResourceDictionary Resources = new ResourceDictionary {Source = new Uri(SharedResourceUri, UriKind.RelativeOrAbsolute)};
+
+        public static object TryFindResource(string name)
+        {
+            var res = Resources[name];
+            return res == DependencyProperty.UnsetValue ? null : res;
+        }
+
+        public static GroupHeader CreateGroupHeader(string header, string description) =>
             new GroupHeader
             {
-                SeparatorStyle = element.TryFindResource("ParamGroupSeparator") as Style,
-                HeaderTextStyle = element.TryFindResource("ParamGroupHeader") as Style,
+                SeparatorStyle = TryFindResource("ParamGroupSeparator") as Style,
+                HeaderTextStyle = TryFindResource("ParamGroupHeader") as Style,
                 Header = header,
                 Description = description
             };
+
+        public static TextBlock CreateParamNameTextBlock(IParameterDescriptor param) => new TextBlock
+        {
+            Style = (Style)TryFindResource("LabelText"),
+            Text = param.Name + (param.Unit == null ? "" : $" ({param.Unit})"),
+            ToolTip = $"Key: {param.Key}\nValue Type: {param.ValueType.GetFriendlyName()}{(param.Description == null ? "" : "\n" + param.Description)}",
+        };
 
         public static StackPanel AddGroupPanel(this Panel parent, string header, string description, int depth = 0)
         {
             var stackPanel = new StackPanel();
             if (depth > 0) stackPanel.Margin = new Thickness { Left = ViewConstants.Intend * depth };
-            stackPanel.Children.Add(CreateGroupHeader(parent, header, description));
+            stackPanel.Children.Add(CreateGroupHeader(header, description));
             parent.Children.Add(stackPanel);
             return stackPanel;
         }
 
         public static Grid AddRow(this Panel parent, string label, UIElement rightPart, uint rowHeight = 0) =>
-            AddRow(parent, label == null ? null : new TextBlock { Text = label, Style = parent.TryFindResource("LabelText") as Style }, rightPart, rowHeight);
+            AddRow(parent, label == null ? null : new TextBlock { Text = label, Style = TryFindResource("LabelText") as Style }, rightPart, rowHeight);
 
         public static Grid AddRow(this Panel parent, UIElement leftPart, UIElement rightPart, uint rowHeight = 0)
         {
@@ -41,15 +59,8 @@ namespace SharpBCI.Extensions.Windows
             row.Children.Add(rightPart);
             Grid.SetColumn(rightPart, 2);
             parent.Children.Add(row);
-            return row;
+            return row; 
         }
-
-        public static TextBlock CreateParamNameTextBlock(this FrameworkElement element, IParameterDescriptor param) => new TextBlock
-        {
-            Style = (Style) element.TryFindResource("LabelText"),
-            Text = param.Name + (param.Unit == null ? "" : $" ({param.Unit})"),
-            ToolTip = $"Key: {param.Key}\nValue Type: {param.ValueType.GetFriendlyName()}{(param.Description == null ? "" : "\n" + param.Description)}",
-        };
 
     }
 

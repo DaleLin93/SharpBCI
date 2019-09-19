@@ -8,11 +8,11 @@ namespace SharpBCI.Extensions.Presenters
 
         public static readonly TypeConvertedPresenter Instance = new TypeConvertedPresenter();
 
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             if (!param.TryGetPresentTypeConverter(out var converter)) throw new ArgumentException();
             var converted = new TypeConvertedParameter(param, converter);
-            var presented = converted.GetPresenter().Present(window, converted, updateCallback);
+            var presented = converted.GetPresenter().Present(converted, updateCallback);
             void Setter(object val) => presented.Delegates.Setter(converter.ConvertForward(val));
             object Getter() => converter.ConvertBackward(presented.Delegates.Getter());
             bool Validator(object val) => presented.Delegates.Validator?.Invoke(converter.ConvertForward(val)) ?? true;

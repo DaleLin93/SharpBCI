@@ -21,7 +21,7 @@ namespace SharpBCI.Extensions.Presenters
 
         public static readonly PositionPresenter Instance = new PositionPresenter();
 
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             if (param.ValueType == typeof(Position1D) || param.ValueType == typeof(PositionH1D) || param.ValueType == typeof(PositionV1D)) return Present1D(param, updateCallback);
             if (param.ValueType == typeof(Position2D)) return Present2D(param, updateCallback);

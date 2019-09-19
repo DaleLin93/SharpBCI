@@ -223,7 +223,7 @@ namespace SharpBCI.Windows
         private void InitializePanel()
         {
             Children.Clear();
-            Children.Add(this.CreateGroupHeader(DisplayHeader ? "Devices" : null, "Device Configuration"));
+            Children.Add(ViewHelper.CreateGroupHeader(DisplayHeader ? "Devices" : null, "Device Configuration"));
             foreach (var deviceType in DeviceTypes)
                 this.AddRow(deviceType.DisplayName, _deviceControlGroups[deviceType].CreateContainer(IsPreviewButtonVisible), DeviceRowHeight);
         }

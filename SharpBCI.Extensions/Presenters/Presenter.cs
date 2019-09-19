@@ -71,7 +71,7 @@ namespace SharpBCI.Extensions.Presenters
     public interface IPresenter
     {
 
-        [NotNull] PresentedParameter Present([NotNull] Window window, [NotNull] IParameterDescriptor parameter, [NotNull] Action updateCallback);
+        [NotNull] PresentedParameter Present([NotNull] IParameterDescriptor parameter, [NotNull] Action updateCallback);
 
     }
 

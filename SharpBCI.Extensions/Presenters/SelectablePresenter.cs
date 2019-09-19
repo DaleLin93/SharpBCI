@@ -17,7 +17,7 @@ namespace SharpBCI.Extensions.Presenters
         public static ContextProperty<Func<IParameterDescriptor, IEnumerable>> SelectableValuesFuncProperty = 
             new ContextProperty<Func<IParameterDescriptor, IEnumerable>>();
 
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             string ToStrFunc(object value) => param.ConvertValueToString(value);
             IEnumerable items;

@@ -13,7 +13,7 @@ namespace SharpBCI.Extensions.Presenters
 
         public static readonly BooleanPresenter Instance = new BooleanPresenter();
 
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             void StateChangeHandler(object sender, RoutedEventArgs args) => updateCallback();
             var checkBox = new CheckBox

@@ -12,7 +12,7 @@ namespace SharpBCI.Extensions.Presenters
         public static readonly OptionalPresenter Instance = new OptionalPresenter();
 
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             var container = new Grid();
             var checkbox = new CheckBox();

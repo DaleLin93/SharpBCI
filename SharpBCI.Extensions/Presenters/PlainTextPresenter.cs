@@ -13,7 +13,7 @@ namespace SharpBCI.Extensions.Presenters
 
         public static readonly PlainTextPresenter Instance = new PlainTextPresenter();
 
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             var textBox = new TextBox { MaxLength = param.ValueType == typeof(char) ? 1 : 128 };
             textBox.TextChanged += (sender, args) => updateCallback();

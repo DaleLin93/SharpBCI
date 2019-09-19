@@ -29,11 +29,11 @@ namespace SharpBCI.Extensions.Presenters
 
         protected ParameterizedObjectPresenter() { }
 
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback) => 
-            ParameterizedObjectExt.PopupProperty.Get(param.Metadata) ? PresentPopup(window, param, updateCallback) : PresentDirectly(window, param, updateCallback);
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback) => 
+            ParameterizedObjectExt.PopupProperty.Get(param.Metadata) ? PresentPopup(param, updateCallback) : PresentDirectly(param, updateCallback);
 
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
-        public PresentedParameter PresentPopup(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter PresentPopup(IParameterDescriptor param, Action updateCallback)
         {
             var factory = param.GetParameterizedObjectFactory();
 
@@ -61,14 +61,18 @@ namespace SharpBCI.Extensions.Presenters
             {
                 var subParams = factory.GetParameters(param);
                 var context = factory.Parse(param, container.Get());
-                var configWindow = new ParameterizedConfigWindow(param.Name, subParams, context) {Width = 400};
-                if (configWindow.ShowDialog(out var @params)) container.Set(factory.Create(param, @params));
+                var configWindow = new ParameterizedConfigWindow(param.Name ?? "Parameter", subParams, context) {Width = 400};
+                if (configWindow.ShowDialog(out var @params))
+                {
+                    container.Set(factory.Create(param, @params));
+                    updateCallback();
+                }
             };
 
             return new PresentedParameter(param, grid, Getter, Setter, null, Updater);
         }
 
-        public PresentedParameter PresentDirectly(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter PresentDirectly(IParameterDescriptor param, Action updateCallback)
         {
             var factory = param.GetParameterizedObjectFactory();
             var subParameters = factory.GetParameters(param).ToArray();
@@ -94,7 +98,7 @@ namespace SharpBCI.Extensions.Presenters
                     var subParam = subParameters[i];
                     if (labelVisible)
                     {
-                        var nameTextBlock = window.CreateParamNameTextBlock(subParam);
+                        var nameTextBlock = ViewHelper.CreateParamNameTextBlock(subParam);
                         nameTextBlock.FontSize = 8;
                         nameTextBlock.TextWrapping = TextWrapping.NoWrap;
                         nameTextBlock.TextAlignment = TextAlignment.Left;
@@ -103,7 +107,7 @@ namespace SharpBCI.Extensions.Presenters
                         Grid.SetColumn(nameTextBlock, columnIndex);
                     }
 
-                    var presentedSubParam = presentedSubParams[i] = subParam.GetPresenter().Present(window, subParam, updateCallback);
+                    var presentedSubParam = presentedSubParams[i] = subParam.GetPresenter().Present(subParam, updateCallback);
                     grid.Children.Add(presentedSubParam.Element);
                     if(labelVisible) Grid.SetRow(presentedSubParam.Element, 1);
                     Grid.SetColumn(presentedSubParam.Element, columnIndex);

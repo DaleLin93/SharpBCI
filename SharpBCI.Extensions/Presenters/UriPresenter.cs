@@ -27,7 +27,7 @@ namespace SharpBCI.Extensions.Presenters
         public static readonly UriPresenter Instance = new UriPresenter();
 
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             var container = new Grid();
             var checkFileExistence = CheckFileExistenceProperty.Get(param.Metadata);
@@ -71,7 +71,7 @@ namespace SharpBCI.Extensions.Presenters
                         }
                     }
 
-                    if ((bool) dialog.ShowDialog(window))
+                    if ((bool) dialog.ShowDialog(Window.GetWindow(button)))
                         textBox.Text = "file:\\" + dialog.FileName;
                 };
                 container.Children.Add(button);

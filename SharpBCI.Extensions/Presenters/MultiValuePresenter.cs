@@ -46,11 +46,11 @@ namespace SharpBCI.Extensions.Presenters
         public static readonly MultiValuePresenter Instance = new MultiValuePresenter();
 
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
-        public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             var maximumElementCount = MaximumElementCountProperty.Get(param.Metadata);
             var elementType = param.ValueType.GetElementType() ?? throw new ArgumentException("array type required");
-            if (elementType.IsPrimitive) return PlainTextPresenter.Instance.Present(window, param, updateCallback);
+            if (elementType.IsPrimitive) return PlainTextPresenter.Instance.Present(param, updateCallback);
 
             var parameterList = new List<Tuple<PresentedParameter, Grid>>();
             var elementTypePresenter = elementType.GetPresenter();
@@ -67,7 +67,7 @@ namespace SharpBCI.Extensions.Presenters
             void AddRow()
             {
                 if (parameterList.Count >= maximumElementCount) return;
-                var presentedParameter = elementTypePresenter.Present(window, elementParameter, updateCallback);
+                var presentedParameter = elementTypePresenter.Present(elementParameter, updateCallback);
 
                 var grid = new Grid {Margin = new Thickness {Top = 2, Bottom = 2}};
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });

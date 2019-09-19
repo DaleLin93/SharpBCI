@@ -120,8 +120,8 @@ namespace SharpBCI.Extensions.Windows
                         continue;
                     case IParameterDescriptor paramItem:
                         if (_paramHolders.ContainsKey(paramItem)) throw new UserException($"Parameter duplicated: {paramItem.Key}");
-                        var nameTextBlock = this.CreateParamNameTextBlock(paramItem);
-                        var presentedParameter = paramItem.GetPresenter().Present(window, paramItem, () => OnParamChanged(paramItem));
+                        var nameTextBlock = ViewHelper.CreateParamNameTextBlock(paramItem);
+                        var presentedParameter = paramItem.GetPresenter().Present(paramItem, () => OnParamChanged(paramItem));
                         using (_updateLock.Ref()) // SetValue Default Value;
                             try { presentedParameter.Delegates.Setter(Context.TryGet(paramItem, out var val) ? val : paramItem.DefaultValue); } 
                             catch (Exception e) { throw new ProgrammingException($"Invalid default value: parameter {paramItem.Key}", e); }

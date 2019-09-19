@@ -299,9 +299,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\pattern.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="bci.ico" />
   </ItemGroup>
   <ItemGroup>
