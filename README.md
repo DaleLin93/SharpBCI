@@ -41,7 +41,7 @@ Different experiment paradigms and external device drivers can be implemented th
 5. Set **SharpBCI** as the startup project.
 6. Build and run the solution.
 
-### Data Files
+### File Formats
 
 After the completion of a session, you can see some files that have the same filename but different suffixes in the data folder: 
  + **.mrk** *Experiment marker with timestamp with timestamp.* (ASCII; Comma-separated)
@@ -53,7 +53,8 @@ After the completion of a session, you can see some files that have the same fil
  + **.result** *Result of the experiment.* (ASCII; Json)
  
 ### Command-line
- + **.\SharpBCI.exe "xxx.scfg"** *Directly run the predefined experiment.*
+ + **.\SharpBCI.exe "xxx.scfg"** *Directly run the predefined session.*
+ + **.\SharpBCI.exe "xxx.mscfg"** *Run multiple predefined sessions in one go.*
 
 ### How to Create Your Own Paradigm
 
