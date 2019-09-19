@@ -29,6 +29,21 @@ namespace SharpBCI
 
         }
 
+        public class SuicideAfterCompletedListener : ISessionListener
+        {
+
+            public static readonly SuicideAfterCompletedListener Instance = new SuicideAfterCompletedListener();
+
+            private SuicideAfterCompletedListener() { }
+
+            public void BeforeStart(int index, Session session) { }
+
+            public void AfterCompleted(int index, Session session) { }
+
+            public void AfterAllCompleted(Session[] sessions) => App.Kill();
+
+        }
+
         public static void StartSession(SessionConfig config, bool monitor = false, ISessionListener sessionListener = null) =>
             StartSession(new[] { config.ExperimentPart }, config.DevicePart, monitor, sessionListener);
 

@@ -16,6 +16,7 @@ using SharpBCI.Plugins;
 using File = System.IO.File;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
+using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Apps;
 using SharpBCI.Extensions.Devices;
@@ -30,7 +31,7 @@ namespace SharpBCI
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App
+    public partial class App 
     {
 
         /// <summary>
@@ -157,7 +158,7 @@ namespace SharpBCI
             {
                 if (!JsonUtils.TryDeserializeFromFile<SessionConfig>(args[0], out var config))
                     throw new IOException($"Failed to load session config file: {args[0]}");
-                Bootstrap.StartSession(config, false, null, session => Kill());
+                Bootstrap.StartSession(config, false, Bootstrap.SuicideAfterCompletedListener.Instance);
             }
         }
 
