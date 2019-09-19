@@ -172,12 +172,12 @@ namespace SharpBCI
             var ex = e.Exception;
             if (ex is UserException || ex is ProgrammingException)
             {
-                Logger.Warn("UnhandledException - unexpected user operation", "message", ex.Message);
+                Logger.Warn("UnhandledException - unexpected user operation", ex);
                 MessageBox.Show($"{ex.Message}", "An error occurred", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else
             {
-                Logger.Error("UnhandledException", ex, "message", ex.Message);
+                Logger.Error("UnhandledException", ex);
                 MessageBox.Show($"{ex.Message}\n{ex.StackTrace}", "An error occurred", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             e.Handled = true;
@@ -185,7 +185,7 @@ namespace SharpBCI
 
         private static void AppDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            if (e.ExceptionObject is Exception ex) Logger.Error("UnhandledException", ex, "message", ex.Message);
+            if (e.ExceptionObject is Exception ex) Logger.Error("UnhandledException", ex);
             MessageBox.Show($"{e.ExceptionObject}", "An error occurred", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 

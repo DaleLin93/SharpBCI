@@ -715,7 +715,6 @@ namespace SharpBCI.Windows
         {
             AddRecentExperimentItems(session.DataFilePrefix);
             SaveConfig();
-            throw new NotImplementedException();
         }
 
         void Bootstrap.ISessionListener.AfterCompleted(int index, Session session) { }

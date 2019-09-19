@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Windows;
 
 namespace SharpBCI.Extensions.Presenters
 {
+
     public class TypeConvertedPresenter : IPresenter
     {
 

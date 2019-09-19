@@ -72,8 +72,9 @@ namespace SharpBCI
                 deviceConsumerLists[deviceType.DeviceType] = list;
                 foreach (var consumerConf in deviceParams.Consumers)
                 {
+                    if (consumerConf.Id == null) continue;
                     if (!App.Instance.Registries.Registry<PluginStreamConsumer>().LookUp(consumerConf.Id, out var pluginStreamConsumer))
-                        throw new ArgumentException($"Cannot find specific consumer by id: {consumerConf.Params}");
+                        throw new ArgumentException($"Cannot find specific consumer by id: {consumerConf.Id}");
                     list.Add(new Tuple<PluginStreamConsumer, IReadonlyContext>(pluginStreamConsumer, pluginStreamConsumer.DeserializeParams(consumerConf.Params)));
                 }
             }

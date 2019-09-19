@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 using System.Windows.Media;
 using JetBrains.Annotations;
@@ -103,6 +105,10 @@ namespace SharpBCI.Extensions.Presenters
     public static class Presenters
     {
 
+        public const string NullPlaceholder = "{NULL}";
+
+        private delegate IPresenter PresenterSelector(IParameterDescriptor parameter);
+
         public static ContextProperty<IPresenter> PresenterProperty = new ContextProperty<IPresenter>();
 
         public static ContextProperty<ITypeConverter> PresentTypeConverterProperty = new ContextProperty<ITypeConverter>();
@@ -119,17 +125,119 @@ namespace SharpBCI.Extensions.Presenters
             {typeof(Position2D), PositionPresenter.Instance},
         };
 
+        private static readonly IList<PresenterSelector> CommonPresenterSelectors = new List<PresenterSelector>
+        {
+            parameter => PresenterProperty.TryGet(parameter.Metadata, out var presenter) ? presenter : null,
+            BoolPresenterSelector(NeedConvert, TypeConvertedPresenter.Instance),
+            BoolPresenterSelector(ParameterDescriptorExt.IsSelectable, SelectablePresenter.Instance),
+            BoolPresenterSelector(ParameterDescriptorExt.IsMultiValue, MultiValuePresenter.Instance),
+            parameter =>GetPresenter(parameter.ValueType)
+        };
+
+        public static bool NeedConvert(IParameterDescriptor param) => NeedConvert(param, out _);
+
+        public static bool NeedConvert(IParameterDescriptor param, out ITypeConverter converter) => param.TryGetPresentTypeConverter(out converter) && !(param is TypeConvertedParameter);
+
         public static bool TryGetPresentTypeConverter(this IParameterDescriptor parameter, out ITypeConverter converter) =>
             PresentTypeConverterProperty.TryGet(parameter.Metadata, out converter) && converter != null;
 
-        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
+        [SuppressMessage("ReSharper", "LoopCanBeConvertedToQuery")]
         public static IPresenter GetPresenter(this IParameterDescriptor param)
         {
-            if (PresenterProperty.TryGet(param.Metadata, out var presenter)) return presenter;
-            if (TryGetPresentTypeConverter(param, out _)) return TypeConvertedPresenter.Instance;
-            if (param.IsSelectable()) return SelectablePresenter.Instance;
-            if (param.IsMultiValue()) return MultiValuePresenter.Instance;
-            return GetPresenter(param.ValueType) ?? throw new NotSupportedException($"presenter not found for type '{param.ValueType}'");
+            IPresenter presenter;
+            foreach (var presenterSelector in CommonPresenterSelectors)
+                if ((presenter = presenterSelector(param)) != null)
+                    return presenter;
+            throw new NotSupportedException($"presenter not found for type '{param.ValueType}'");
+        }
+
+        public static object ParseValueFromString(this IParameterDescriptor parameter, string strVal)
+        {
+            if (Equals(NullPlaceholder, strVal)) return null;
+            return NeedConvert(parameter, out var converter)
+                ? converter.ConvertBackward(ParseValueFromString(converter.OutputType, strVal))
+                : ParseValueFromString(parameter.ValueType, strVal);
+        }
+
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        public static object ParseValueFromString(Type type, string strVal)
+        {
+            if (Equals(NullPlaceholder, strVal)) return null;
+            if (type.IsArray)
+                if (type.GetArrayRank() == 1)
+                {
+                    strVal = strVal.Trim();
+                    var substrings = strVal.Split(' ').Where(str => !str.IsBlank()).ToArray();
+                    var array = Array.CreateInstance(type.GetElementType(), substrings.Length);
+                    for (var i = 0; i < substrings.Length; i++)
+                        array.SetValue(ParseValueFromString(type.GetElementType(), substrings[i]), i);
+                    return array;
+                }
+                else
+                    throw new NotSupportedException("Only 1D-array was supported");
+
+            if (type == typeof(string)) return strVal;
+
+            var nullableType = type.IsNullableType(out var underlyingType);
+            var actualType = nullableType ? underlyingType : type;
+
+            if (actualType.IsEnum)
+            {
+                var enumValues = Enum.GetValues(actualType);
+                foreach (var enumValue in enumValues)
+                    if (Equals(enumValue.ToString(), strVal))
+                        return enumValue;
+                throw new ArgumentException($"{actualType.Name} value not found by name: '{strVal}'");
+            }
+
+            if (!actualType.IsPrimitive) throw new ArgumentException("type is not supported, type: " + type.FullName);
+
+            if (strVal?.IsEmpty() ?? true)
+                if (nullableType)
+                    return null;
+                else
+                    throw new ArgumentException("cannot convert empty string to type: " + type.FullName);
+
+            if (actualType == typeof(char)) return strVal[0];
+            if (actualType == typeof(byte)) return byte.Parse(strVal);
+            if (actualType == typeof(sbyte)) return sbyte.Parse(strVal);
+            if (actualType == typeof(short)) return short.Parse(strVal);
+            if (actualType == typeof(ushort)) return ushort.Parse(strVal);
+            if (actualType == typeof(int)) return int.Parse(strVal);
+            if (actualType == typeof(uint)) return uint.Parse(strVal);
+            if (actualType == typeof(ulong)) return ulong.Parse(strVal);
+            if (actualType == typeof(float)) return float.Parse(strVal);
+            if (actualType == typeof(double)) return double.Parse(strVal);
+            if (actualType == typeof(decimal)) return decimal.Parse(strVal);
+
+            throw new Exception("unreachable statement");
+        }
+
+        public static string ConvertValueToString(this IParameterDescriptor parameter, object val)
+        {
+            if (NeedConvert(parameter, out var converter)) val = converter.ConvertForward(val);
+            return val == null ? NullPlaceholder : ConvertValueToString(val.GetType(), val);
+        }
+
+        public static string ConvertValueToString(this Type type, object value)
+        {
+            if (type.IsArray)
+            {
+                if (type.GetArrayRank() == 1 && (type.GetElementType()?.IsPrimitive ?? false))
+                {
+                    var stringBuilder = new StringBuilder();
+                    var array = (Array)value;
+                    for (var i = 1; i <= array.Length; i++)
+                    {
+                        stringBuilder.Append(array.GetValue(i - 1));
+                        if (i != array.Length) stringBuilder.Append(' ');
+                    }
+                    return stringBuilder.ToString();
+                }
+                throw new NotSupportedException();
+            }
+            if (value is IDescribable describable) return describable.GetShortDescription();
+            return value.ToString();
         }
 
         internal static IPresenter GetPresenter(this Type type)
@@ -142,6 +250,8 @@ namespace SharpBCI.Extensions.Presenters
                 return ParameterizedObjectPresenter.Instance;
             return type.GetCustomAttribute<PresenterAttribute>()?.Presenter ?? PlainTextPresenter.Instance;
         }
+
+        private static PresenterSelector BoolPresenterSelector(Predicate<IParameterDescriptor> predicate, IPresenter presenter) => parameter => predicate(parameter) ? presenter : null;
 
     }
 

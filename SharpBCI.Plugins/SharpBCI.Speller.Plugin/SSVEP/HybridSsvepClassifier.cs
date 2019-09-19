@@ -267,8 +267,9 @@ namespace SharpBCI.Experiments.Speller.SSVEP
 
         ~HybridSsvepClassifier()
         {
-            foreach (var harmonicGroup in _harmonicGroups)
-                DeleteMatrix(harmonicGroup.MatrixId);
+            if (_harmonicGroups != null)
+                foreach (var harmonicGroup in _harmonicGroups)
+                    DeleteMatrix(harmonicGroup.MatrixId);
         }
 
         public static void Test()
