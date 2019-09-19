@@ -100,10 +100,6 @@
     <Compile Include="MiStage.cs" />
     <Compile Include="MiStimClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="MediaTestWindow.xaml.cs">
-      <DependentUpon>MediaTestWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="SampleGrabEntry.cs" />
     <Compile Include="TestWindow.xaml.cs">
       <DependentUpon>TestWindow.xaml</DependentUpon>
     </Compile>
@@ -129,10 +125,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="MediaTestWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="TestWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
