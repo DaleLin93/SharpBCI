@@ -23,11 +23,11 @@
                     <MenuItem Header="Save Config" Click="SaveMenuItem_OnClick" />
                     <MenuItem Header="Reload Config" Click="ReloadMenuItem_OnClick" />
                     <Separator/>
-                    <MenuItem Header="New Auto-Run Config" Click="NewAutoRunConfigMenuItem_OnClick" />
-                    <MenuItem Header="Open Auto-Run Config" Click="OpenAutoRunConfigMenuItem_OnClick" />
-                    <Separator/>
                     <MenuItem Header="Save Session Config as..." Click="SaveAsMenuItem_OnClick" />
                     <MenuItem Header="Load Session Config from..." Click="LoadFromMenuItem_OnClick" />
+                    <Separator/>
+                    <MenuItem Header="New Multi-Session Config" Click="NewMultiSessionConfigMenuItem_OnClick" />
+                    <MenuItem Header="Open Multi-Session Config" Click="OpenMultiSessionConfigMenuItem_OnClick" />
                     <Separator/>
                     <MenuItem x:Name="LoadFromRecentExperimentsMenuItem" Header="Load From Recent Experiments" />
                     <Separator/>

@@ -155,8 +155,8 @@ namespace SharpBCI
         {
             if (args.IsEmpty())
                 new LauncherWindow().Show();
-            else if (args[0].EndsWith(AutoRunConfig.FileSuffix, StringComparison.OrdinalIgnoreCase))
-                new AutoRunConfigWindow(args[0]).Show();
+            else if (args[0].EndsWith(MultiSessionConfig.FileSuffix, StringComparison.OrdinalIgnoreCase))
+                new MultiSessionConfigWindow(args[0]).Show();
             else if (args[0].EndsWith(SessionConfig.FileSuffix, StringComparison.OrdinalIgnoreCase))
             {
                 if (!JsonUtils.TryDeserializeFromFile<SessionConfig>(args[0], out var config))

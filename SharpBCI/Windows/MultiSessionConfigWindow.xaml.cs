@@ -14,6 +14,7 @@ using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using MarukoLib.Persistence;
 using Microsoft.Win32;
+using SharpBCI.Core.Experiment;
 
 namespace SharpBCI.Windows
 {
@@ -34,7 +35,7 @@ namespace SharpBCI.Windows
 
     /// <inheritdoc cref="Window" />
     /// <summary>
-    /// Interaction logic for AnalysisWindow.xaml
+    /// Interaction logic for MultiSessionConfigWindow.xaml
     /// </summary>
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -78,17 +79,19 @@ namespace SharpBCI.Windows
 
         private DeviceItem _device = null;
         
-        private string _autoRunFile;
+        private string _multiSessionConfigFile;
 
-        public MultiSessionConfigWindow([CanBeNull] string autoRunFile = null)
+        public MultiSessionConfigWindow([CanBeNull] string multiSessionConfigFile = null)
         {
             InitializeComponent();
 
             ExperimentListView.ItemsSource = _experiments;
             _experiments.CollectionChanged += ExperimentsCollectionOnChanged;
 
-            _autoRunFile = autoRunFile;
+            _multiSessionConfigFile = multiSessionConfigFile;
         }
+
+        public bool IsKillOnFinish { get; set; } = false;
 
         private static ExperimentItem ReadExperimentConfig(string path, string alternativeDirectory)
         {
@@ -142,12 +145,16 @@ namespace SharpBCI.Windows
                 return;
             }
             Close();
-            App.StartExperiment(_experiments.Select(item => item.Value).ToArray(), DeviceConfigPanel.DeviceConfig, false, null, sessions => App.Kill());
+            Action<Session[]> completeAction = null;
+            if (IsKillOnFinish) completeAction = sessions => App.Kill();
+            App.StartExperiment(_experiments.Select(item => item.Value).ToArray(), DeviceConfigPanel.DeviceConfig, false, null, completeAction);
         }
 
-        private void UpdateTitle() => Title = string.IsNullOrWhiteSpace(_autoRunFile) ? "Auto Run Configuration" : $"Auto Run Configuration: {_autoRunFile}";
+        private void UpdateTitle() => Title = string.IsNullOrWhiteSpace(_multiSessionConfigFile) 
+            ? "Multi-Session Configuration" 
+            : $"Multi-Session Configuration: {_multiSessionConfigFile}";
 
-        private void LoadAutoRunConfig(string path)
+        private void LoadMultiSessionConfig(string path)
         {
             if (path == null)
             {
@@ -157,22 +164,23 @@ namespace SharpBCI.Windows
 
             var dir = Path.GetDirectoryName(Path.GetFullPath(path));
 
-            if (!JsonUtils.TryDeserializeFromFile<MultiSessionConfig>(path, out var autoRunConfig)) throw new UserException($"Malformed auto-run config file: {path}");
+            if (!JsonUtils.TryDeserializeFromFile<MultiSessionConfig>(path, out var msCfg))
+                throw new UserException($"Malformed multi-session config file: {path}");
             _experiments.Clear();
 
-            SubjectTextBox.Text = autoRunConfig.Subject ?? "";
+            SubjectTextBox.Text = msCfg.Subject ?? "";
 
-            foreach (var expPath in autoRunConfig.ExperimentConfigs ?? EmptyArray<string>.Instance) 
+            foreach (var expPath in msCfg.ExperimentConfigs ?? EmptyArray<string>.Instance) 
                 _experiments.Add(ReadExperimentConfig(expPath, dir));
 
-            _device = string.IsNullOrWhiteSpace(autoRunConfig.DeviceConfig) ? null : ReadDeviceConfig(autoRunConfig.DeviceConfig, dir);
+            _device = string.IsNullOrWhiteSpace(msCfg.DeviceConfig) ? null : ReadDeviceConfig(msCfg.DeviceConfig, dir);
             DeviceConfigPanel.DeviceConfig = _device?.Value ?? new Dictionary<string, DeviceParams>();
 
-            _autoRunFile = path;
+            _multiSessionConfigFile = path;
             UpdateTitle();
         }
 
-        private void SaveAutoRunConfig(string path)
+        private void SaveMultiSessionConfig(string path)
         {
             new MultiSessionConfig
             {
@@ -180,7 +188,7 @@ namespace SharpBCI.Windows
                 ExperimentConfigs = _experiments.Select(item => item.FilePath).ToArray(),
                 DeviceConfig = _device.FilePath
             }.JsonSerializeToFile(path, JsonUtils.PrettyFormat, JsonUtils.DefaultEncoding);
-            _autoRunFile = path;
+            _multiSessionConfigFile = path;
             UpdateTitle();
         }
 
@@ -197,7 +205,7 @@ namespace SharpBCI.Windows
         private void Window_OnLoaded(object sender, RoutedEventArgs e)
         {
             DeviceConfigPanel.UpdateDevices();
-            LoadAutoRunConfig(_autoRunFile);
+            LoadMultiSessionConfig(_multiSessionConfigFile);
         }
 
         private void ExperimentsCollectionOnChanged(object sender, NotifyCollectionChangedEventArgs e) => RunExperimentsBtn.IsEnabled = _experiments.Any();
@@ -220,46 +228,46 @@ namespace SharpBCI.Windows
             e.Handled = true;
         }
 
-        private void NewAutoRunConfigMenuItem_OnClick(object sender, RoutedEventArgs e) => Clear();
+        private void NewMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e) => Clear();
 
-        private void OpenAutoRunConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void OpenMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
-                Title = "Open Auto-Run Config",
+                Title = "Open Multi-Session Config",
                 Multiselect = false,
                 CheckFileExists = true,
                 DefaultExt = MultiSessionConfig.FileSuffix,
-                Filter = FileUtils.GetFileFilter("Auto-Run Config File", MultiSessionConfig.FileSuffix),
+                Filter = FileUtils.GetFileFilter("Multi-Session Config File", MultiSessionConfig.FileSuffix),
             };
-            if (!string.IsNullOrWhiteSpace(_autoRunFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_autoRunFile)) ?? "";
+            if (!string.IsNullOrWhiteSpace(_multiSessionConfigFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_multiSessionConfigFile)) ?? "";
             if (!dialog.ShowDialog(this).Value) return;
-            LoadAutoRunConfig(dialog.FileName);
+            LoadMultiSessionConfig(dialog.FileName);
         }
 
-        private void SaveAutoRunConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void SaveMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_autoRunFile))
-                SaveAutoRunConfigAsMenuItem_OnClick(sender, e);
+            if (string.IsNullOrWhiteSpace(_multiSessionConfigFile))
+                SaveMultiSessionConfigAsMenuItem_OnClick(sender, e);
             else
-                SaveAutoRunConfig(_autoRunFile);
+                SaveMultiSessionConfig(_multiSessionConfigFile);
         }
 
-        private void SaveAutoRunConfigAsMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void SaveMultiSessionConfigAsMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            var defaultFileName = string.IsNullOrWhiteSpace(_autoRunFile) ? "" : Path.GetFileName(_autoRunFile);
+            var defaultFileName = string.IsNullOrWhiteSpace(_multiSessionConfigFile) ? "" : Path.GetFileName(_multiSessionConfigFile);
             var dialog = new SaveFileDialog
             {
-                Title = "Save Auto-Run Config",
+                Title = "Save Multi-Session Config",
                 OverwritePrompt = true,
                 AddExtension = true,
                 FileName = defaultFileName,
                 DefaultExt = MultiSessionConfig.FileSuffix,
-                Filter = FileUtils.GetFileFilter("Auto-Run Config File", MultiSessionConfig.FileSuffix),
+                Filter = FileUtils.GetFileFilter("Multi-Session Config File", MultiSessionConfig.FileSuffix),
             };
-            if (!string.IsNullOrWhiteSpace(_autoRunFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_autoRunFile)) ?? "";
+            if (!string.IsNullOrWhiteSpace(_multiSessionConfigFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_multiSessionConfigFile)) ?? "";
             if (!dialog.ShowDialog(this).Value) return;
-            SaveAutoRunConfig(dialog.FileName);
+            SaveMultiSessionConfig(dialog.FileName);
         }
 
         private void AddExperimentConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -272,7 +280,7 @@ namespace SharpBCI.Windows
                 DefaultExt = SessionConfig.Experiment.FileSuffix,
                 Filter = FileUtils.GetFileFilter("Experiment Config File", SessionConfig.Experiment.FileSuffix),
             };
-            if (!string.IsNullOrWhiteSpace(_autoRunFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_autoRunFile)) ?? "";
+            if (!string.IsNullOrWhiteSpace(_multiSessionConfigFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_multiSessionConfigFile)) ?? "";
             if (!dialog.ShowDialog(this).Value || dialog.FileNames.IsEmpty()) return;
             foreach (var fileName in dialog.FileNames)
                 _experiments.Add(ReadExperimentConfig(fileName, null));
@@ -289,7 +297,7 @@ namespace SharpBCI.Windows
                 Filter = FileUtils.GetFileFilter("Device Config File", SessionConfig.DeviceFileSuffix),
             };
             if (!string.IsNullOrWhiteSpace(_device?.FilePath)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_device.FilePath)) ?? "";
-            else if (!string.IsNullOrWhiteSpace(_autoRunFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_autoRunFile)) ?? "";
+            else if (!string.IsNullOrWhiteSpace(_multiSessionConfigFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_multiSessionConfigFile)) ?? "";
             if (!dialog.ShowDialog(this).Value) return;
             _device = ReadDeviceConfig(dialog.FileName, null);
         }

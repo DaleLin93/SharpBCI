@@ -45,10 +45,10 @@ namespace SharpBCI
 
     }
 
-    public struct AutoRunConfig
+    public struct MultiSessionConfig
     {
 
-        public const string FileSuffix = ".autorun";
+        public const string FileSuffix = ".mscfg";
 
         public string Subject;
 

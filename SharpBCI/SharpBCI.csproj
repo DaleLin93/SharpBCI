@@ -119,8 +119,8 @@
     <Compile Include="Configs.cs" />
     <Compile Include="Plugins\Plugin.cs" />
     <Compile Include="Plugins\PluginDevice.cs" />
-    <Compile Include="Windows\AutoRunConfigWindow.xaml.cs">
-      <DependentUpon>AutoRunConfigWindow.xaml</DependentUpon>
+    <Compile Include="Windows\MultiSessionConfigWindow.xaml.cs">
+      <DependentUpon>MultiSessionConfigWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Windows\AnalysisWindow.xaml.cs">
       <DependentUpon>AnalysisWindow.xaml</DependentUpon>
@@ -147,7 +147,7 @@
     <Compile Include="Windows\ResultWindow.xaml.cs">
       <DependentUpon>ResultWindow.xaml</DependentUpon>
     </Compile>
-    <Page Include="Windows\AutoRunConfigWindow.xaml">
+    <Page Include="Windows\MultiSessionConfigWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

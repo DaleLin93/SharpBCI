@@ -632,21 +632,21 @@ namespace SharpBCI.Windows
 
         private void ReloadMenuItem_OnClick(object sender, RoutedEventArgs e) => LoadConfig();
 
-        private void NewAutoRunConfigMenuItem_OnClick(object sender, RoutedEventArgs e) => new AutoRunConfigWindow(null).ShowDialog();
+        private void NewMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e) => new MultiSessionConfigWindow(null).ShowDialog();
 
-        private void OpenAutoRunConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void OpenMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
                 Title = "Open Config File",
                 Multiselect = false,
                 CheckFileExists = true,
-                DefaultExt = AutoRunConfig.FileSuffix,
-                Filter = FileUtils.GetFileFilter("Auto-Run Config File", AutoRunConfig.FileSuffix),
+                DefaultExt = MultiSessionConfig.FileSuffix,
+                Filter = FileUtils.GetFileFilter("Multi-Session Config File", MultiSessionConfig.FileSuffix),
                 InitialDirectory = Path.GetFullPath(ConfigDir)
             };
             if (!dialog.ShowDialog(this).Value) return;
-            new AutoRunConfigWindow(dialog.FileName).ShowDialog();
+            new MultiSessionConfigWindow(dialog.FileName).ShowDialog();
         }
 
         private void SaveAsMenuItem_OnClick(object sender, RoutedEventArgs e)
