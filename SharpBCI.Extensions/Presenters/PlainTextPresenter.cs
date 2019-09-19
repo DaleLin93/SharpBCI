@@ -17,8 +17,8 @@ namespace SharpBCI.Extensions.Presenters
         {
             var textBox = new TextBox { MaxLength = param.ValueType == typeof(char) ? 1 : 128 };
             textBox.TextChanged += (sender, args) => updateCallback();
-            void Setter(object val) => textBox.Text = param.ValueToString(val ?? "");
-            object Getter() => param.ParseValue(textBox.Text ?? "");
+            void Setter(object val) => textBox.Text = param.ConvertValueToString(val ?? "");
+            object Getter() => param.ParseValueFromString(textBox.Text ?? "");
             void Updater(ParameterStateType state, bool value)
             {
                 switch (state)

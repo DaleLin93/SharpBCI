@@ -19,7 +19,7 @@ namespace SharpBCI.Extensions.Presenters
 
         public PresentedParameter Present(Window window, IParameterDescriptor param, Action updateCallback)
         {
-            string ToStrFunc(object value) => param.ValueToString(value);
+            string ToStrFunc(object value) => param.ConvertValueToString(value);
             IEnumerable items;
             if (SelectableValuesFuncProperty.TryGet(param.Metadata, out var selectableValuesFunc))
                 items = selectableValuesFunc(param);

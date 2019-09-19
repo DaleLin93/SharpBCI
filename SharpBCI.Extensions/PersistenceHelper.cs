@@ -14,6 +14,8 @@ namespace SharpBCI.Extensions
     public static class PersistenceHelper
     {
 
+        public const string NullPlaceholder = "{NULL}";
+
         private static readonly Logger Logger = Logger.GetLogger(typeof(PersistenceHelper));
 
         public static ContextProperty<ITypeConverter> PersistentTypeConverterProperty = new ContextProperty<ITypeConverter>();
@@ -77,21 +79,18 @@ namespace SharpBCI.Extensions
             return value == null ? null : JsonUtils.Deserialize(value, parameter.ValueType);
         }
 
-        public static object ParseValue(this IParameterDescriptor parameter, string strVal)
+        public static object ParseValueFromString(this IParameterDescriptor parameter, string strVal)
         {
-            if ("<<null>>".Equals(strVal)) return null;
-            if (TryGetPersistentTypeConverter(parameter, out var converter))
-            {
-                var parsed = ParseValue(converter.OutputType, strVal);
-                return converter.ConvertBackward(parsed);
-            }
-            return ParseValue(parameter.ValueType, strVal);
+            if (Equals(NullPlaceholder, strVal)) return null;
+            return TryGetPersistentTypeConverter(parameter, out var converter) 
+                ? converter.ConvertBackward(ParseValue(converter.OutputType, strVal)) 
+                : ParseValue(parameter.ValueType, strVal);
         }
 
         [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
         private static object ParseValue(Type type, string strVal)
         {
-            if ("<<null>>".Equals(strVal)) return null;
+            if (Equals(NullPlaceholder, strVal)) return null;
             if (type.IsArray)
                 if (type.GetArrayRank() == 1)
                 {
@@ -109,6 +108,15 @@ namespace SharpBCI.Extensions
 
             var nullableType = type.IsNullableType(out var underlyingType);
             var actualType = nullableType ? underlyingType : type;
+
+            if (actualType.IsEnum)
+            {
+                var enumValues = Enum.GetValues(actualType);
+                foreach (var enumValue in enumValues)
+                    if (Equals(enumValue.ToString(), strVal))
+                        return enumValue;
+                throw new ArgumentException($"{actualType.Name} value not found by name: '{strVal}'");
+            }
 
             if (!actualType.IsPrimitive) throw new ArgumentException("type is not supported, type: " + type.FullName);
 
@@ -133,13 +141,13 @@ namespace SharpBCI.Extensions
             throw new Exception("unreachable statement");
         }
 
-        public static string ValueToString(this IParameterDescriptor parameter, object val)
+        public static string ConvertValueToString(this IParameterDescriptor parameter, object val)
         {
             if (TryGetPersistentTypeConverter(parameter, out var converter)) val = converter.ConvertForward(val);
-            return val == null ? "<<null>>" : ValueToString(val.GetType(), val);
+            return val == null ? NullPlaceholder : ConvertValueToString(val.GetType(), val);
         }
 
-        public static string ValueToString(this Type type, object value)
+        public static string ConvertValueToString(this Type type, object value)
         {
             if (type.IsArray)
             {
