@@ -10,7 +10,7 @@ using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using MarukoLib.Logging;
 using SharpBCI.Core.Experiment;
-using SharpBCI.Registrables;
+using SharpBCI.Plugins;
 
 namespace SharpBCI
 {
@@ -162,7 +162,7 @@ namespace SharpBCI
         {
             var sessionName = experimentPart.SessionDescriptor;
             dynamic expandoContext = new ExpandoObject();
-            if (experimentPart.Params.Params != null && App.Instance.Registries.Registry<RegistrableExperiment>().LookUp(experimentPart.Params.Id, out var exp))
+            if (experimentPart.Params.Params != null && App.Instance.Registries.Registry<PluginExperiment>().LookUp(experimentPart.Params.Id, out var exp))
             {
                 var context = exp.DeserializeParams(experimentPart.Params.Params);
                 foreach (var group in exp.Factory.ParameterGroups)

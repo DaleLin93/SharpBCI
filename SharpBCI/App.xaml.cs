@@ -15,11 +15,12 @@ using MarukoLib.IO;
 using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions.Experiments.Rest;
 using SharpBCI.Extensions.Streamers;
-using SharpBCI.Registrables;
+using SharpBCI.Plugins;
 using File = System.IO.File;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
 using SharpBCI.Extensions;
+using SharpBCI.Extensions.Apps;
 using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Experiments;
 using SharpBCI.Extensions.Experiments.TextDisplay;
@@ -50,7 +51,7 @@ namespace SharpBCI
 
         private static readonly StringBuilder ErrorMessageBuilder = new StringBuilder(1024);
 
-        public readonly Registries Registries = new Registries();
+        internal readonly Registries Registries = new Registries();
 
         static App()
         {
@@ -176,7 +177,7 @@ namespace SharpBCI
             for (var i = 0; i < experimentParts.Count; i++)
             {
                 var expConf = experimentParts[i];
-                if (!Instance.Registries.Registry<RegistrableExperiment>().LookUp(expConf.Params.Id, out var registrableExperiment))
+                if (!Instance.Registries.Registry<PluginExperiment>().LookUp(expConf.Params.Id, out var registrableExperiment))
                     throw new ArgumentException($"Cannot find specific experiment by id: {expConf.Params.Id}");
                 if (!TryInitiateExperiment(registrableExperiment, registrableExperiment.DeserializeParams(expConf.Params.Params), out var experiment)) return;
                 experiments[i] = experiment;
@@ -184,17 +185,17 @@ namespace SharpBCI
             }
 
             /* Parse consumer configurations. */
-            var deviceConsumerLists = new Dictionary<DeviceType, IList<Tuple<RegistrableStreamConsumer, IReadonlyContext>>>();
-            foreach (var deviceType in Instance.Registries.Registry<DeviceType>().Registered)
+            var deviceConsumerLists = new Dictionary<DeviceType, IList<Tuple<PluginStreamConsumer, IReadonlyContext>>>();
+            foreach (var deviceType in Instance.Registries.Registry<PluginDeviceType>().Registered)
             {
-                if (!devicePart.TryGetValue(deviceType.Name, out var deviceParams) || deviceParams.Device.Id == null) continue;
-                var list = new List<Tuple<RegistrableStreamConsumer, IReadonlyContext>>();
-                deviceConsumerLists[deviceType] = list;
+                if (!devicePart.TryGetValue(deviceType.DeviceType.Name, out var deviceParams) || deviceParams.Device.Id == null) continue;
+                var list = new List<Tuple<PluginStreamConsumer, IReadonlyContext>>();
+                deviceConsumerLists[deviceType.DeviceType] = list;
                 foreach (var consumerConf in deviceParams.Consumers)
                 {
-                    if (!Instance.Registries.Registry<RegistrableStreamConsumer>().LookUp(consumerConf.Id, out var registrableConsumer))
+                    if (!Instance.Registries.Registry<PluginStreamConsumer>().LookUp(consumerConf.Id, out var registrableConsumer))
                         throw new ArgumentException($"Cannot find specific consumer by id: {consumerConf.Params}");
-                    list.Add(new Tuple<RegistrableStreamConsumer, IReadonlyContext>(registrableConsumer, registrableConsumer.DeserializeParams(consumerConf.Params)));
+                    list.Add(new Tuple<PluginStreamConsumer, IReadonlyContext>(registrableConsumer, registrableConsumer.DeserializeParams(consumerConf.Params)));
                 }
             }
 
@@ -279,14 +280,14 @@ namespace SharpBCI
             deviceStreamers = new Dictionary<DeviceType, IStreamer>();
             var streamers = new StreamerCollection();
             streamers.Add(new MarkerStreamer(clock));
-            foreach (var deviceType in Instance.Registries.Registry<DeviceType>().Registered)
+            foreach (var deviceType in Instance.Registries.Registry<PluginDeviceType>().Registered)
             {
-                if (!devices.TryGetValue(deviceType.Name, out var entity) || entity.Device.Id == null) continue;
-                if (!Instance.Registries.Registry<RegistrableDevice>().LookUp(entity.Device.Id, out var device))
+                if (!devices.TryGetValue(deviceType.DeviceType.Name, out var entity) || entity.Device.Id == null) continue;
+                if (!Instance.Registries.Registry<PluginDevice>().LookUp(entity.Device.Id, out var device))
                     throw new ArgumentException($"Cannot find device by id: {entity.Device.Id}");
                 var deviceInstance = device.NewInstance(device.DeserializeParams(entity.Device.Params));
-                var streamer = device.DeviceType.StreamerFactory?.Create(deviceInstance, clock);
-                if (streamer != null) streamers.Add(deviceStreamers[deviceType] = streamer);
+                var streamer = device.Factory.DeviceType.StreamerFactory?.Create(deviceInstance, clock);
+                if (streamer != null) streamers.Add(deviceStreamers[deviceType.DeviceType] = streamer);
             }
             return streamers;
         }
@@ -294,7 +295,7 @@ namespace SharpBCI
         /// <summary>
         /// Try initiate experiment experiment under specific context.
         /// </summary>
-        public static bool TryInitiateExperiment(RegistrableExperiment registrableExperiment, IReadonlyContext context, out IExperiment experiment, bool msgBox = true)
+        public static bool TryInitiateExperiment(PluginExperiment registrableExperiment, IReadonlyContext context, out IExperiment experiment, bool msgBox = true)
         {
             experiment = null;
             try
@@ -344,31 +345,34 @@ namespace SharpBCI
 
             MarukoLib.DirectX.DirectX.CreateIndependentResource();
 
-            Registries.Registry<RegistrableExperiment>().RegisterAll(
-                new RegistrableExperiment(null, new RestExperiment.Factory()),
-                new RegistrableExperiment(null, new CountdownExperiment.Factory()),
-                new RegistrableExperiment(null, new TextDisplayExperiment.Factory()));
+            Registries.Registry<PluginDeviceType>().RegisterAll(
+                new PluginDeviceType(null, DeviceType.Of(typeof(IBiosignalSampler))),
+                new PluginDeviceType(null, DeviceType.Of(typeof(IEyeTracker))),
+                new PluginDeviceType(null, DeviceType.Of(typeof(IVideoSource))));
 
-            Registries.Registry<DeviceType>().RegisterAll(
-                DeviceType.FromType<IBiosignalSampler>(),
-                DeviceType.FromType<IEyeTracker>(),
-                DeviceType.FromType<IVideoSource>());
+            Registries.Registry<PluginAppEntry>().RegisterAll(
+                new PluginAppEntry(null, new FileRenamingToolAppEntry()));
 
-            Registries.Registry<RegistrableDevice>().RegisterAll(
-                new RegistrableDevice(null, DeviceType.FromType<IEyeTracker>(), new CursorTracker.Factory()),
-                new RegistrableDevice(null, DeviceType.FromType<IEyeTracker>(), new GazeFileReader.Factory()),
-                new RegistrableDevice(null, DeviceType.FromType<IBiosignalSampler>(), new GenericOscillator.Factory()),
-                new RegistrableDevice(null, DeviceType.FromType<IBiosignalSampler>(), new DataFileReader.Factory()),
-                new RegistrableDevice(null, DeviceType.FromType<IVideoSource>(), new ScreenCapturer.Factory()));
+            Registries.Registry<PluginExperiment>().RegisterAll(
+                new PluginExperiment(null, new RestExperiment.Factory()),
+                new PluginExperiment(null, new CountdownExperiment.Factory()),
+                new PluginExperiment(null, new TextDisplayExperiment.Factory()));
 
-            Registries.Registry<RegistrableStreamConsumer>().RegisterAll(
-                new RegistrableStreamConsumer(null, new BiosignalDataFileWriter.Factory()),
-                new RegistrableStreamConsumer(null, new GazePointFileWriter.Factory()),
-                new RegistrableStreamConsumer(null, new VideoFramesFileWriter.Factory()));
+            Registries.Registry<PluginDevice>().RegisterAll(
+                new PluginDevice(null, new CursorTracker.Factory()),
+                new PluginDevice(null, new GazeFileReader.Factory()),
+                new PluginDevice(null, new GenericOscillator.Factory()),
+                new PluginDevice(null, new DataFileReader.Factory()),
+                new PluginDevice(null, new ScreenCapturer.Factory()));
+
+            Registries.Registry<PluginStreamConsumer>().RegisterAll(
+                new PluginStreamConsumer(null, new BiosignalDataFileWriter.Factory()),
+                new PluginStreamConsumer(null, new GazePointFileWriter.Factory()),
+                new PluginStreamConsumer(null, new VideoFramesFileWriter.Factory()));
 
             Plugin.ScanPlugins(Registries, (file, ex) => ShowErrorMessage(ex, "Failed to load plugin: " + file));
 
-            foreach (var entry in Registries.Registry<RegistrableAppEntry>().Registered)
+            foreach (var entry in Registries.Registry<PluginAppEntry>().Registered)
                 if (entry.IsAutoStart)
                     try
                     {

@@ -7,10 +7,9 @@ using SharpBCI.Extensions;
 namespace SharpBCI.Experiments.Speller
 {
 
+    [AppEntry("Speller Utility")]
     public class SpellerUtilityEntry : IAppEntry
     {
-
-        public string Name => "Speller Utility";
 
         public void Run() => new SpellerUtilityWindow().ShowDialog();
 

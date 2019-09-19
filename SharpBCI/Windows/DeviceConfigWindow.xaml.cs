@@ -12,7 +12,7 @@ using MarukoLib.UI;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Windows;
-using SharpBCI.Registrables;
+using SharpBCI.Plugins;
 
 namespace SharpBCI.Windows
 {
@@ -20,13 +20,13 @@ namespace SharpBCI.Windows
     public class ConsumerChangedEventArgs : EventArgs
     {
 
-        public readonly RegistrableStreamConsumer OldConsumer, NewConsumer;
+        public readonly PluginStreamConsumer OldConsumer, NewConsumer;
 
         public readonly IReadonlyContext OldConsumerParams;
 
         public IReadonlyContext NewConsumerParams;
 
-        public ConsumerChangedEventArgs(RegistrableStreamConsumer oldConsumer, RegistrableStreamConsumer newConsumer, IReadonlyContext oldConsumerParams)
+        public ConsumerChangedEventArgs(PluginStreamConsumer oldConsumer, PluginStreamConsumer newConsumer, IReadonlyContext oldConsumerParams)
         {
             OldConsumer = oldConsumer;
             NewConsumer = newConsumer;
@@ -48,12 +48,12 @@ namespace SharpBCI.Windows
 
         private readonly ComboBox _consumerComboBox;
 
-        private RegistrableStreamConsumer _currentConsumer;
+        private PluginStreamConsumer _currentConsumer;
 
         private bool _needResizeWindow;
 
-        public DeviceConfigWindow([NotNull] RegistrableDevice device, [CanBeNull] IReadonlyContext deviceParams,
-            [CanBeNull] RegistrableStreamConsumer consumer, [CanBeNull] IReadonlyContext consumerParams)
+        public DeviceConfigWindow([NotNull] PluginDevice device, [CanBeNull] IReadonlyContext deviceParams,
+            [CanBeNull] PluginStreamConsumer consumer, [CanBeNull] IReadonlyContext consumerParams)
         {
             InitializeComponent();
 
@@ -84,11 +84,11 @@ namespace SharpBCI.Windows
             var streamerValueType = deviceType.StreamerFactory?.ValueType;
             if (streamerValueType == null) return new object[] { NoneIdentifier };
             var list = new List<object> {NoneIdentifier};
-            list.AddRange(App.Instance.Registries.Registry<RegistrableStreamConsumer>().Registered.Where(rc => rc.Factory.AcceptType.IsAssignableFrom(streamerValueType)));
+            list.AddRange(App.Instance.Registries.Registry<PluginStreamConsumer>().Registered.Where(rc => rc.Factory.AcceptType.IsAssignableFrom(streamerValueType)));
             return list;
         }
 
-        public bool ShowDialog(out IReadonlyContext deviceParams, out RegistrableStreamConsumer consumer, out IReadonlyContext consumerParams)
+        public bool ShowDialog(out IReadonlyContext deviceParams, out PluginStreamConsumer consumer, out IReadonlyContext consumerParams)
         {
             deviceParams = EmptyContext.Instance;
             consumer = null;
@@ -101,7 +101,7 @@ namespace SharpBCI.Windows
             return true;
         }
 
-        private void InitializeDeviceConfigurationPanel(RegistrableDevice device)
+        private void InitializeDeviceConfigurationPanel(PluginDevice device)
         {
             DeviceConfigurationPanel.Descriptors = AsGroup("Device", device?.Factory.Parameters.Cast<IDescriptor>().ToArray() ?? EmptyArray<IDescriptor>.Instance);
             DeviceConfigurationPanel.Adapter = device?.Factory as IParameterPresentAdapter;
@@ -111,7 +111,7 @@ namespace SharpBCI.Windows
             _needResizeWindow = true;
         }
 
-        private void InitializeConsumerConfigurationPanel(RegistrableStreamConsumer consumer)
+        private void InitializeConsumerConfigurationPanel(PluginStreamConsumer consumer)
         {
             ConsumerConfigurationPanel.Descriptors = AsGroup("", consumer?.Factory.Parameters.Cast<IDescriptor>().ToArray() ?? EmptyArray<IDescriptor>.Instance);
             ConsumerConfigurationPanel.Adapter = consumer?.Factory as IParameterPresentAdapter;
@@ -173,7 +173,7 @@ namespace SharpBCI.Windows
 
         private void ConsumerComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var registrableConsumer = _consumerComboBox.SelectedItem as RegistrableStreamConsumer;
+            var registrableConsumer = _consumerComboBox.SelectedItem as PluginStreamConsumer;
 
             var eventArgs = new ConsumerChangedEventArgs(_currentConsumer, registrableConsumer, ConsumerConfigurationPanel.Context);
             ConsumerChanged?.Invoke(this, eventArgs);

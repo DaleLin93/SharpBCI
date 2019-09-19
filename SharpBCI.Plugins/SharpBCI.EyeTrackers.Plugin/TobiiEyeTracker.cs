@@ -14,7 +14,7 @@ namespace SharpBCI.EyeTrackers
 
         public const string DeviceName = "Tobii's Eye-Tracker";
 
-        public class Factory : DeviceFactory<TobiiEyeTracker>
+        public class Factory : DeviceFactory<TobiiEyeTracker, IEyeTracker>
         {
 
             public static readonly Parameter<string> HostNameParam = new Parameter<string>("Host Name", defaultValue: "SharpBCI");

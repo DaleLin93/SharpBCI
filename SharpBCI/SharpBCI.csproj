@@ -111,13 +111,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Registrables\RegistrableAppEntry.cs" />
-    <Compile Include="Registrables\ParameterizedRegistrable.cs" />
-    <Compile Include="Registrables\RegistrableStreamConsumer.cs" />
-    <Compile Include="Registrables\RegistrableExperiment.cs" />
+    <Compile Include="Plugins\PluginAppEntry.cs" />
+    <Compile Include="Plugins\ParameterizedRegistrable.cs" />
+    <Compile Include="Plugins\PluginDeviceType.cs" />
+    <Compile Include="Plugins\PluginStreamConsumer.cs" />
+    <Compile Include="Plugins\PluginExperiment.cs" />
     <Compile Include="Configs.cs" />
-    <Compile Include="Plugin.cs" />
-    <Compile Include="Registrables\RegistrableDevice.cs" />
+    <Compile Include="Plugins\Plugin.cs" />
+    <Compile Include="Plugins\PluginDevice.cs" />
     <Compile Include="Windows\AutoRunConfigWindow.xaml.cs">
       <DependentUpon>AutoRunConfigWindow.xaml</DependentUpon>
     </Compile>

@@ -16,7 +16,7 @@ namespace SharpBCI.Extensions.Devices
 
         public static readonly string DeviceName = $"Data File Reader (*{BiosignalDataFileWriter.FileSuffix})";
 
-        public class Factory : DeviceFactory<DataFileReader>
+        public class Factory : DeviceFactory<DataFileReader, IBiosignalSampler>
         {
 
             public static readonly Parameter<Path> DataFileParam = Parameter<Path>.CreateBuilder("Data File", new Path(""))

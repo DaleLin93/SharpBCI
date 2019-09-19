@@ -15,7 +15,7 @@ namespace SharpBCI.BiosignalSamplers
 
         public const string DeviceName = "Unnamed Device (2kHz)";
 
-        public class Factory : DeviceFactory<UnnamedDeviceSampler>
+        public class Factory : DeviceFactory<UnnamedDeviceSampler, IBiosignalSampler>
         {
 
             public static readonly Parameter<string> SerialPortParam = new Parameter<string>("Serial Port", defaultValue: null);

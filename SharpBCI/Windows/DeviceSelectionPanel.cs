@@ -2,7 +2,7 @@
 using MarukoLib.UI;
 using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Streamers;
-using SharpBCI.Registrables;
+using SharpBCI.Plugins;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -20,13 +20,13 @@ namespace SharpBCI.Windows
 
         public readonly DeviceType DeviceType;
 
-        public readonly RegistrableDevice OldDevice, NewDevice;
+        public readonly PluginDevice OldDevice, NewDevice;
 
         public readonly IReadonlyContext OldDeviceParams;
 
         public IReadonlyContext NewDeviceParams;
 
-        public DeviceChangedEventArgs(DeviceType deviceType, RegistrableDevice oldDevice, RegistrableDevice newDevice, IReadonlyContext oldDeviceParams)
+        public DeviceChangedEventArgs(DeviceType deviceType, PluginDevice oldDevice, PluginDevice newDevice, IReadonlyContext oldDeviceParams)
         {
             DeviceType = deviceType;
             OldDevice = oldDevice;
@@ -112,7 +112,7 @@ namespace SharpBCI.Windows
         public sealed class SelectedDevice
         {
 
-            public RegistrableDevice Device { get; set; }
+            public PluginDevice Device { get; set; }
 
             public IReadonlyContext Params { get; set; } = EmptyContext.Instance;
 
@@ -121,7 +121,7 @@ namespace SharpBCI.Windows
         public sealed class SelectedConsumer
         {
 
-            public RegistrableStreamConsumer Consumer { get; set; }
+            public PluginStreamConsumer Consumer { get; set; }
 
             public IReadonlyContext Params { get; set; } = EmptyContext.Instance;
 
@@ -135,7 +135,7 @@ namespace SharpBCI.Windows
 
         public DeviceSelectionPanel()
         {
-            DeviceTypes = App.Instance.Registries.Registry<DeviceType>().Registered;
+            DeviceTypes = App.Instance.Registries.Registry<PluginDeviceType>().Registered.Select(el => el.DeviceType).ToArray();
             _deviceControlGroups = new Dictionary<DeviceType, DeviceControlGroup>(DeviceTypes.Length * 2);
 
             var designMode = DesignerProperties.GetIsInDesignMode(this);
@@ -157,9 +157,9 @@ namespace SharpBCI.Windows
             get
             {
                 var selectedDevice = SelectedDevices[deviceType];
-                var device = RegistrableDevice.CreateParameterizedEntity(selectedDevice.Device, selectedDevice.Params);
+                var device = PluginDevice.CreateParameterizedEntity(selectedDevice.Device, selectedDevice.Params);
                 var selectedConsumer = SelectedConsumers[deviceType];
-                var consumer = RegistrableStreamConsumer.CreateParameterizedEntity(selectedConsumer.Consumer, selectedConsumer.Params);
+                var consumer = PluginStreamConsumer.CreateParameterizedEntity(selectedConsumer.Consumer, selectedConsumer.Params);
                 return new DeviceParams { Device = device, Consumers = new[] { consumer } };
             }
             set
@@ -170,7 +170,7 @@ namespace SharpBCI.Windows
                     selectedDevice.Params = selectedDevice.Device?.DeserializeParams(value.Device.Params) ?? (IReadonlyContext)EmptyContext.Instance;
                 }
                 var consumerEntity = value.Consumers.Length > 0 ? value.Consumers[0] : new ParameterizedEntity();
-                App.Instance.Registries.Registry<RegistrableStreamConsumer>().LookUp(consumerEntity.Id ?? NoneIdentifier, out var registrableConsumer);
+                App.Instance.Registries.Registry<PluginStreamConsumer>().LookUp(consumerEntity.Id ?? NoneIdentifier, out var registrableConsumer);
                 SelectedConsumers[deviceType].Consumer = registrableConsumer;
                 SelectedConsumers[deviceType].Params = registrableConsumer?.DeserializeParams(consumerEntity.Params) ?? (IReadonlyContext)EmptyContext.Instance;
             }
@@ -209,7 +209,7 @@ namespace SharpBCI.Windows
             var registries = App.Instance?.Registries;
             if (registries == null) return;
 
-            var devices = registries.Registry<RegistrableDevice>().Registered;
+            var devices = registries.Registry<PluginDevice>().Registered;
             foreach (var deviceType in DeviceTypes)
             {
                 var list = new LinkedList<object>();
@@ -232,7 +232,7 @@ namespace SharpBCI.Windows
         {
             var controlGroup = (DeviceControlGroup) ((ComboBox) sender).Tag;
             var deviceType = controlGroup.DeviceType;
-            var newDevice = controlGroup.DeviceComboBox.SelectedItem as RegistrableDevice;
+            var newDevice = controlGroup.DeviceComboBox.SelectedItem as PluginDevice;
             controlGroup.ConfigButton.IsEnabled = (newDevice?.Factory.Parameters?.Count ?? 0) > 0;
             controlGroup.PreviewButton.IsEnabled = newDevice?.Factory != null;
             var selectedDevice = SelectedDevices[deviceType];
@@ -246,7 +246,7 @@ namespace SharpBCI.Windows
         {
             var controlGroup = (DeviceControlGroup) ((Button) sender).Tag;
             var deviceType = controlGroup.DeviceType;
-            var selectedItem = (RegistrableDevice) controlGroup.DeviceComboBox.SelectedItem;
+            var selectedItem = (PluginDevice) controlGroup.DeviceComboBox.SelectedItem;
             if (selectedItem?.Factory == null) return;
             var parameters = selectedItem.Factory.Parameters;
             if (CollectionUtils.IsNullOrEmpty(parameters)) return;
@@ -267,7 +267,7 @@ namespace SharpBCI.Windows
         {
             var controlGroup = (DeviceControlGroup) ((Button) sender).Tag;
             var deviceType = controlGroup.DeviceType;
-            var selectedItem = (RegistrableDevice)controlGroup.DeviceComboBox.SelectedItem;
+            var selectedItem = (PluginDevice)controlGroup.DeviceComboBox.SelectedItem;
             if (selectedItem?.Factory == null) return;
             if (deviceType.BaseType == typeof(IEyeTracker))
             {

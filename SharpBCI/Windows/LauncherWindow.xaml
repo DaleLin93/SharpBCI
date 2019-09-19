@@ -42,6 +42,7 @@
                     <Separator/>
                     <MenuItem Header="Analyze" Click="AnalyzeMenuItem_OnClick" />
                 </MenuItem>
+                <MenuItem x:Name="AppsMenuItem" Header="Apps" />
                 <MenuItem x:Name="PluginsMenuItem" Header="Plugins" />
                 <MenuItem Header="Monitor" Click="MonitorMenuItem_OnClick" Visibility="Collapsed" />
             </Menu>

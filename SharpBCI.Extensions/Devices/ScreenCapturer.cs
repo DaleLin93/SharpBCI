@@ -14,7 +14,7 @@ namespace SharpBCI.Extensions.Devices
 
         public const string DeviceName = "Screen Capturer";
 
-        public class Factory : DeviceFactory<ScreenCapturer>
+        public class Factory : DeviceFactory<ScreenCapturer, IVideoSource>
         {
 
             public static readonly Parameter<byte> MaxFpsParam = new Parameter<byte>("Max FPS", 25);

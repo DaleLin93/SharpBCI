@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 using MarukoLib.Lang;
 using SharpBCI.Extensions;
 
-namespace SharpBCI.Registrables
+namespace SharpBCI.Plugins
 {
 
     public abstract class ParameterizedRegistrable : IRegistrable 

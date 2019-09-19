@@ -49,7 +49,7 @@ namespace SharpBCI.BiosignalSamplers
 
         public const string DeviceName = "OpenBCI";
 
-        public class Factory : DeviceFactory<OpenBCISampler>
+        public class Factory : DeviceFactory<OpenBCISampler, IBiosignalSampler>
         {
 
             public static readonly Parameter<string> SerialPortParam = new Parameter<string>("Serial Port", defaultValue: null);

@@ -12,11 +12,9 @@ using Image = System.Windows.Controls.Image;
 namespace SharpBCI.Experiments.MI
 {
 
-    [AppEntry(false)]
+    [AppEntry("Media Test", false)]
     public class MediaTestEntry : IAppEntry
     {
-
-        public string Name => "Media Test";
 
         public void Run() => new MediaTestWindow().ShowDialog();
 

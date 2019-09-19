@@ -16,7 +16,7 @@ namespace SharpBCI.BiosignalSamplers
 
         public const string DeviceName = "NeuroElectrics";
 
-        public class Factory : DeviceFactory<NeuroElectricsSampler>
+        public class Factory : DeviceFactory<NeuroElectricsSampler, IBiosignalSampler>
         {
 
             public static readonly Parameter<string> IpAddressParam = new Parameter<string>("IP Address", defaultValue: "127.0.0.1");

@@ -19,7 +19,7 @@ using MarukoLib.Lang.Exceptions;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Presenters;
-using SharpBCI.Registrables;
+using SharpBCI.Plugins;
 using SharpBCI.Extensions.Windows;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
@@ -131,7 +131,7 @@ namespace SharpBCI.Windows
 
         /* Temporary variables */
 
-        private RegistrableExperiment _currentExperiment;
+        private PluginExperiment _currentExperiment;
 
         static LauncherWindow() => Directory.CreateDirectory(ConfigDir);
 
@@ -197,18 +197,18 @@ namespace SharpBCI.Windows
             if (session?.Result != null) new ResultWindow(session).Show();
         }
 
-        public SessionConfig.Experiment GetSessionExperimentPart(RegistrableExperiment experiment, IReadonlyContext @params) =>
+        public SessionConfig.Experiment GetSessionExperimentPart(PluginExperiment experiment, IReadonlyContext @params) =>
             new SessionConfig.Experiment
             {
                 Subject = _subjectTextBox.Text,
                 SessionDescriptor = _sessionDescriptorTextBox.Text,
                 Params = new ParameterizedEntity(experiment.Identifier, 
-                    experiment.Attribute.Version?.ToString(), experiment.SerializeParams(@params))
+                    experiment.ExperimentAttribute.Version?.ToString(), experiment.SerializeParams(@params))
             };
 
         public SessionConfig GetSessionConfig()
         {
-            var experiment = (RegistrableExperiment)_experimentComboBox.SelectedItem ?? throw new UserException("No experiment was selected");
+            var experiment = (PluginExperiment)_experimentComboBox.SelectedItem ?? throw new UserException("No experiment was selected");
             return new SessionConfig
             {
                 ExperimentPart = GetSessionExperimentPart(experiment, ExperimentParamPanel.Context),
@@ -247,7 +247,7 @@ namespace SharpBCI.Windows
         {
             _config.Subject = _subjectTextBox.Text;
             _config.SessionName = _sessionDescriptorTextBox.Text;
-            _config.SelectedExperiment = (_experimentComboBox.SelectedItem as RegistrableExperiment)?.Identifier;
+            _config.SelectedExperiment = (_experimentComboBox.SelectedItem as PluginExperiment)?.Identifier;
 
             SerializeExperimentConfig();
             SerializeDevicesConfig();
@@ -255,7 +255,7 @@ namespace SharpBCI.Windows
             _config.JsonSerializeToFile(ConfigFile, JsonUtils.PrettyFormat);
         }
 
-        private void UpdateFullSessionName(RegistrableExperiment experiment, IReadonlyContext @params)
+        private void UpdateFullSessionName(PluginExperiment experiment, IReadonlyContext @params)
         {
             if (experiment != null)
             {
@@ -326,9 +326,9 @@ namespace SharpBCI.Windows
             FooterPanel.Children.Add(_deviceConfigPanel);
         }
 
-        private void InitializeExperimentConfigurationPanel(RegistrableExperiment experiment)
+        private void InitializeExperimentConfigurationPanel(PluginExperiment experiment)
         {
-            _experimentDescriptionTextBlock.Text = experiment.Attribute.Description;
+            _experimentDescriptionTextBlock.Text = experiment.ExperimentAttribute.Description;
             _experimentDescriptionRow.Visibility = string.IsNullOrWhiteSpace(_experimentDescriptionTextBlock.Text) 
                 ? Visibility.Collapsed : Visibility.Visible;
 
@@ -351,7 +351,7 @@ namespace SharpBCI.Windows
             var experiment = _currentExperiment;
             if (experiment == null) return;
             _config.SetExperiment(new ParameterizedEntity(experiment.Identifier, 
-                experiment.Attribute.Version?.ToString(), 
+                experiment.ExperimentAttribute.Version?.ToString(), 
                 experiment.SerializeParams(ExperimentParamPanel.Context)));
         }
 
@@ -378,7 +378,7 @@ namespace SharpBCI.Windows
         }
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private void SerializeDeviceConfig(RegistrableDevice device, IReadonlyContext @params)
+        private void SerializeDeviceConfig(PluginDevice device, IReadonlyContext @params)
         {
             if (device == null) return;
             _config.SetDevice(new ParameterizedEntity(device.Identifier, device.SerializeParams(@params)));
@@ -396,18 +396,18 @@ namespace SharpBCI.Windows
         }
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private IReadonlyContext DeserializeDeviceConfig(RegistrableDevice device) =>
+        private IReadonlyContext DeserializeDeviceConfig(PluginDevice device) =>
             device == null ? EmptyContext.Instance : (IReadonlyContext)device.DeserializeParams(_config.GetDevice(device.Identifier).Params) ?? EmptyContext.Instance;
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private void SerializeConsumerConfig(RegistrableStreamConsumer consumer, IReadonlyContext @params)
+        private void SerializeConsumerConfig(PluginStreamConsumer consumer, IReadonlyContext @params)
         {
             if (consumer == null) return;
             _config.SetConsumer(new ParameterizedEntity(consumer.Identifier, consumer.SerializeParams(@params)));
         }
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private IReadonlyContext DeserializeConsumerConfig(RegistrableStreamConsumer consumer) =>
+        private IReadonlyContext DeserializeConsumerConfig(PluginStreamConsumer consumer) =>
             consumer == null ? EmptyContext.Instance : (IReadonlyContext)consumer.DeserializeParams(_config.GetConsumer(consumer.Identifier).Params) ?? EmptyContext.Instance;
 
         private bool ValidateExperimentParams(bool msgBox = true)
@@ -493,6 +493,23 @@ namespace SharpBCI.Windows
             LoadFromRecentExperimentsMenuItem.ItemsSource = menuItems.ToArray();
         }
 
+        private void RefreshAppMenuItems()
+        {
+            var style = (Style)FindResource("MenuItem");
+            var menuItems = new LinkedList<object>();
+            var appEntries = App.Instance.Registries.Registry<PluginAppEntry>().Registered;
+            if (appEntries?.IsEmpty() ?? true)
+                menuItems.AddLast(new MenuItem { Style = style, Header = "None", IsEnabled = false });
+            else
+                foreach (var appEntry in appEntries)
+                {
+                    var appEntryMenuItem = new MenuItem { Style = style, Header = $"{appEntry.Identifier} - ({appEntry.Plugin?.Name ?? "Embedded"})" };
+                    appEntryMenuItem.Click += (sender, e) => appEntry.Entry.Run();
+                    menuItems.AddLast(appEntryMenuItem);
+                }
+            AppsMenuItem.ItemsSource = menuItems.ToArray();
+        }
+
         private void RefreshPluginMenuItems()
         {
             var style = (Style)FindResource("MenuItem");
@@ -511,19 +528,19 @@ namespace SharpBCI.Windows
                     else
                         foreach (var appEntry in plugin.AppEntries)
                         {
-                            var appEntryMenuItem = new MenuItem { Style = style, Header = $"{appEntry.Name} - {appEntry.GetType().FullName}" };
-                            appEntryMenuItem.Click += (sender, e) => appEntry.Run();
+                            var appEntryMenuItem = new MenuItem { Style = style, Header = $"{appEntry.Identifier} - {appEntry.GetType().FullName}" };
+                            appEntryMenuItem.Click += (sender, e) => appEntry.Entry.Run();
                             children.AddLast(appEntryMenuItem);
                         }
                     children.AddLast(new Separator());
 
-                    if (!plugin.ExperimentFactories.Any())
+                    if (!plugin.Experiments.Any())
                         children.AddLast(new MenuItem { Style = style, Header = "No Experiment Implementations", IsEnabled = false });
                     else
-                        foreach (var experimentFactory in plugin.ExperimentFactories)
+                        foreach (var experiment in plugin.Experiments)
                         {
-                            var experimentAttribute = experimentFactory.ExperimentType.GetExperimentAttribute();
-                            var menuItemHeader = $"{experimentAttribute.Name} ({experimentAttribute.FullVersionName}) - {experimentFactory.GetType().FullName}";
+                            var experimentAttribute = experiment.Factory.ExperimentType.GetExperimentAttribute();
+                            var menuItemHeader = $"{experimentAttribute.Name} ({experimentAttribute.FullVersionName}) - {experiment.GetType().FullName}";
                             var experimentMenuItem = new MenuItem {Style = style, Header = menuItemHeader};
                             experimentMenuItem.Click += (sender, e) => _experimentComboBox.FindAndSelect(experimentAttribute.Name, null);
                             children.AddLast(experimentMenuItem);
@@ -532,20 +549,20 @@ namespace SharpBCI.Windows
 
                     foreach (var deviceType in _deviceConfigPanel.DeviceTypes)
                     {
-                        var deviceFactories = plugin.DeviceFactories[deviceType];
-                        if (deviceFactories.Count <= 0)
+                        var devices = plugin.Devices.Where(d => d.DeviceType == deviceType).ToArray();
+                        if (devices.Length <= 0)
                             children.AddLast(new MenuItem { Style = style, Header = $"No {deviceType.DisplayName.ToLowerInvariant()} Implementations", IsEnabled = false });
                         else
-                            foreach (var factory in deviceFactories)
+                            foreach (var device in devices)
                             {
-                                var deviceMenuItem = new MenuItem { Style = style, Header = $"{factory.DeviceName} - {factory.GetType().FullName}" };
-                                deviceMenuItem.Click += (sender, e) => _deviceConfigPanel.FindAndSelectDevice(deviceType, factory.DeviceName, null);
+                                var deviceMenuItem = new MenuItem { Style = style, Header = $"{device.Factory.DeviceName} - {device.GetType().FullName}" };
+                                deviceMenuItem.Click += (sender, e) => _deviceConfigPanel.FindAndSelectDevice(deviceType, device.Factory.DeviceName, null);
                                 children.AddLast(deviceMenuItem);
                             }
                         children.AddLast(new Separator());
                     }
 
-                    if (!plugin.ExperimentFactories.Any() && !plugin.CustomMarkers.Any())
+                    if (!plugin.Experiments.Any() && !plugin.CustomMarkers.Any())
                         children.AddLast(new MenuItem { Style = style, Header = "No Custom Marker Definitions", IsEnabled = false });
                     else 
                         foreach (var keyValuePair in plugin.CustomMarkers.OrderBy(pair => pair.Key))
@@ -560,12 +577,13 @@ namespace SharpBCI.Windows
         {
             LoadPlatformCaps();
 
-            _experimentComboBox.ItemsSource = App.Instance.Registries.Registry<RegistrableExperiment>().Registered.OrderBy(exp => exp.Identifier);
+            _experimentComboBox.ItemsSource = App.Instance.Registries.Registry<PluginExperiment>().Registered.OrderBy(exp => exp.Identifier);
             _deviceConfigPanel.UpdateDevices();
 
             LoadConfig();
 
             RefreshRecentExperimentMenuItems();
+            RefreshAppMenuItems();
             RefreshPluginMenuItems();
         }
 
@@ -593,7 +611,7 @@ namespace SharpBCI.Windows
         private void ExperimentComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             SerializeExperimentConfig();
-            var registrableExperiment = (RegistrableExperiment) _experimentComboBox.SelectedItem;
+            var registrableExperiment = (PluginExperiment) _experimentComboBox.SelectedItem;
             InitializeExperimentConfigurationPanel(registrableExperiment);
             DeserializeExperimentConfig();
         }

@@ -148,6 +148,7 @@ namespace SharpBCI.Extensions.Experiments
     public static class ExperimentExt
     {
 
+        [NotNull]
         public static ExperimentAttribute GetExperimentAttribute(this Type type)
         {
             if (!typeof(IExperiment).IsAssignableFrom(type)) throw new ArgumentException($"Given type '{type.FullName}' must implements interface IExperiment");

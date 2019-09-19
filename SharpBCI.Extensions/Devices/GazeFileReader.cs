@@ -16,7 +16,7 @@ namespace SharpBCI.Extensions.Devices
 
         public static readonly string DeviceName = $"Gaze File Reader (*{GazePointFileWriter.FileSuffix})";
 
-        public class Factory : DeviceFactory<GazeFileReader>
+        public class Factory : DeviceFactory<GazeFileReader, IEyeTracker>
         {
 
             public static readonly Parameter<Path> GazeFileParam = Parameter<Path>.CreateBuilder("Gaze File", new Path(""))

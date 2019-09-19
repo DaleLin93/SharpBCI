@@ -12,7 +12,7 @@ namespace SharpBCI.Extensions.Devices
 
         public const string DeviceName = "Cursor Tracker";
 
-        public class Factory : DeviceFactory<CursorTracker>
+        public class Factory : DeviceFactory<CursorTracker, IEyeTracker>
         {
 
             public static readonly Parameter<double> MaxFrequencyParam = new Parameter<double>("Max Frequency", 100);

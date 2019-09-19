@@ -9,7 +9,13 @@ namespace SharpBCI.Extensions
     public sealed class AppEntryAttribute : Attribute
     {
 
-        public AppEntryAttribute(bool autoStart) => AutoStart = autoStart;
+        public AppEntryAttribute([NotNull] string name, bool autoStart = false)
+        {
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            AutoStart = autoStart;
+        }
+
+        public string Name { get; }
 
         public bool AutoStart { get; }
 
@@ -18,8 +24,6 @@ namespace SharpBCI.Extensions
     public interface IAppEntry
     {
 
-        string Name { get; }
-
         void Run();
 
     }
@@ -27,12 +31,11 @@ namespace SharpBCI.Extensions
     public static class AppEntryExt
     {
 
-        [CanBeNull]
+        [NotNull]
         public static AppEntryAttribute GetAppEntryAttribute(this Type type)
         {
-            if (!typeof(IAppEntry).IsAssignableFrom(type))
-                throw new ArgumentException($"Given type '{type.FullName}' must implements interface IAppEntry");
-            return type.GetCustomAttribute<AppEntryAttribute>();
+            if (!typeof(IAppEntry).IsAssignableFrom(type)) throw new ArgumentException($"Given type '{type.FullName}' must implements interface IAppEntry");
+            return type.GetCustomAttribute<AppEntryAttribute>() ?? throw new ArgumentException($"AppEntryAttribute not defined for '{type.FullName}'");
         }
 
     }

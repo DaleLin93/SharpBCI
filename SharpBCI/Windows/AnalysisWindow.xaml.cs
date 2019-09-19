@@ -15,6 +15,7 @@ using MarukoLib.Lang.Exceptions;
 using MarukoLib.UI;
 using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Streamers;
+using SharpBCI.Plugins;
 
 namespace SharpBCI.Windows
 {

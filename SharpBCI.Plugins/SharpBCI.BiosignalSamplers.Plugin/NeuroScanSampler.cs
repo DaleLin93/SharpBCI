@@ -21,7 +21,7 @@ namespace SharpBCI.BiosignalSamplers
 
         public const string DeviceName = "NeuroScan";
 
-        public class Factory : DeviceFactory<NeuroScanSampler>
+        public class Factory : DeviceFactory<NeuroScanSampler, IBiosignalSampler>
         {
 
             public static readonly Parameter<string> IpAddressParam = new Parameter<string>("IP Address", defaultValue: "127.0.0.1");
@@ -30,7 +30,8 @@ namespace SharpBCI.BiosignalSamplers
 
             public Factory() : base(NeuroScanSampler.DeviceName, IpAddressParam, PortParam) { }
 
-            public override NeuroScanSampler Create(IReadonlyContext context) => new NeuroScanSampler(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context));
+            public override NeuroScanSampler Create(IReadonlyContext context) =>
+                new NeuroScanSampler(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context));
 
         }
 

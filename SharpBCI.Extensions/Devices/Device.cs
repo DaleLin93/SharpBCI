@@ -18,8 +18,10 @@ namespace SharpBCI.Extensions.Devices
 
     }
 
-    public struct DeviceType : IEquatable<DeviceType>, IRegistrable
+    public struct DeviceType : IEquatable<DeviceType>
     {
+
+        private static readonly IDictionary<Type, DeviceType> DeviceTypes = new Dictionary<Type, DeviceType>();
 
         public DeviceType(string name, string displayName, Type baseType, Type streamerFactoryType)
         {
@@ -34,8 +36,13 @@ namespace SharpBCI.Extensions.Devices
 
         public static bool operator !=(DeviceType left, DeviceType right) => !left.Equals(right);
 
-        public static DeviceType FromType<T>() where T : IDevice => 
-            TryGet(typeof(T), out var deviceType) ? deviceType : throw new ArgumentException($"DeviceTypeAttribute not defined in device type '{typeof(T)}'");
+        public static DeviceType Of(Type type)
+        {
+            if (DeviceTypes.TryGetValue(type, out var deviceType)) return deviceType;
+            if (!TryGet(type, out deviceType)) throw new ArgumentException($"{nameof(DeviceTypeAttribute)} not defined in device type '{type}'");
+            return DeviceTypes[type] = deviceType;
+        }
+            
 
         public static bool TryGet(Type type, out DeviceType deviceType)
         {
@@ -48,9 +55,7 @@ namespace SharpBCI.Extensions.Devices
             deviceType = new DeviceType(attribute.Name, attribute.DisplayName, type, attribute.StreamerFactoryType);
             return true;
         }
-
-        public string Identifier => $"{Name}@{BaseType.FullName}";
-
+        
         [NotNull] public string Name { get; }
 
         [NotNull] public string DisplayName { get; }
@@ -127,7 +132,7 @@ namespace SharpBCI.Extensions.Devices
 
         [NotNull] string DeviceName { get; }
 
-        [NotNull] Type BaseType { get; }
+        DeviceType DeviceType { get; }
 
         IReadOnlyCollection<IParameterDescriptor> Parameters { get; }
 
@@ -138,19 +143,22 @@ namespace SharpBCI.Extensions.Devices
     /// <summary>
     /// Device Factory.
     /// </summary>
-    /// <typeparam name="T">Target type</typeparam>
-    public abstract class DeviceFactory<T> : IDeviceFactory, IParameterPresentAdapter where T : IDevice
+    /// <typeparam name="TDevice">Class of device</typeparam>
+    /// <typeparam name="TDeviceBaseType">Base type of device</typeparam>
+    public abstract class DeviceFactory<TDevice, TDeviceBaseType> : IDeviceFactory, IParameterPresentAdapter 
+        where TDevice : TDeviceBaseType where TDeviceBaseType : IDevice
     {
 
         protected DeviceFactory(string deviceName, params IParameterDescriptor[] parameters)
         {
             DeviceName = deviceName;
             Parameters = parameters;
+            DeviceType = DeviceType.Of(typeof(TDeviceBaseType));
         }
 
         public string DeviceName { get; }
 
-        public Type BaseType => typeof(T);
+        public DeviceType DeviceType { get; }
 
         public virtual IReadOnlyCollection<IParameterDescriptor> Parameters { get; }
 
@@ -158,7 +166,7 @@ namespace SharpBCI.Extensions.Devices
 
         public virtual bool IsVisible(IReadonlyContext context, IDescriptor descriptor) => true;
 
-        public abstract T Create(IReadonlyContext context);
+        public abstract TDevice Create(IReadonlyContext context);
 
         IDevice IDeviceFactory.Create(IReadonlyContext context) => Create(context);
 

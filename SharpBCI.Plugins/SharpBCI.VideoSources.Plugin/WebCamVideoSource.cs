@@ -9,6 +9,7 @@ using MarukoLib.Lang;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Presenters;
+using IVideoSource = SharpBCI.Extensions.Devices.IVideoSource;
 
 namespace SharpBCI.VideoSources
 {
@@ -18,7 +19,7 @@ namespace SharpBCI.VideoSources
 
         public const string DeviceName = "Web-Camera";
 
-        public class Factory : DeviceFactory<WebCamVideoSource>
+        public class Factory : DeviceFactory<WebCamVideoSource, IVideoSource>
         {
 
             public struct DeviceInfo

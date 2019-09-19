@@ -5,25 +5,23 @@ using MarukoLib.Lang;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
 
-namespace SharpBCI.Registrables
+namespace SharpBCI.Plugins
 {
 
-    public class RegistrableDevice : ParameterizedRegistrable
+    public class PluginDevice : ParameterizedRegistrable
     {
-
-        public readonly DeviceType DeviceType;
 
         [NotNull] public readonly IDeviceFactory Factory;
 
-        public RegistrableDevice(Plugin plugin,  DeviceType deviceType, [NotNull] IDeviceFactory factory) : base(plugin)
-        {
-            DeviceType = deviceType;
+        internal PluginDevice(Plugin plugin, [NotNull] IDeviceFactory factory) : base(plugin) => 
             Factory = factory ?? throw new ArgumentNullException(nameof(factory));
-        }
 
-        public static ParameterizedEntity CreateParameterizedEntity(RegistrableDevice device, IReadonlyContext context) => new ParameterizedEntity(device?.Identifier, device?.SerializeParams(context));
+        public static ParameterizedEntity CreateParameterizedEntity(PluginDevice device, IReadonlyContext context) =>
+            new ParameterizedEntity(device?.Identifier, device?.SerializeParams(context));
 
         public override string Identifier => Factory.DeviceName;
+
+        public DeviceType DeviceType => Factory.DeviceType;
 
         public override IEnumerable<IParameterDescriptor> Parameters => Factory.Parameters;
 

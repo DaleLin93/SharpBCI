@@ -9,7 +9,7 @@ namespace SharpBCI.Extensions.Devices
 
         public const string DeviceName = "Generic Oscillator";
 
-        public class Factory : DeviceFactory<GenericOscillator>
+        public class Factory : DeviceFactory<GenericOscillator, IBiosignalSampler>
         {
 
             public static readonly Parameter<ushort> ChannelNumParam = new Parameter<ushort>("Channel Num", 8);

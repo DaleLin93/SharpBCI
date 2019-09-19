@@ -7,18 +7,18 @@ using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Streamers;
 
-namespace SharpBCI.Registrables
+namespace SharpBCI.Plugins
 {
 
-    public class RegistrableStreamConsumer : ParameterizedRegistrable
+    public class PluginStreamConsumer : ParameterizedRegistrable
     {
 
         [NotNull] public readonly IStreamConsumerFactory Factory;
 
-        public RegistrableStreamConsumer(Plugin plugin, IStreamConsumerFactory factory) : base(plugin) =>
+        internal PluginStreamConsumer(Plugin plugin, IStreamConsumerFactory factory) : base(plugin) =>
             Factory = factory ?? throw new ArgumentNullException(nameof(factory));
 
-        public static ParameterizedEntity CreateParameterizedEntity(RegistrableStreamConsumer consumer, IReadonlyContext context) => 
+        public static ParameterizedEntity CreateParameterizedEntity(PluginStreamConsumer consumer, IReadonlyContext context) => 
             new ParameterizedEntity(consumer?.Identifier, consumer?.SerializeParams(context));
 
         public override string Identifier => Factory.Name;
