@@ -87,7 +87,7 @@ namespace SharpBCI.Extensions.Presenters
                         break;
                     case ParameterStateType.Valid:
                         for (var i = 0; i < checkboxes.Length; i++)
-                            checkboxes[i].Fill = value ? (i == selectedIndex ? Brushes.DimGray : Brushes.White) : new SolidColorBrush(ViewConstants.InvalidColor);
+                            checkboxes[i].Fill = value ? (i == selectedIndex ? Brushes.DimGray : Brushes.White) : ViewConstants.InvalidColorBrush;
                         break;
                 }
             }
@@ -161,7 +161,7 @@ namespace SharpBCI.Extensions.Presenters
                         break;
                     case ParameterStateType.Valid:
                         for (var i = 0; i < checkboxes.Length; i++)
-                            checkboxes[i].Fill = value ? (i == selectedIndex ? Brushes.DimGray : Brushes.White) : new SolidColorBrush(ViewConstants.InvalidColor);
+                            checkboxes[i].Fill = value ? (i == selectedIndex ? Brushes.DimGray : Brushes.White) : ViewConstants.InvalidColorBrush;
                         break;
                 }
             }

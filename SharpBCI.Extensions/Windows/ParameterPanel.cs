@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
@@ -42,6 +41,8 @@ namespace SharpBCI.Extensions.Windows
             };
         }
 
+        [CanBeNull] public IParameterPresentAdapter Adapter { get; set; }
+
         [CanBeNull] public IDescriptor[] Descriptors
         {
             get => _descriptors;
@@ -51,8 +52,6 @@ namespace SharpBCI.Extensions.Windows
                 InitializeConfigurationPanel();
             }
         }
-
-        [CanBeNull] public IParameterPresentAdapter Adapter { get; set; }
 
         [NotNull] public IReadonlyContext Context
         {
@@ -88,6 +87,17 @@ namespace SharpBCI.Extensions.Windows
         public void SetParamState(IParameterDescriptor parameter, ParameterStateType stateType, bool value) =>
             _paramHolders[parameter].Delegates.Updater?.Invoke(stateType, value);
 
+        public void Refresh()
+        {
+            if (_updateLock.IsReferred) return;
+            var context = new Context();
+            foreach (var entry in _paramHolders)
+                try { context[entry.Key] = entry.Value.Delegates.Getter(); }
+                catch (Exception) { SetParamState(entry.Key, ParameterStateType.Valid, false); }
+            _context = context;
+            OnParamsUpdated();
+        }
+
         public void ResetToDefault() => Context = EmptyContext.Instance;
 
         public IEnumerable<IParameterDescriptor> GetInvalidParams() => from holder in _paramHolders.Values where !holder.CheckValid() select holder.ParameterDescriptor;
@@ -120,30 +130,31 @@ namespace SharpBCI.Extensions.Windows
                         continue;
                     case IParameterDescriptor paramItem:
                         if (_paramHolders.ContainsKey(paramItem)) throw new UserException($"Parameter duplicated: {paramItem.Key}");
-                        var nameTextBlock = ViewHelper.CreateParamNameTextBlock(paramItem);
                         var presentedParameter = paramItem.GetPresenter().Present(paramItem, () => OnParamChanged(paramItem));
                         using (_updateLock.Ref()) // SetValue Default Value;
                             try { presentedParameter.Delegates.Setter(Context.TryGet(paramItem, out var val) ? val : paramItem.DefaultValue); } 
                             catch (Exception e) { throw new ProgrammingException($"Invalid default value: parameter {paramItem.Key}", e); }
-                        nameTextBlock.MouseUp += (s, e) =>
-                        {
-                            if (e.ChangedButton != MouseButton.Left || e.ClickCount != 2) return;
-                            if (MessageBox.Show($"Set param '{paramItem.Name}' to default?", "Set to default", MessageBoxButton.YesNo,
-                                    MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes)
-                                presentedParameter.Delegates.Setter(paramItem.DefaultValue);
-                        };
+                        var canReset = Adapter?.CanReset(paramItem) ?? false;
+                        var nameTextBlock = ViewHelper.CreateParamNameTextBlock(paramItem, canReset);
+                        if (canReset)
+                            nameTextBlock.MouseLeftButtonDown += (s, e) =>
+                            {
+                                if (e.ClickCount != 2) return;
+                                if (MessageBox.Show($"Set param '{paramItem.Name}' to default?", "Set to default", MessageBoxButton.YesNo,
+                                        MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes)
+                                    presentedParameter.Delegates.Setter(paramItem.DefaultValue);
+                                OnParamChanged(paramItem);
+                            };
                         var rowContainer = tuple.Item2.AddRow(nameTextBlock, presentedParameter.Element);
                         _paramHolders[paramItem] = new ParamHolder(tuple.Item1, rowContainer, nameTextBlock, presentedParameter);
                         break;
                     case ParameterGroup groupItem:
                         if (_paramGroupHolders.ContainsKey(groupItem)) throw new UserException($"Invalid experiment, parameter group duplicated: {groupItem.Name}");
                         var depth = stack.Count - 1;
-                        var groupPanel = tuple.Item2.AddGroupPanel(groupItem.Name, groupItem.Description, depth);
-                        var paramsPanel = new StackPanel();
-                        groupPanel.Children.Add(paramsPanel);
-                        var groupHolder = new ParamGroupHolder(null, groupItem, groupPanel, paramsPanel, depth);
-                        groupPanel.MouseLeftButtonUp += (sender, e) => groupHolder.Collapsed = !groupHolder.Collapsed;
-                        stack.Push(new Tuple<ParamGroupHolder, StackPanel, IEnumerator<IDescriptor>>(groupHolder, groupHolder.GroupPanel, groupHolder.ParameterGroup.Items.GetEnumerator()));
+                        var canCollapse = Adapter?.CanCollapse(groupItem) ?? false;
+                        var groupHolder = ViewHelper.CreateGroupHolder(groupItem, depth, canCollapse);
+                        tuple.Item2.Children.Add(groupHolder.GroupPanel);
+                        stack.Push(new Tuple<ParamGroupHolder, StackPanel, IEnumerator<IDescriptor>>(groupHolder, groupHolder.ItemsPanel, groupHolder.ParameterGroup.Items.GetEnumerator()));
                         _paramGroupHolders[groupItem] = groupHolder;
                         break;
                     default:
@@ -153,17 +164,6 @@ namespace SharpBCI.Extensions.Windows
 
             LayoutChanged?.Invoke(this, LayoutChangedEventArgs.Initialization);
             _initialized = true;
-        }
-
-        private void OnParamsChanged()
-        {
-            if (_updateLock.IsReferred) return;
-            var context = new Context();
-            foreach (var entry in _paramHolders)
-                try { context[entry.Key] = entry.Value.Delegates.Getter(); }
-                catch (Exception) { SetParamState(entry.Key, ParameterStateType.Valid, false); }
-            _context = context;
-            OnParamsUpdated();
         }
 
         private void OnParamChanged(IParameterDescriptor parameter)

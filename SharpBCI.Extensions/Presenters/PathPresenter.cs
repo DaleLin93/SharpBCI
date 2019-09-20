@@ -102,7 +102,7 @@ namespace SharpBCI.Extensions.Presenters
                         if (button != null) button.IsEnabled = value;
                         break;
                     case ParameterStateType.Valid:
-                        textBox.Background = value ? Brushes.Transparent : new SolidColorBrush(ViewConstants.InvalidColor);
+                        textBox.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
                         break;
                 }
             }

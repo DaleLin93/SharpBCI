@@ -101,6 +101,10 @@ namespace SharpBCI.Extensions.Experiments
 
         public virtual IReadOnlyCollection<ISummary> Summaries => EmptyArray<ISummary>.Instance;
 
+        public virtual bool CanReset(IParameterDescriptor parameter) => true;
+
+        public virtual bool CanCollapse(ParameterGroup group) => true;
+
         public virtual bool IsVisible(IReadonlyContext context, IDescriptor descriptor) => true;
 
         public virtual bool IsVisible(IReadonlyContext context, ISummary summary) => true;

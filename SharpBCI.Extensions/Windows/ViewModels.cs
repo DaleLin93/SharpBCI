@@ -2,7 +2,6 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Shapes;
 using MarukoLib.Logging;
 using SharpBCI.Extensions.Presenters;
@@ -19,8 +18,6 @@ namespace SharpBCI.Extensions.Windows
 
         public GroupHeader()
         {
-            Height = ViewConstants.SeparatorRowHeight;
-            Background = new SolidColorBrush(ViewConstants.GroupHeaderColor);
             Children.Add(_separatorRectangle = new Rectangle { Margin = new Thickness { Left = 10, Right = 10, Top = 7 } });
             Children.Add(_headerTextBlock = new TextBlock { Margin = new Thickness { Left = 15, Top = 2 }, IsHitTestVisible = false, Visibility = Visibility.Hidden });
         }
@@ -58,8 +55,6 @@ namespace SharpBCI.Extensions.Windows
     public class ParamGroupHolder
     {
 
-        public readonly ParamGroupHolder GroupHolder;
-
         public readonly ParameterGroup ParameterGroup;
 
         public readonly StackPanel GroupPanel, ItemsPanel;
@@ -68,12 +63,11 @@ namespace SharpBCI.Extensions.Windows
 
         private bool _collapsed = false, _visible = true;
 
-        public ParamGroupHolder(ParamGroupHolder groupHolder, ParameterGroup parameterGroup, StackPanel groupPanel, int depth) 
-            : this(groupHolder, parameterGroup, groupPanel, groupPanel, depth) { }
+        public ParamGroupHolder(ParameterGroup parameterGroup, StackPanel groupPanel, int depth) 
+            : this(parameterGroup, groupPanel, groupPanel, depth) { }
 
-        public ParamGroupHolder(ParamGroupHolder groupHolder, ParameterGroup parameterGroup, StackPanel groupPanel, StackPanel itemsPanel, int depth)
+        public ParamGroupHolder(ParameterGroup parameterGroup, StackPanel groupPanel, StackPanel itemsPanel, int depth)
         {
-            GroupHolder = groupHolder;
             ParameterGroup = parameterGroup;
             GroupPanel = groupPanel;
             ItemsPanel = itemsPanel;

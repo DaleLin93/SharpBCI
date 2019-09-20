@@ -326,11 +326,11 @@ namespace SharpBCI.Windows
             _experimentDescriptionRow.Visibility = string.IsNullOrWhiteSpace(_experimentDescriptionTextBlock.Text) 
                 ? Visibility.Collapsed : Visibility.Visible;
 
-            ExperimentParamPanel.Descriptors = experiment.Factory.ParameterGroups.Cast<IDescriptor>().ToArray();
             ExperimentParamPanel.Adapter = experiment.Factory as IParameterPresentAdapter;
+            ExperimentParamPanel.Descriptors = experiment.Factory.ParameterGroups.Cast<IDescriptor>().ToArray();
 
-            ExperimentSummaryPanel.Summaries = experiment.Factory.Summaries.ToArray();
             ExperimentSummaryPanel.Adapter = experiment.Factory as ISummaryPresentAdapter;
+            ExperimentSummaryPanel.Summaries = experiment.Factory.Summaries.ToArray();
 
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();

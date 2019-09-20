@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 using MarukoLib.Lang;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SharpBCI.Core.Staging;
 using SharpBCI.Extensions;
+using SharpBCI.Extensions.Presenters;
 
 namespace SharpBCI.Tests
 {

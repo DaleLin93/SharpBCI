@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MarukoLib.Lang;
+﻿using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 
 namespace SharpBCI.Extensions.Windows
@@ -11,6 +6,10 @@ namespace SharpBCI.Extensions.Windows
 
     public interface IParameterPresentAdapter
     {
+
+        bool CanReset(IParameterDescriptor parameter);
+
+        bool CanCollapse(ParameterGroup group);
 
         bool IsEnabled(IReadonlyContext context, IParameterDescriptor parameter);
 

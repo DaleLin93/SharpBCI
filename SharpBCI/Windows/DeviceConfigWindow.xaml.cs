@@ -103,8 +103,8 @@ namespace SharpBCI.Windows
 
         private void InitializeDeviceConfigurationPanel(PluginDevice device)
         {
-            DeviceConfigurationPanel.Descriptors = AsGroup("Device", device?.Factory.Parameters.Cast<IDescriptor>().ToArray() ?? EmptyArray<IDescriptor>.Instance);
             DeviceConfigurationPanel.Adapter = device?.Factory as IParameterPresentAdapter;
+            DeviceConfigurationPanel.Descriptors = AsGroup("Device", device?.Factory.Parameters.Cast<IDescriptor>().ToArray() ?? EmptyArray<IDescriptor>.Instance);
 
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();
@@ -113,8 +113,8 @@ namespace SharpBCI.Windows
 
         private void InitializeConsumerConfigurationPanel(PluginStreamConsumer consumer)
         {
-            ConsumerConfigurationPanel.Descriptors = AsGroup("", consumer?.Factory.Parameters.Cast<IDescriptor>().ToArray() ?? EmptyArray<IDescriptor>.Instance);
             ConsumerConfigurationPanel.Adapter = consumer?.Factory as IParameterPresentAdapter;
+            ConsumerConfigurationPanel.Descriptors = AsGroup("", consumer?.Factory.Parameters.Cast<IDescriptor>().ToArray() ?? EmptyArray<IDescriptor>.Instance);
 
             _currentConsumer = consumer;
             ScrollView.InvalidateScrollInfo();

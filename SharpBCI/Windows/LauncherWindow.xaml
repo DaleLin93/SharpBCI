@@ -17,7 +17,7 @@
 
         <!-- Menu -->
         <StackPanel Grid.Row="0">
-            <Rectangle Style="{StaticResource ParamGroupSeparator}" Fill="#FFE2E2E2" />
+            <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
             <Menu Background="#88FAFAFA">
                 <MenuItem Header="File" >
                     <MenuItem Header="Save Config" Click="SaveMenuItem_OnClick" />
@@ -46,7 +46,7 @@
                 <MenuItem x:Name="PluginsMenuItem" Header="Plugins" />
                 <MenuItem Header="Monitor" Click="MonitorMenuItem_OnClick" Visibility="Collapsed" />
             </Menu>
-            <Rectangle Style="{StaticResource ParamGroupSeparator}" Fill="#FFE2E2E2" />
+            <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
         </StackPanel>
 
         <!-- Main Panel: Session configuration, Experiment configuration, Recorder configuration -->
