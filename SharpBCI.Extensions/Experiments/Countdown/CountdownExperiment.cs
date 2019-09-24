@@ -57,7 +57,7 @@ namespace SharpBCI.Extensions.Experiments.Countdown
 
             private static readonly Parameter<uint> FontSize = new Parameter<uint>("Font Size", 90);
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => ScanGroups(typeof(Factory));
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => ScanGroups(typeof(Factory));
 
             public override IReadOnlyCollection<ISummary> Summaries => ScanSummaries(typeof(Factory));
 

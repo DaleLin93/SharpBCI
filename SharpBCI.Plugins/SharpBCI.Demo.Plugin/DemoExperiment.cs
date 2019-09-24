@@ -30,7 +30,7 @@ namespace SharpBCI.Experiments.Demo
 
             private static readonly Parameter<Color> BackgroundColor = new Parameter<Color>("Background Color", null, "The background color of window", Color.Black);
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => new[] { new ParameterGroup(Text, ForegroundColor, BackgroundColor), };
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[] { new ParameterGroup(Text, ForegroundColor, BackgroundColor), };
 
             /// <summary>
             /// Create the demo experiment with given context.

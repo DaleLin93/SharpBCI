@@ -18,7 +18,6 @@ using MarukoLib.IO;
 using MarukoLib.Lang.Exceptions;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
-using SharpBCI.Extensions.Presenters;
 using SharpBCI.Plugins;
 using SharpBCI.Extensions.Windows;
 using MarukoLib.Logging;
@@ -299,7 +298,7 @@ namespace SharpBCI.Windows
             var loadDefaultCfgBtn = new Button {ToolTip = "Load Default Config", HorizontalAlignment = HorizontalAlignment.Right, Width = ViewConstants.DefaultRowHeight, Content = loadDefaultCfgImage};
             loadDefaultCfgBtn.Click += ExperimentResetBtn_OnClick;
             experimentComboBoxContainer.Children.Add(loadDefaultCfgBtn);
-            experimentPanel.AddRow("Experiment", experimentComboBoxContainer, ViewConstants.DefaultRowHeight);
+            experimentPanel.AddRow("Experiment", experimentComboBoxContainer);
             _experimentDescriptionRow = experimentPanel.AddRow("", _experimentDescriptionTextBlock = new TextBlock { FontSize = 10, Foreground = Brushes.DarkGray });
             _experimentDescriptionRow.Visibility = Visibility.Collapsed;
         }
@@ -326,11 +325,8 @@ namespace SharpBCI.Windows
             _experimentDescriptionRow.Visibility = string.IsNullOrWhiteSpace(_experimentDescriptionTextBlock.Text) 
                 ? Visibility.Collapsed : Visibility.Visible;
 
-            ExperimentParamPanel.Adapter = experiment.Factory as IParameterPresentAdapter;
-            ExperimentParamPanel.Descriptors = experiment.Factory.ParameterGroups.Cast<IDescriptor>().ToArray();
-
-            ExperimentSummaryPanel.Adapter = experiment.Factory as ISummaryPresentAdapter;
-            ExperimentSummaryPanel.Summaries = experiment.Factory.Summaries.ToArray();
+            ExperimentParamPanel.SetDescriptors(experiment.Factory as IParameterPresentAdapter, experiment.Factory.ParameterGroups);
+            ExperimentSummaryPanel.SetSummaries(experiment.Factory as ISummaryPresentAdapter, experiment.Factory.Summaries);
 
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();
@@ -421,8 +417,10 @@ namespace SharpBCI.Windows
                     .Select(pd =>
                     {
                         var valid = ValidationResult.Failed();
-                        try { valid = factory.IsValid(context, pd); }
+                        try { valid = factory.CheckValid(context, pd); }
                         catch (Exception e) { Logger.Warn("ValidateExperimentParams", e, "parameter", pd.Key); }
+                        var row = ExperimentParamPanel[pd].Container;
+                        if (row.IsError = valid.IsFailed) row.ErrorMessage = valid.Message.Trim();
                         return new ParamValidationResult(pd, valid);
                     })
                     .Where(result => result.Result.IsFailed)
@@ -432,8 +430,6 @@ namespace SharpBCI.Windows
                     SetErrorMessage(null);
                     return true;
                 }
-                foreach (var paramValidationResult in invalidParamValidationResults)
-                    ExperimentParamPanel.SetParamState(paramValidationResult.Param, ParameterStateType.Valid, false);
             }
             var stringBuilder = new StringBuilder("The following parameters of experiment are invalid");
             foreach (var paramValidationResult in invalidParamValidationResults)
@@ -590,15 +586,16 @@ namespace SharpBCI.Windows
 
         private void Window_OnLayoutUpdated(object sender, EventArgs e)
         {
-            if (!_needResizeWindow) return;
+            if (!_needResizeWindow || !IsLoaded) return;
             var point = PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
             var screen = System.Windows.Forms.Screen.FromPoint(point.RoundToSdPoint());
             var scaleFactor = GraphicsUtils.Scale;
             var maxHeight = screen.WorkingArea.Height / scaleFactor;
             var contentHeight = MainPanel.Children.OfType<FrameworkElement>().Sum(el => el.ActualHeight);
-            Height = Math.Min(contentHeight + 15 + (ActualHeight - ScrollView.ActualHeight), maxHeight);
-            var offset = screen.WorkingArea.Bottom / scaleFactor - (Top + ActualHeight);
-            if (offset < 0) Top += offset;
+            var newHeight = Math.Min(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight), maxHeight);
+            if (Math.Abs(newHeight - Height) > 1.0) BeginAnimation(HeightProperty, ViewHelper.CreateDoubleAnimation(Height, newHeight));
+            var offset = screen.WorkingArea.Bottom / scaleFactor - (Top + newHeight + (ActualHeight - Height));
+            if (offset < 0) BeginAnimation(TopProperty, ViewHelper.CreateDoubleAnimation(Top, Math.Max(0, Top + offset)));
             _needResizeWindow = false;
         }
 

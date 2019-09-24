@@ -51,7 +51,7 @@ namespace SharpBCI.Experiments.MRCP
 
             private static readonly Parameter<ushort> InterStimulusInterval = new Parameter<ushort>("Inter-Stimulus Interval", "s", null, 2);
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => ScanGroups(typeof(Factory));
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => ScanGroups(typeof(Factory));
 
             public override bool IsEnabled(IReadonlyContext context, IParameterDescriptor parameter) => !ReferenceEquals(parameter, TrialDuration);
 

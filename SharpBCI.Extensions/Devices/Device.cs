@@ -164,7 +164,7 @@ namespace SharpBCI.Extensions.Devices
 
         public virtual bool CanReset(IParameterDescriptor parameter) => true;
 
-        public virtual bool CanCollapse(ParameterGroup group) => true;
+        public virtual bool CanCollapse(IGroupDescriptor group, int depth) => true;
 
         public virtual bool IsEnabled(IReadonlyContext context, IParameterDescriptor parameter) => true;
 

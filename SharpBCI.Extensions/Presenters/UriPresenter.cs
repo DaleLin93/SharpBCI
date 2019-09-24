@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -16,6 +15,48 @@ namespace SharpBCI.Extensions.Presenters
     public class UriPresenter : IPresenter
     {
 
+        private class Adapter : IPresentedParameterAdapter
+        {
+
+            private readonly IParameterDescriptor _parameter;
+
+            private readonly ISet<string> _supportedSchemes;
+
+            private readonly bool _checkFileExistence;
+
+            private readonly TextBox _uriTextBox;
+
+            private readonly Button _browseButton;
+
+            public Adapter(IParameterDescriptor parameter, ISet<string> supportedSchemes, bool checkFileExistence, TextBox uriTextBox, Button browseButton)
+            {
+                _parameter = parameter;
+                _supportedSchemes = supportedSchemes;
+                _checkFileExistence = checkFileExistence;
+                _uriTextBox = uriTextBox;
+                _browseButton = browseButton;
+            }
+
+            public object GetValue()
+            {
+                var uri = new Uri(_uriTextBox.Text);
+                if (!_supportedSchemes.Any() && !_supportedSchemes.Contains(uri.Scheme.ToLowerInvariant())) throw new Exception("unsupported scheme");
+                if (string.Equals(uri.Scheme, "file", StringComparison.OrdinalIgnoreCase) && _checkFileExistence && !File.Exists(uri.LocalPath)) throw new Exception("file not exists");
+                return _parameter.IsValidOrThrow(uri);
+            }
+
+            public void SetValue(object value) => _uriTextBox.Text = value?.ToString() ?? "";
+
+            public void SetEnabled(bool value)
+            {
+                _uriTextBox.IsEnabled = value;
+                if (_browseButton != null) _browseButton.IsEnabled = value;
+            }
+
+            public void SetValid(bool value) => _uriTextBox.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
+
+        }
+
         public static readonly NamedProperty<string[]> SupportedSchemesProperty = new NamedProperty<string[]>("SupportedSchemes");
 
         public static readonly NamedProperty<bool> ShowFileSelectorProperty = PathPresenter.ShowSelectorProperty;
@@ -26,11 +67,11 @@ namespace SharpBCI.Extensions.Presenters
 
         public static readonly UriPresenter Instance = new UriPresenter();
 
-        [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
         public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             var container = new Grid();
             var checkFileExistence = CheckFileExistenceProperty.Get(param.Metadata);
+            var fileFilter = FileFilterProperty.Get(param.Metadata);
 
             var textBox = new TextBox {MaxLength = 256};
             textBox.TextChanged += (sender, args) => updateCallback();
@@ -49,8 +90,8 @@ namespace SharpBCI.Extensions.Presenters
                     {
                         Title = $"Select File: {param.Name}",
                         Multiselect = false,
-                        CheckFileExists = CheckFileExistenceProperty.Get(param.Metadata),
-                        Filter = FileFilterProperty.Get(param.Metadata),
+                        CheckFileExists = checkFileExistence,
+                        Filter = fileFilter,
                     };
                     if (!textBox.Text.IsBlank())
                     {
@@ -76,33 +117,7 @@ namespace SharpBCI.Extensions.Presenters
                 };
                 container.Children.Add(button);
             }
-
-            void Setter(object uri) => textBox.Text = uri?.ToString() ?? "";
-            object Getter() => new Uri(textBox.Text);
-            bool Validator(object val)
-            {
-                if (val is Uri uri)
-                {
-                    if (!supportedSchemes.Any() && !supportedSchemes.Contains(uri.Scheme.ToLowerInvariant())) return false;
-                    if (string.Equals(uri.Scheme, "file", StringComparison.OrdinalIgnoreCase) && checkFileExistence && !File.Exists(uri.LocalPath)) return false;
-                }
-                return param.IsValid(val);
-            }
-
-            void Updater(ParameterStateType state, bool value)
-            {
-                switch (state)
-                {
-                    case ParameterStateType.Enabled:
-                        textBox.IsEnabled = value;
-                        if (button != null) button.IsEnabled = value;
-                        break;
-                    case ParameterStateType.Valid:
-                        textBox.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
-                        break;
-                }
-            }
-            return new PresentedParameter(param, container, new PresentedParameter.ParamDelegates(Getter, Setter, Validator, Updater));
+            return new PresentedParameter(param, container, new Adapter(param, supportedSchemes, checkFileExistence, textBox, button));
         }
 
     }

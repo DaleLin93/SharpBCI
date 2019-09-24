@@ -61,7 +61,7 @@ namespace SharpBCI.Extensions.Experiments.Rest
 
             private static readonly Parameter<string> Cue = new Parameter<string>("Display Content", defaultValue: "Resting");
             
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => new[] { new ParameterGroup(Cue, Duration, BackgroundColor,ForegroundColor) };
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[] { new ParameterGroup(Cue, Duration, BackgroundColor,ForegroundColor) };
 
             public override RestExperiment Create(IReadonlyContext context) => new RestExperiment(new Configuration
             {

@@ -109,7 +109,7 @@ namespace SharpBCI.Experiments.VEP.MAVEP
                 .SetDefaultValue(new Configuration.GuiConfig.StimulusSettings { Count = 2, Size = 1, HorizontalOffset = 40, VerticalOffset = 0, Tolerance = 0.5})
                 .Build();
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => new[]
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
                 new ParameterGroup("Exp. Params", Baseline, TrialCount, InterStimulusInterval),
                 new ParameterGroup("User Interface", BackgroundColor, FixationPoint, Stimulus),

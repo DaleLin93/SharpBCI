@@ -2,6 +2,7 @@
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Animation;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
@@ -12,15 +13,26 @@ namespace SharpBCI.Extensions.Windows
     public static class ViewHelper
     {
 
-        public const string SharedResourceUri = "pack://application:,,,/SharpBCI.Extensions;component/Resources/SharedResourceDictionary.xaml";
-
-        public static readonly ResourceDictionary Resources = new ResourceDictionary {Source = new Uri(SharedResourceUri, UriKind.RelativeOrAbsolute)};
+        public static readonly ResourceDictionary Resources = new ResourceDictionary {Source = new Uri(ViewConstants.SharedResourceDictionaryUri)};
 
         public static object GetResource(string name)
         {
             var res = Resources[name];
             if (res == DependencyProperty.UnsetValue) throw new ProgrammingException($"Resource not found by name: '{name}'");
             return res;
+        }
+
+        public static DoubleAnimation CreateDoubleAnimation(double from, double to, FillBehavior? fillBehavior = null,
+            Action completeAction = null,
+            Duration? duration = null, IEasingFunction easingFunction = null)
+        {
+            var animation = new DoubleAnimation(from, to, duration ?? ViewConstants.DefaultAnimationDuration)
+            {
+                FillBehavior = fillBehavior ?? FillBehavior.HoldEnd,
+                EasingFunction = easingFunction ?? ViewConstants.DefaultEasingFunction
+            };
+            if (completeAction != null) animation.Completed += (sender, e) => completeAction();
+            return animation;
         }
 
         public static GroupHeader CreateGroupHeader(string header, string description, bool click2Collapse = false)
@@ -66,7 +78,7 @@ namespace SharpBCI.Extensions.Windows
             return stackPanel;
         }
 
-        public static ParamGroupHolder CreateGroupHolder(ParameterGroup group, int depth = 0, bool click2Collapse = false)
+        public static GroupViewModel CreateGroupViewModel(IGroupDescriptor group, int depth = 0, bool click2Collapse = false)
         {
             var stackPanel = new StackPanel();
             if (depth > 0) stackPanel.Margin = new Thickness { Left = ViewConstants.Intend * depth };
@@ -74,25 +86,18 @@ namespace SharpBCI.Extensions.Windows
             stackPanel.Children.Add(groupHeader);
             var itemsPanel = new StackPanel();
             stackPanel.Children.Add(itemsPanel);
-            var groupHolder = new ParamGroupHolder(group, stackPanel, itemsPanel, depth);
-            if (click2Collapse) groupHeader.MouseLeftButtonUp += (sender, e) => groupHolder.Collapsed = !groupHolder.Collapsed;
-            return groupHolder;
+            var viewModel = new GroupViewModel(group, stackPanel, itemsPanel, depth);
+            if (click2Collapse) groupHeader.MouseLeftButtonUp += (sender, e) => viewModel.IsCollapsed = !viewModel.IsCollapsed;
+            return viewModel;
         }
 
-        public static Grid AddRow(this Panel parent, string label, UIElement rightPart, uint rowHeight = 0) =>
+        public static KeyValueRow AddRow(this Panel parent, string label, UIElement rightPart, uint rowHeight = 0) =>
             AddRow(parent, label == null ? null : new TextBlock { Text = label, Style = GetResource("LabelText") as Style }, rightPart, rowHeight);
 
-        public static Grid AddRow(this Panel parent, UIElement leftPart, UIElement rightPart, uint rowHeight = 0)
+        public static KeyValueRow AddRow(this Panel parent, UIElement leftPart, UIElement rightPart, uint rowHeight = 0)
         {
-            var row = new Grid { Margin = ViewConstants.RowMargin };
+            var row = new KeyValueRow(leftPart, rightPart);
             if (rowHeight > 0) row.Height = rowHeight;
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MaxWidth = 300 });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(ViewConstants.MajorSpacing) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2.5, GridUnitType.Star) });
-            row.Children.Add(leftPart);
-            Grid.SetColumn(leftPart, 0);
-            row.Children.Add(rightPart);
-            Grid.SetColumn(rightPart, 2);
             parent.Children.Add(row);
             return row; 
         }

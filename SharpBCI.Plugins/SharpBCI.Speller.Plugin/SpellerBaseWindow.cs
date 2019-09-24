@@ -494,8 +494,7 @@ namespace SharpBCI.Experiments.Speller
             if (session.StreamerCollection.TryFindFirst<GazePointStreamer>(out var gazePointStreamer))
             {
                 gazePointStreamer.Attach(GazePointHandler);
-                //                        if (_experiment.Config.Test.TrialCancellable)
-                //                              TODO: blink to cancel
+                // if (_experiment.Config.Test.TrialCancellable) TODO: blink to cancel
                 if (gazePointStreamer.EyeTracker.GetType() != typeof(CursorTracker)) this.HideCursorInside();
             }
             else

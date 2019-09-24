@@ -141,7 +141,7 @@ namespace SharpBCI.Experiments.MI
 
             private static readonly Parameter<Border> ProgressBarBorder = new Parameter<Border>("Progress Bar Border", new Border(0, Color.White));
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => new[]
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
 #if DEBUG
                 new ParameterGroup("Diagnostics", UseInternalProgram),

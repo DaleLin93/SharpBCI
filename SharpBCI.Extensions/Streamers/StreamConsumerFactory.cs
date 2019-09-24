@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Streamers
 {
@@ -27,7 +28,7 @@ namespace SharpBCI.Extensions.Streamers
     /// An abstract implementation IStreamConsumerFactory.
     /// </summary>
     /// <typeparam name="T">Accept type of StreamConsumer </typeparam>
-    public abstract class StreamConsumerFactory<T> : IStreamConsumerFactory 
+    public abstract class StreamConsumerFactory<T> : IStreamConsumerFactory, IParameterPresentAdapter
     {
 
         protected StreamConsumerFactory(string name, params IParameterDescriptor[] parameters)
@@ -39,6 +40,14 @@ namespace SharpBCI.Extensions.Streamers
         public string Name { get; }
 
         public Type AcceptType => typeof(T);
+
+        public virtual bool CanReset(IParameterDescriptor parameter) => true;
+
+        public bool CanCollapse(IGroupDescriptor @group, int depth) => true;
+
+        public virtual bool IsEnabled(IReadonlyContext context, IParameterDescriptor parameter) => true;
+
+        public virtual bool IsVisible(IReadonlyContext context, IDescriptor descriptor) => true;
 
         public virtual IReadOnlyCollection<IParameterDescriptor> Parameters { get; }
 

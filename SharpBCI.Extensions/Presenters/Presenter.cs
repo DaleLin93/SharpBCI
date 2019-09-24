@@ -5,49 +5,49 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Data;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Presenters
 {
 
-    public enum ParameterStateType
+    public interface IPresentedParameterAccessor
     {
-        Valid, Enabled
+
+        object GetValue();
+
+        void SetValue(object value);
+
     }
 
-    public sealed class PresentedParameter
+    public interface IPresentedParameterStateHandler
     {
 
-        public delegate object ValueGetter();
+        void SetEnabled(bool value);
 
-        public delegate void ValueSetter(object value);
+        void SetValid(bool value);
 
-        public delegate bool ValueValidator(object value);
+    }
 
-        public delegate void StateUpdater(ParameterStateType stateType, bool value);
+    public interface IPresentedParameterAdapter : IPresentedParameterAccessor, IPresentedParameterStateHandler { }
 
-        public sealed class ParamDelegates
+    public sealed class PresentedParameter : IPresentedParameterAdapter
+    {
+
+        private class SimpleStateHandler : IPresentedParameterStateHandler
         {
 
-            [NotNull] public readonly ValueGetter Getter;
+            private readonly Control _control;
 
-            [NotNull] public readonly ValueSetter Setter;
+            public SimpleStateHandler(Control control) => _control = control;
 
-            [CanBeNull] public readonly ValueValidator Validator;
+            public void SetEnabled(bool value) => _control.IsEnabled = value;
 
-            [CanBeNull] public readonly StateUpdater Updater;
-
-            public ParamDelegates([NotNull] ValueGetter getter, [NotNull] ValueSetter setter, 
-                [CanBeNull] ValueValidator validator = null, [CanBeNull] StateUpdater updater = null)
-            {
-                Getter = getter ?? throw new ArgumentNullException(nameof(getter));
-                Setter = setter ?? throw new ArgumentNullException(nameof(setter));
-                Validator = validator;
-                Updater = updater;
-            }
+            public void SetValid(bool value) => _control.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
 
         }
 
@@ -55,18 +55,73 @@ namespace SharpBCI.Extensions.Presenters
 
         [NotNull] public readonly UIElement Element;
 
-        [NotNull] public readonly ParamDelegates Delegates;
+        [NotNull] private readonly IPresentedParameterAccessor _accessor;
+
+        [CanBeNull] private readonly IPresentedParameterStateHandler _stateHandler;
+
+        private bool _isEnabled = true;
+
+        private bool _isValid = true;
+
+        public PresentedParameter([NotNull] IParameterDescriptor parameterDescriptor, [NotNull] UIElement element, [NotNull] IPresentedParameterAdapter adapter) 
+            : this(parameterDescriptor, element, adapter, adapter) { }
 
         public PresentedParameter([NotNull] IParameterDescriptor parameterDescriptor, [NotNull] UIElement element,
-            [NotNull] ValueGetter getter, [NotNull] ValueSetter setter, [CanBeNull] ValueValidator validator = null, [CanBeNull] StateUpdater updater = null) 
-            : this(parameterDescriptor, element, new ParamDelegates(getter, setter, validator, updater)) { }
+            [NotNull] IPresentedParameterAccessor accessor, [CanBeNull] Control control = null) 
+            : this(parameterDescriptor, element, accessor, control == null ? null : new SimpleStateHandler(control)) { }
 
-        public PresentedParameter([NotNull] IParameterDescriptor parameterDescriptor, [NotNull] UIElement element, [NotNull] ParamDelegates delegates)
+        public PresentedParameter([NotNull] IParameterDescriptor parameterDescriptor, [NotNull] UIElement element,
+            [NotNull] IPresentedParameterAccessor accessor, [CanBeNull] IPresentedParameterStateHandler handler = null)
         {
             ParameterDescriptor = parameterDescriptor ?? throw new ArgumentNullException(nameof(parameterDescriptor));
             Element = element ?? throw new ArgumentNullException(nameof(element));
-            Delegates = delegates ?? throw new ArgumentNullException(nameof(delegates));
+            _accessor = accessor ?? throw new ArgumentNullException(nameof(accessor));
+            _stateHandler = handler;
         }
+
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set
+            {
+                if (_isEnabled == value) return;
+                _isEnabled = value;
+                _stateHandler?.SetEnabled(_isEnabled);
+            }
+        }
+
+        public bool IsValid
+        {
+            get => _isValid;
+            set
+            {
+                if (_isValid == value) return;
+                _isValid = value;
+                _stateHandler?.SetValid(_isValid);
+            }
+        }
+        
+        public object GetValue()
+        {
+            object value;
+            try
+            {
+                value = _accessor.GetValue();
+                IsValid = true;
+            }
+            catch (Exception)
+            {
+                IsValid = false;
+                throw;
+            }
+            return value;
+        }
+
+        public void SetValue(object value) => _accessor.SetValue(value);
+
+        public void SetEnabled(bool value) => IsEnabled = value;
+
+        public void SetValid(bool value) => IsValid = value;
 
     }
 
@@ -118,6 +173,7 @@ namespace SharpBCI.Extensions.Presenters
             {typeof(bool), BooleanPresenter.Instance},
             {typeof(Color), ColorPresenter.Instance},
             {typeof(System.Drawing.Color), ColorPresenter.Instance},
+            {typeof(DateTime), DateTimePresenter.Instance},
             {typeof(Uri), UriPresenter.Instance},
             {typeof(Position1D), PositionPresenter.Instance},
             {typeof(PositionH1D), PositionPresenter.Instance},
@@ -128,15 +184,14 @@ namespace SharpBCI.Extensions.Presenters
         private static readonly IList<PresenterSelector> CommonPresenterSelectors = new List<PresenterSelector>
         {
             parameter => PresenterProperty.TryGet(parameter.Metadata, out var presenter) ? presenter : null,
+            parameter => parameter.ValueType.GetCustomAttribute<PresenterAttribute>()?.Presenter,
             BoolPresenterSelector(NeedConvert, TypeConvertedPresenter.Instance),
             BoolPresenterSelector(ParameterDescriptorExt.IsSelectable, SelectablePresenter.Instance),
             BoolPresenterSelector(ParameterDescriptorExt.IsMultiValue, MultiValuePresenter.Instance),
-            parameter =>GetPresenter(parameter.ValueType)
+            parameter => GetPresenter(parameter.ValueType)
         };
 
-        public static bool NeedConvert(IParameterDescriptor param) => NeedConvert(param, out _);
-
-        public static bool NeedConvert(IParameterDescriptor param, out ITypeConverter converter) => param.TryGetPresentTypeConverter(out converter) && !(param is TypeConvertedParameter);
+        public static bool NeedConvert(IParameterDescriptor param) => TryGetPresentTypeConverter(param, out _);
 
         public static bool TryGetPresentTypeConverter(this IParameterDescriptor parameter, out ITypeConverter converter) =>
             PresentTypeConverterProperty.TryGet(parameter.Metadata, out converter) && converter != null;
@@ -154,7 +209,7 @@ namespace SharpBCI.Extensions.Presenters
         public static object ParseValueFromString(this IParameterDescriptor parameter, string strVal)
         {
             if (Equals(NullPlaceholder, strVal)) return null;
-            return NeedConvert(parameter, out var converter)
+            return TryGetPresentTypeConverter(parameter, out var converter)
                 ? converter.ConvertBackward(ParseValueFromString(converter.OutputType, strVal))
                 : ParseValueFromString(parameter.ValueType, strVal);
         }
@@ -215,7 +270,7 @@ namespace SharpBCI.Extensions.Presenters
 
         public static string ConvertValueToString(this IParameterDescriptor parameter, object val)
         {
-            if (NeedConvert(parameter, out var converter)) val = converter.ConvertForward(val);
+            if (TryGetPresentTypeConverter(parameter, out var converter)) val = converter.ConvertForward(val);
             return val == null ? NullPlaceholder : ConvertValueToString(val.GetType(), val);
         }
 
@@ -242,13 +297,10 @@ namespace SharpBCI.Extensions.Presenters
 
         internal static IPresenter GetPresenter(this Type type)
         {
-            if (type.IsNullableType(out var underlyingType))
-                type = underlyingType;
-            if (TypePresenters.TryGetValue(type, out var presenter))
-                return presenter;
-            if (typeof(IParameterizedObject).IsAssignableFrom(type))
-                return ParameterizedObjectPresenter.Instance;
-            return type.GetCustomAttribute<PresenterAttribute>()?.Presenter ?? PlainTextPresenter.Instance;
+            if (type.IsNullableType(out var underlyingType)) type = underlyingType;
+            if (TypePresenters.TryGetValue(type, out var presenter)) return presenter;
+            if (typeof(IParameterizedObject).IsAssignableFrom(type)) return ParameterizedObjectPresenter.Instance;
+            return PlainTextPresenter.Instance;
         }
 
         private static PresenterSelector BoolPresenterSelector(Predicate<IParameterDescriptor> predicate, IPresenter presenter) => parameter => predicate(parameter) ? presenter : null;

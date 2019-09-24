@@ -174,7 +174,7 @@ namespace SharpBCI.Experiments.VEP.SSVEP
                 }
             }
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => new[]
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
                 new ParameterGroup("Display", Screen),
                 new ParameterGroup("Exp. Params", Paradigm, Patterns, Baseline, TrialDuration, TrialCount, InterStimulusInterval),
@@ -187,7 +187,7 @@ namespace SharpBCI.Experiments.VEP.SSVEP
                 ComputationalSummary.FromExperiment<SsvepExperiment>("Experiment Duration", experiment => $"{experiment.StageProviders.GetStages().GetDuration().TotalSeconds} s")
             };
 
-            public override ValidationResult IsValid(IReadonlyContext context, IParameterDescriptor parameter)
+            public override ValidationResult CheckValid(IReadonlyContext context, IParameterDescriptor parameter)
             {
                 if (ReferenceEquals(Patterns, parameter))
                 {
@@ -195,7 +195,7 @@ namespace SharpBCI.Experiments.VEP.SSVEP
                     if ((int) BlockLayout.Get(context).Volume * Paradigm.Get(context).GetParadigmPatternMultiplier() > (patterns?.Length ?? 0))
                         return ValidationResult.Failed("Input number of 'Pattern' value must not less than block count * paradigm multiplier");
                 }
-                return base.IsValid(context, parameter);
+                return base.CheckValid(context, parameter);
             }
 
             public override SsvepExperiment Create(IReadonlyContext context) => new SsvepExperiment(new Configuration

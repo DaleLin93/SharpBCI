@@ -162,7 +162,7 @@ namespace SharpBCI.Experiments.Speller.MidasTouch
 
             #endregion
             
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => ScanGroups(typeof(Factory));
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => ScanGroups(typeof(Factory));
 
             public override IReadOnlyCollection<ISummary> Summaries => ScanSummaries(typeof(Factory));
 

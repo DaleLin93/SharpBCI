@@ -24,9 +24,8 @@ namespace SharpBCI.Extensions.Windows
             IReadonlyContext context = null, IParameterPresentAdapter adapter = null)
         {
             InitializeComponent();
-            ConfigurationPanel.Descriptors = descriptors.ToArray();
+            ConfigurationPanel.SetDescriptors(adapter, descriptors);
             ConfigurationPanel.Context = context ?? EmptyContext.Instance;
-            ConfigurationPanel.Adapter = adapter;
             Title = title;
         }
 

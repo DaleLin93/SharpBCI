@@ -27,13 +27,20 @@ namespace SharpBCI.Extensions
 
         bool IsNullable { get; }
 
-        object DefaultValue { get; }
+        [CanBeNull] object DefaultValue { get; }
 
-        IEnumerable SelectableValues { get; }
+        [CanBeNull] IEnumerable SelectableValues { get; }
 
-        IReadonlyContext Metadata { get; }
+        [NotNull] IReadonlyContext Metadata { get; }
 
-        bool IsValid(object value);
+        bool IsValid([CanBeNull] object value);
+
+    }
+
+    public interface IGroupDescriptor : IDescriptor
+    {
+
+        [NotNull] IReadOnlyCollection<IDescriptor> Items { get; }
 
     }
 
@@ -44,7 +51,7 @@ namespace SharpBCI.Extensions
 
     }
 
-    public sealed class ParameterGroup : IReadOnlyCollection<IDescriptor>, IDescriptor
+    public sealed class ParameterGroup : IGroupDescriptor, IReadOnlyCollection<IDescriptor>
     {
 
         public ParameterGroup([NotNull] params IDescriptor[] items) 
@@ -67,11 +74,7 @@ namespace SharpBCI.Extensions
 
         public string Description { get; }
 
-        [NotNull] public IReadOnlyCollection<IDescriptor> Items { get; }
-
-        [NotNull] public IReadOnlyCollection<IParameterDescriptor> Parameters => Items.OfType<IParameterDescriptor>().ToList();
-
-        [NotNull] public IReadOnlyCollection<ParameterGroup> Groups => Items.OfType<ParameterGroup>().ToList();
+        public IReadOnlyCollection<IDescriptor> Items { get; }
 
         public int Count => Items.Count;
 
@@ -90,24 +93,24 @@ namespace SharpBCI.Extensions
         {
             unchecked
             {
-                return ((Name != null ? Name.GetHashCode() : 0) * 397) ^ Parameters.GetHashCode();
+                return ((Name != null ? Name.GetHashCode() : 0) * 397) ^ Items.GetHashCode();
             }
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        private bool Equals(ParameterGroup other) => string.Equals(Name, other.Name) && Equals(Parameters, other.Parameters);
+        private bool Equals(IGroupDescriptor other) => string.Equals(Name, other.Name) && Equals(Items, other.Items);
 
     }
 
-    public sealed class ParameterGroupCollection : IReadOnlyCollection<ParameterGroup>, IReadOnlyCollection<IDescriptor>
+    public sealed class ParameterGroupCollection : IReadOnlyCollection<IGroupDescriptor>, IReadOnlyCollection<IDescriptor>
     {
 
-        private readonly LinkedList<ParameterGroup> _groups = new LinkedList<ParameterGroup>();
+        private readonly LinkedList<IGroupDescriptor> _groups = new LinkedList<IGroupDescriptor>();
 
         public int Count => _groups.Count;
 
-        public IEnumerator<ParameterGroup> GetEnumerator() => _groups.GetEnumerator();
+        public IEnumerator<IGroupDescriptor> GetEnumerator() => _groups.GetEnumerator();
 
         public ParameterGroupCollection Add([NotNull] params IDescriptor[] descriptors) => Add(null, descriptors);
 
@@ -159,40 +162,10 @@ namespace SharpBCI.Extensions
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (!(obj is IParameterDescriptor that)) return false;
-            var rawThis = this.GetRawParameter();
-            var rawThat = that.GetRawParameter();
+            var rawThis = this.GetOriginalParameter();
+            var rawThat = that.GetOriginalParameter();
             return Equals(rawThis, rawThat);
         }
-
-    }
-
-    public sealed class TypeConvertedParameter : RoutedParameter
-    {
-
-        public TypeConvertedParameter(IParameterDescriptor originalParameter, ITypeConverter typeConverter) : base(originalParameter) => TypeConverter = typeConverter;
-
-        public ITypeConverter TypeConverter { get; }
-
-        public override string Key => OriginalParameter.Key;
-
-        public override string Name => OriginalParameter.Name;
-
-        public override string Unit => OriginalParameter.Unit;
-
-        public override string Description => OriginalParameter.Description;
-
-        public override Type ValueType => TypeConverter.OutputType;
-
-        public override bool IsNullable => OriginalParameter.IsNullable;
-
-        public override object DefaultValue => TypeConverter.ConvertForward(OriginalParameter.DefaultValue);
-
-        public override IEnumerable SelectableValues => OriginalParameter.SelectableValues?
-            .Cast<object>().Select(value => TypeConverter.ConvertForward(value));
-
-        public override IReadonlyContext Metadata => OriginalParameter.Metadata;
-
-        public override bool IsValid(object value) => OriginalParameter.IsValid(TypeConverter.ConvertBackward(value));
 
     }
 
@@ -265,9 +238,9 @@ namespace SharpBCI.Extensions
 
             public bool Nullable = typeof(T).IsNullableType();
 
-            public T DefaultValue;
+            public Supplier<T> DefaultValueSupplier;
 
-            public IEnumerable<T> SelectableValues;
+            public Supplier<IEnumerable<T>> SelectableValuesSupplier;
 
             public Predicate<T> Validator;
 
@@ -313,16 +286,35 @@ namespace SharpBCI.Extensions
 
             public Builder SetDefaultValue(T defaultValue)
             {
-                DefaultValue = defaultValue;
+                DefaultValueSupplier = () => defaultValue;
+                return this;
+            }
+
+            public Builder SetDefaultValue(Supplier<T> defaultValueSupplier)
+            {
+                DefaultValueSupplier = defaultValueSupplier;
                 return this;
             }
 
             [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
             public Builder SetSelectableValues(IEnumerable<T> selectableValues, bool setFirstAsDefault = false)
             {
-                SelectableValues = selectableValues;
+                SelectableValuesSupplier = selectableValues == null ? (Supplier<IEnumerable<T>>)null : () => selectableValues;
+                if (setFirstAsDefault) SetDefaultValue(selectableValues == null ? default : selectableValues.FirstOrDefault());
+                return this;
+            }
+
+            [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
+            public Builder SetSelectableValues(Supplier<IEnumerable<T>> selectableValuesSupplier, bool setFirstAsDefault = false)
+            {
+                SelectableValuesSupplier = selectableValuesSupplier;
                 if (setFirstAsDefault)
-                    DefaultValue = selectableValues.First();
+                {
+                    if (selectableValuesSupplier == null)
+                        SetDefaultValue(() => default);
+                    else
+                        SetDefaultValue(() => selectableValuesSupplier().FirstOrDefault());
+                }
                 return this;
             }
 
@@ -352,9 +344,15 @@ namespace SharpBCI.Extensions
 
             public Builder SetMetadata(Action<MetadataBuilder> action)
             {
-                var metaBuilder = new MetadataBuilder(Metadata is Context context ? context : (Metadata == null ? new Context() : new Context(Metadata)));
+                var metaBuilder = new MetadataBuilder(Metadata?.CastOrConvertToSubType(roCtx => new Context(roCtx)) ?? new Context());
                 action(metaBuilder);
                 Metadata = metaBuilder.Context;
+                return this;
+            }
+
+            public Builder Config(Action<Builder> action)
+            {
+                action(this);
                 return this;
             }
 
@@ -372,14 +370,7 @@ namespace SharpBCI.Extensions
             : this(ParameterUtils.GenerateKey(name), name, unit, description, defaultValue, selectableValues) { }
 
         public Parameter(string key, string name, string unit, string description, T defaultValue = default, IEnumerable<T> selectableValues = null)
-        {
-            Key = key;
-            Name = name;
-            Unit = unit;
-            Description = description;
-            DefaultValue = defaultValue;
-            SelectableValues = selectableValues;
-        }
+            : this(CreateBuilderWithKey(key, name, defaultValue).SetUnit(unit).SetDescription(description).SetSelectableValues(selectableValues, false)) { }
 
         public Parameter(string name, Predicate<T> validator, T defaultValue = default)
             : this(ParameterUtils.GenerateKey(name), name, null, null, validator, defaultValue) { }
@@ -388,25 +379,17 @@ namespace SharpBCI.Extensions
             : this(ParameterUtils.GenerateKey(name), name, unit, description, validator, defaultValue) { }
 
         public Parameter(string key, string name, string unit, string description, Predicate<T> validator, T defaultValue = default)
-        {
-            Key = key;
-            Name = name;
-            Unit = unit;
-            Description = description;
-            IsNullable = defaultValue == null;
-            DefaultValue = defaultValue;
-            Validator = validator;
-        }
+            : this(CreateBuilderWithKey(key, name, defaultValue).SetUnit(unit).SetDescription(description).SetValidator(validator)) { }
 
         private Parameter(Builder builder)
         {
-            Key = builder.Key;
+            Key = builder.Key ?? throw new ArgumentNullException(nameof(builder.Key));
             Name = builder.Name;
             Unit = builder.Unit;
             Description = builder.Description;
             IsNullable = builder.Nullable;
-            DefaultValue = builder.DefaultValue;
-            SelectableValues = builder.SelectableValues;
+            DefaultValueSupplier = builder.DefaultValueSupplier;
+            SelectableValuesSupplier = builder.SelectableValuesSupplier;
             Validator = builder.Validator;
             Metadata = builder.Metadata ?? EmptyContext.Instance;
         }
@@ -443,17 +426,21 @@ namespace SharpBCI.Extensions
 
         public string Description { get; }
 
-        public bool IsNullable { get; } = typeof(T).IsNullableType();
+        public bool IsNullable { get; }
 
         public override bool HasDefaultValue => true;
 
-        public override T DefaultValue { get; }
+        public override T DefaultValue => DefaultValueSupplier();
 
-        public IEnumerable<T> SelectableValues { get; }
+        public IEnumerable<T> SelectableValues => SelectableValuesSupplier?.Invoke();
 
         public Predicate<T> Validator { get; }
 
-        public IReadonlyContext Metadata { get; } = EmptyContext.Instance;
+        public IReadonlyContext Metadata { get; }
+
+        [NotNull] private Supplier<T> DefaultValueSupplier { get; }
+
+        [CanBeNull] private Supplier<IEnumerable<T>> SelectableValuesSupplier { get; }
 
         public bool IsValid(object val)
         {
@@ -462,7 +449,7 @@ namespace SharpBCI.Extensions
             return false;
         }
 
-        public TV Get<TV>(IReadonlyContext context, Func<T, TV> mappingFunc) => mappingFunc(Get(context));
+        public TOut Get<TOut>(IReadonlyContext context, Func<T, TOut> mappingFunc) => mappingFunc(Get(context));
 
         public override string ToString() => Key;
 
@@ -475,11 +462,21 @@ namespace SharpBCI.Extensions
     public static class ParameterDescriptorExt
     {
 
-        public static IParameterDescriptor GetRawParameter(this IParameterDescriptor parameter)
+        public static IParameterDescriptor GetOriginalParameter(this IParameterDescriptor parameter, bool recursively = true)
         {
             var param = parameter;
-            while (param is IRoutedParameter routedParameter) param = routedParameter.OriginalParameter;
+            while (param is IRoutedParameter routedParameter)
+            {
+                param = routedParameter.OriginalParameter;
+                if (!recursively) return param;
+            }
             return param;
+        }
+
+        public static object IsValidOrThrow(this IParameterDescriptor parameter, object value)
+        {
+            if(!parameter.IsValid(value)) throw new ArgumentException();
+            return value;
         }
 
         public static bool IsSelectable(this IParameterDescriptor parameter) => parameter.SelectableValues != null;
@@ -491,6 +488,10 @@ namespace SharpBCI.Extensions
     public static class ParameterGroupExt
     {
 
+        public static IReadOnlyCollection<IParameterDescriptor> GetParameters(this IGroupDescriptor group) => group.Items.OfType<IParameterDescriptor>().ToList();
+
+        public static IReadOnlyCollection<IGroupDescriptor> GetGroups(this IGroupDescriptor group) => group.Items.OfType<IGroupDescriptor>().ToList();
+
         public static IEnumerable<IParameterDescriptor> GetAllParameters(this IEnumerable<IDescriptor> descriptors) => descriptors.SelectMany(GetAllParameters);
 
         public static IEnumerable<IParameterDescriptor> GetAllParameters(this IDescriptor descriptor)
@@ -500,9 +501,9 @@ namespace SharpBCI.Extensions
                 case IParameterDescriptor parameter:
                     yield return parameter;
                     break;
-                case ParameterGroup group:
+                case IGroupDescriptor group:
                 {
-                    foreach (var child in @group.Items)
+                    foreach (var child in group.Items)
                     foreach (var p in GetAllParameters(child))
                         yield return p;
                     break;
@@ -510,15 +511,15 @@ namespace SharpBCI.Extensions
             }
         }
 
-        public static IEnumerable<ParameterGroup> GetAllGroups(this IEnumerable<IDescriptor> descriptors) =>
+        public static IEnumerable<IGroupDescriptor> GetAllGroups(this IEnumerable<IDescriptor> descriptors) =>
             descriptors.SelectMany(descriptor => GetAllGroups(descriptor, true));
 
-        public static IEnumerable<ParameterGroup> GetAllGroups(this IDescriptor descriptor, bool includeSelf = true)
+        public static IEnumerable<IGroupDescriptor> GetAllGroups(this IDescriptor descriptor, bool includeSelf = true)
         {
-            if (descriptor is ParameterGroup group)
+            if (descriptor is IGroupDescriptor group)
             {
                 if (includeSelf) yield return group;
-                foreach (var child in group.Groups)
+                foreach (var child in GetGroups(group))
                 foreach (var childGroup in GetAllGroups(child, false))
                     yield return childGroup;
             }
@@ -529,7 +530,7 @@ namespace SharpBCI.Extensions
     public static class ParameterBuilderExt
     {
 
-        public static Parameter<T>.Builder SetSelectableValuesForEnum<T>(this Parameter<T>.Builder builder, bool setFirstAsDefault = false) where T : Enum
+        public static Parameter<T>.Builder SetSelectablesForEnum<T>(this Parameter<T>.Builder builder, bool setFirstAsDefault = false) where T : Enum
         {
             var values = EnumUtils.GetEnumValues<T>();
             if (values.Length == 0)
@@ -547,7 +548,7 @@ namespace SharpBCI.Extensions
             var chars = paramName
                 .Filter(c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
                 .ToArray();
-            if (chars.IsEmpty()) throw new ArgumentException($"Generated parameter key is empty for parameter name: '{paramName}'");
+            if (chars.IsEmpty()) throw new ArgumentException($"The generated key of parameter is empty for name: '{paramName}'");
             chars[0] = char.ToLower(chars[0]);
             return new string(chars);
         }

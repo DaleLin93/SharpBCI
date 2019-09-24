@@ -96,7 +96,7 @@
                 </Grid.ColumnDefinitions>
                 <Rectangle Grid.Column="0" Fill="Coral"/>
                 <Rectangle Grid.Column="1" Fill="Pink" Stroke="Coral" StrokeThickness="1"/>
-                <TextBox x:Name="ErrorMsgTextBox" Grid.Column="1" Margin="5" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" FontSize="13" Foreground="Red"
+                <TextBox x:Name="ErrorMsgTextBox" Grid.Column="1" Margin="5" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" FontSize="11" Foreground="Red"
                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True" UndoLimit="0" Text="" />
             </Grid>
 

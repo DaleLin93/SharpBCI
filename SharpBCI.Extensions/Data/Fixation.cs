@@ -3,6 +3,7 @@ using System.Windows;
 using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Extensions.Presenters;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Data
 {
@@ -16,7 +17,7 @@ namespace SharpBCI.Extensions.Data
 
             private static readonly Parameter<uint> Size = Parameter<uint>.CreateBuilder("Size")
                 .SetUnit("dp").SetDescription("0 - hidden").SetDefaultValue(5)
-                .SetMetadata(ParameterizedObjectPresenter.ColumnWidthProperty, new GridLength(1, GridUnitType.Star))
+                .SetMetadata(ParameterizedObjectPresenter.ColumnWidthProperty, ViewConstants.Star1GridLength)
                 .Build();
 
             private static readonly Parameter<Color> Color = Parameter<Color>.CreateBuilder("Color")

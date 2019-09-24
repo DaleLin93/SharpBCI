@@ -17,8 +17,6 @@ namespace SharpBCI.Windows
     internal partial class ResultWindow
     {
 
-        private static readonly Action EmptyDelegate = delegate () { };
-
         private readonly LinkedList<Result.Item> _allDisplayItems = new LinkedList<Result.Item>();
 
         private readonly Session _session;

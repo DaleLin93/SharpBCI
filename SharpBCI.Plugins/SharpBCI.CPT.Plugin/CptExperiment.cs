@@ -180,7 +180,7 @@ namespace SharpBCI.Experiments.CPT
 
             private static readonly Parameter<Color> FontColor = new Parameter<Color>("Font Color", Color.Red);
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => new[]
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
                 new ParameterGroup("Exp. Params", Still, PseudoRandom, TargetRate, LetterDuration, InterStimulusInterval, ExperimentDuration),
                 new ParameterGroup("UI Window", BackgroundColor),

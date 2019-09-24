@@ -10,6 +10,7 @@ using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using MarukoLib.Logging;
 using SharpBCI.Core.Experiment;
+using SharpBCI.Extensions;
 using SharpBCI.Plugins;
 
 namespace SharpBCI
@@ -166,7 +167,7 @@ namespace SharpBCI
             {
                 var context = exp.DeserializeParams(experimentPart.Params.Params);
                 foreach (var group in exp.Factory.ParameterGroups)
-                foreach (var parameter in @group.Parameters)
+                foreach (var parameter in group.GetParameters())
                     ((IDictionary<string, object>)expandoContext)[parameter.Key] = context.TryGet(parameter, out var val) ? val : parameter.DefaultValue;
             }
             var stringBuilder = new StringBuilder();

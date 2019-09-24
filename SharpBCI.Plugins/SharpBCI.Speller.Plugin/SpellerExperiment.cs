@@ -15,6 +15,7 @@ using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Experiments;
 using SharpBCI.Extensions.Patterns;
+using SharpBCI.Extensions.Presenters;
 using SharpBCI.Extensions.StageProviders;
 
 namespace SharpBCI.Experiments.Speller
@@ -312,7 +313,7 @@ namespace SharpBCI.Experiments.Speller
                 .Build();
 
             private static readonly Parameter<SpellerParadigm> Paradigm = Parameter<SpellerParadigm>.CreateBuilder("Paradigm")
-                .SetSelectableValuesForEnum(true)
+                .SetSelectablesForEnum(true)
                 .SetTypeConverters(SpellerParadigmExt.TypeConverter)
                 .Build();
 
@@ -362,6 +363,29 @@ namespace SharpBCI.Experiments.Speller
                 .Build();
 
             private static readonly Parameter<SubBandMixingParams> SubBandMixingParams = new Parameter<SubBandMixingParams>("Sub-Band Mixing Params", new SubBandMixingParams(1.25F, 0.25));
+
+            private static readonly Parameter<SubBandMixingParams[]> SubBandMixingParams2 = Parameter<SubBandMixingParams[]>.CreateBuilder("Sub-Band Mixing Params2")
+                .SetDefaultValue(new[] { new SubBandMixingParams(1.25F, 5) })
+                .SetMetadata(MultiValuePresenter.FixedElementCountProperty, 2)
+                .Build();
+
+            private static readonly Parameter<SubBandMixingParams[]> SubBandMixingParams3 = Parameter<SubBandMixingParams[]>.CreateBuilder("Sub-Band Mixing Params3")
+                .SetDefaultValue(new[] { new SubBandMixingParams(1.25F, 5), new SubBandMixingParams(1.25F, 22) })
+                .Build();
+
+            private static readonly Parameter<DateTime> DATE0 = Parameter<DateTime>.CreateBuilder("Sub-DATE0").Build();
+            private static readonly Parameter<DateTime?> DATE1 = Parameter<DateTime?>.CreateBuilder("Sub-DATE1").Build();
+            private static readonly Parameter<Optional<DateTime>> DATE2 = Parameter<Optional<DateTime>>.CreateBuilder("Sub-DATE2").Build();
+            private static readonly Parameter<double> NUM = Parameter<double>.CreateBuilder("NUM")
+                .SetMetadata(Presenters.PresenterProperty, SliderNumberPresenter.Instance)
+                .SetMetadata(SliderNumberPresenter.MinimumValueProperty, 10)
+                .SetMetadata(SliderNumberPresenter.MaximumValueProperty, 100)
+                .Build();
+            private static readonly Parameter<Interval> Interval = Parameter<Interval>.CreateBuilder("Interval")
+                .SetMetadata(Presenters.PresenterProperty, IntervalPresenter.Instance)
+                .SetMetadata(SliderNumberPresenter.MinimumValueProperty, 10)
+                .SetMetadata(SliderNumberPresenter.MaximumValueProperty, 100)
+                .Build();
 
             private static readonly Parameter<uint> HarmonicsCount = new Parameter<uint>("Harmonics Count", null, null, Predicates.Positive, 1);
 
@@ -490,7 +514,7 @@ namespace SharpBCI.Experiments.Speller
                 return new CompositeTemporalPattern<SinusoidalPattern>(expression.Split(',').Select(SinusoidalPattern.Parse).ToArray());
             }
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => ScanGroups(typeof(Factory));
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => ScanGroups(typeof(Factory));
 
             public override IReadOnlyCollection<ISummary> Summaries => ScanSummaries(typeof(Factory));
 
@@ -518,7 +542,7 @@ namespace SharpBCI.Experiments.Speller
                 return true;
             }
 
-            public override ValidationResult IsValid(IReadonlyContext context, IParameterDescriptor parameter)
+            public override ValidationResult CheckValid(IReadonlyContext context, IParameterDescriptor parameter)
             {
                 if (ReferenceEquals(Baseline, parameter))
                 {
@@ -533,7 +557,7 @@ namespace SharpBCI.Experiments.Speller
                     if (ParseMultiple(StimulationPatterns.Get(context)).Length < activationCount)
                         return ValidationResult.Failed($"'available frequencies' must contains unless {activationCount} elements");
                 }
-                return base.IsValid(context, parameter);
+                return base.CheckValid(context, parameter);
             }
 
             public override SpellerExperiment Create(IReadonlyContext context)

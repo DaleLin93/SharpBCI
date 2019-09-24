@@ -29,7 +29,7 @@ namespace SharpBCI.Extensions.Streamers
 
         public readonly IVideoSource VideoSource;
 
-        public VideoFrameStreamer(IVideoSource videoSource, IClock clock) : base(nameof(GazePointStreamer), clock)
+        public VideoFrameStreamer(IVideoSource videoSource, IClock clock) : base(nameof(VideoFrameStreamer), clock)
         {
             VideoSource = videoSource;
             Started += (sender, e) => videoSource.Open();

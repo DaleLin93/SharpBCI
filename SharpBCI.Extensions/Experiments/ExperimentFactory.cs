@@ -47,7 +47,7 @@ namespace SharpBCI.Extensions.Experiments
         /// <summary>
         /// The definitions of parameters used to create the experiment.
         /// </summary>
-        IReadOnlyCollection<ParameterGroup> ParameterGroups { get; }
+        IReadOnlyCollection<IGroupDescriptor> ParameterGroups { get; }
 
         /// <summary>
         /// The summaries used to peek the information of experiment while creating.
@@ -60,7 +60,7 @@ namespace SharpBCI.Extensions.Experiments
         /// <param name="context"></param>
         /// <param name="parameter"></param>
         /// <returns></returns>
-        ValidationResult IsValid(IReadonlyContext context, IParameterDescriptor parameter);
+        ValidationResult CheckValid(IReadonlyContext context, IParameterDescriptor parameter);
 
         /// <summary>
         /// Create experiment instance.
@@ -74,10 +74,10 @@ namespace SharpBCI.Extensions.Experiments
     public abstract class ExperimentFactory<T> : IExperimentFactory, IParameterPresentAdapter, ISummaryPresentAdapter where T : IExperiment
     {
 
-        public static IReadOnlyCollection<ParameterGroup> ScanGroups(Type type, bool findUngroupedParameters = true, bool recursively = true)
+        public static IReadOnlyCollection<IGroupDescriptor> ScanGroups(Type type, bool findUngroupedParameters = true, bool recursively = true)
         {
-            var groups = type.ReadFields<ParameterGroup>(null, recursively);
-            var rootGroups = new LinkedList<ParameterGroup>(groups);
+            var groups = type.ReadFields<IGroupDescriptor>(null, recursively);
+            var rootGroups = new LinkedList<IGroupDescriptor>(groups);
             foreach (var group in groups)
                 foreach (var parameterGroup in group.GetAllGroups(false))
                     rootGroups.Remove(parameterGroup);
@@ -89,7 +89,7 @@ namespace SharpBCI.Extensions.Experiments
             foreach (var parameter in rootGroups.GetAllParameters())
                 unusedParameters.Remove(parameter);
             if (unusedParameters.Any())
-                return new List<ParameterGroup>(rootGroups) { new ParameterGroup(null, null, unusedParameters) };
+                return new List<IGroupDescriptor>(rootGroups) { new ParameterGroup(null, null, unusedParameters) };
             return rootGroups;
         }
 
@@ -97,13 +97,13 @@ namespace SharpBCI.Extensions.Experiments
 
         public Type ExperimentType => typeof(T);
 
-        public virtual IReadOnlyCollection<ParameterGroup> ParameterGroups => EmptyArray<ParameterGroup>.Instance;
+        public virtual IReadOnlyCollection<IGroupDescriptor> ParameterGroups => EmptyArray<IGroupDescriptor>.Instance;
 
         public virtual IReadOnlyCollection<ISummary> Summaries => EmptyArray<ISummary>.Instance;
 
         public virtual bool CanReset(IParameterDescriptor parameter) => true;
 
-        public virtual bool CanCollapse(ParameterGroup group) => true;
+        public virtual bool CanCollapse(IGroupDescriptor group, int depth) => true;
 
         public virtual bool IsVisible(IReadonlyContext context, IDescriptor descriptor) => true;
 
@@ -111,7 +111,7 @@ namespace SharpBCI.Extensions.Experiments
 
         public virtual bool IsEnabled(IReadonlyContext context, IParameterDescriptor parameter) => true;
 
-        public virtual ValidationResult IsValid(IReadonlyContext context, IParameterDescriptor parameter) => ValidationResult.Ok;
+        public virtual ValidationResult CheckValid(IReadonlyContext context, IParameterDescriptor parameter) => ValidationResult.Ok;
 
         public abstract T Create(IReadonlyContext context);
 

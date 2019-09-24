@@ -100,7 +100,7 @@ namespace SharpBCI.Experiments.WebBrowser
 
             private static readonly Parameter<ushort> ListeningPort = new Parameter<ushort>("Listening Port", description: null, defaultValue: 12315);
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => new ParameterGroupCollection()
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new ParameterGroupCollection()
                 .Add("System", DebugInformation, ListeningPort, Channels)
                 .Add("User", HomePage, WebRootDir, DwellSelectionDelay, ConfirmationDelay, CursorMovementTolerance, TrialDuration, TrialCancellable, StimulationSize);
 

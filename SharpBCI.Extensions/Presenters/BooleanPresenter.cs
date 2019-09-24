@@ -9,6 +9,25 @@ namespace SharpBCI.Extensions.Presenters
     public class BooleanPresenter : IPresenter
     {
 
+        private class Accessor : IPresentedParameterAccessor
+        {
+
+            private readonly IParameterDescriptor _parameter;
+
+            private readonly CheckBox _checkBox;
+
+            public Accessor(IParameterDescriptor parameter, CheckBox checkBox)
+            {
+                _parameter = parameter;
+                _checkBox = checkBox;
+            }
+
+            public object GetValue() => _parameter.IsValidOrThrow(_checkBox.IsChecked ?? false);
+
+            public void SetValue(object value) => _checkBox.IsChecked = (bool?)value ?? false;
+
+        }
+
         public static readonly NamedProperty<string> CheckboxTextProperty = new NamedProperty<string>("CheckBoxText");
 
         public static readonly BooleanPresenter Instance = new BooleanPresenter();
@@ -25,18 +44,7 @@ namespace SharpBCI.Extensions.Presenters
             if (CheckboxTextProperty.TryGet(param.Metadata, out var checkboxText)) checkBox.Content = checkboxText;
             checkBox.Checked += StateChangeHandler;
             checkBox.Unchecked += StateChangeHandler;
-            void Setter(object val) => checkBox.IsChecked = (bool?)val ?? false;
-            object Getter() => checkBox.IsChecked ?? false;
-            void Updater(ParameterStateType state, bool value)
-            {
-                switch (state)
-                {
-                    case ParameterStateType.Enabled:
-                        checkBox.IsEnabled = value;
-                        break;
-                }
-            }
-            return new PresentedParameter(param, checkBox, new PresentedParameter.ParamDelegates(Getter, Setter, param.IsValid, Updater));
+            return new PresentedParameter(param, checkBox, new Accessor(param, checkBox), checkBox);
         }
 
     }

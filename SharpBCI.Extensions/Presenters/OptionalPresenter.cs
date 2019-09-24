@@ -1,7 +1,10 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using MarukoLib.Lang;
+using SharpBCI.Extensions.Data;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Presenters
 {
@@ -9,16 +12,75 @@ namespace SharpBCI.Extensions.Presenters
     public class OptionalPresenter : IPresenter
     {
 
+        private class Adapter : IPresentedParameterAdapter
+        {
+
+            private readonly IParameterDescriptor _parameter;
+
+            private readonly Grid _container;
+
+            private readonly CheckBox _checkBox;
+
+            private readonly PresentedParameter _presented;
+
+            private readonly ConstructorInfo _constructor;
+
+            private readonly PropertyInfo _hasProperty, _valueProperty;
+
+            public Adapter(IParameterDescriptor parameter, Type valueType, Grid container, CheckBox checkBox, PresentedParameter presented)
+            {
+                _parameter = parameter;
+                _container = container;
+                _checkBox = checkBox;
+                _presented = presented;
+                _constructor = _parameter.ValueType.GetConstructor(new [] {typeof(bool), valueType});
+                _hasProperty = _parameter.ValueType.GetProperty("Has");
+                _valueProperty = _parameter.ValueType.GetProperty("Value");
+            }
+
+            public object GetValue() => _parameter.IsValidOrThrow(_constructor.Invoke(new[] { _checkBox.IsChecked ?? false, _presented.GetValue() }));
+
+            public void SetValue(object value)
+            {
+                if (_parameter.ValueType.IsInstanceOfType(value))
+                {
+                    _checkBox.IsChecked = _hasProperty.GetValue(value) as bool?;
+                    _presented.SetValue(_valueProperty.GetValue(value));
+                }
+            }
+
+            public void SetEnabled(bool value) => _container.IsEnabled = value;
+
+            public void SetValid(bool value) { }
+
+        }
+
         public static readonly OptionalPresenter Instance = new OptionalPresenter();
 
-        [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
         public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
+            var valueType = param.ValueType.GetGenericType(typeof(Optional<>));
+            var presented = valueType.GetPresenter().Present(new MultiValuePresenter.ArrayElementParameter(param, valueType, EmptyContext.Instance), updateCallback);
+
             var container = new Grid();
-            var checkbox = new CheckBox();
+            container.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
+            container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength});
+            container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
+            var checkbox = new CheckBox {IsChecked = true, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center};
+
+            void IsCheckedChangedEventHandler(object sender, RoutedEventArgs e)
+            {
+                presented.Element.IsEnabled = ((CheckBox) sender).IsChecked ?? false;
+                updateCallback();
+            }
+            checkbox.Checked += IsCheckedChangedEventHandler;
+            checkbox.Unchecked += IsCheckedChangedEventHandler;
+
             container.Children.Add(checkbox);
-            // TODO
-            return null;
+            Grid.SetColumn(checkbox, 0);
+            container.Children.Add(presented.Element);
+            Grid.SetColumn(presented.Element, 2);
+            return new PresentedParameter(param, container, new Adapter(param, valueType, container, checkbox, presented));
         }
 
     }

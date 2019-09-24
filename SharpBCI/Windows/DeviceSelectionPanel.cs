@@ -50,10 +50,6 @@ namespace SharpBCI.Windows
 
             private static readonly Uri PreviewImageUri = new Uri("pack://application:,,,/Resources/preview.png", UriKind.Absolute);
 
-            private static readonly GridLength Star1GridLength = new GridLength(1, GridUnitType.Star);
-
-            private static readonly GridLength MinorSpacingGridLength = new GridLength(ViewConstants.MinorSpacing, GridUnitType.Pixel);
-
             public DeviceType DeviceType;
 
             public readonly ComboBox DeviceComboBox;
@@ -93,14 +89,14 @@ namespace SharpBCI.Windows
             public Grid CreateContainer(bool addPreviewButton)
             {
                 var container = new Grid();
-                container.ColumnDefinitions.Add(new ColumnDefinition {Width = Star1GridLength});
-                container.ColumnDefinitions.Add(new ColumnDefinition {Width = MinorSpacingGridLength});
+                container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
+                container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength });
                 container.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
                 container.Children.Add(DeviceComboBox);
                 container.Children.Add(ConfigButton);
                 if (addPreviewButton)
                 {
-                    container.ColumnDefinitions.Add(new ColumnDefinition {Width = MinorSpacingGridLength});
+                    container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength });
                     container.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
                     container.Children.Add(PreviewButton);
                 }
@@ -202,7 +198,8 @@ namespace SharpBCI.Windows
             }
         }
 
-        public bool FindAndSelectDevice(DeviceType type, string itemStr, int? defaultIndex = null) => _deviceControlGroups[type].DeviceComboBox.FindAndSelect(itemStr, defaultIndex);
+        public bool FindAndSelectDevice(DeviceType type, string itemStr, int? defaultIndex = null) =>
+            _deviceControlGroups[type].DeviceComboBox.FindAndSelect(itemStr, defaultIndex);
 
         public void UpdateDevices()
         {
@@ -225,7 +222,7 @@ namespace SharpBCI.Windows
             Children.Clear();
             Children.Add(ViewHelper.CreateGroupHeader(DisplayHeader ? "Devices" : null, "Device Configuration"));
             foreach (var deviceType in DeviceTypes)
-                this.AddRow(deviceType.DisplayName, _deviceControlGroups[deviceType].CreateContainer(IsPreviewButtonVisible), DeviceRowHeight);
+                this.AddRow(deviceType.DisplayName, _deviceControlGroups[deviceType].CreateContainer(IsPreviewButtonVisible));
         }
 
         private void DeviceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

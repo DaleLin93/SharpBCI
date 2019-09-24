@@ -14,51 +14,54 @@ namespace SharpBCI.Extensions.Windows
     public class ParameterPanel : StackPanel
     {
 
+        private struct GroupMeta
+        {
+
+            internal readonly GroupViewModel Group;
+
+            internal readonly StackPanel Container;
+
+            internal readonly IEnumerator<IDescriptor> Items;
+
+            public GroupMeta(GroupViewModel group, StackPanel container, IEnumerator<IDescriptor> items)
+            {
+                Group = group;
+                Container = container;
+                Items = items;
+            }
+
+        }
+
         public event EventHandler<LayoutChangedEventArgs> LayoutChanged;
 
         public event EventHandler<ContextChangedEventArgs> ContextChanged;
 
         private readonly ReferenceCounter _updateLock = new ReferenceCounter();
 
-        private readonly IDictionary<ParameterGroup, ParamGroupHolder> _paramGroupHolders =
-            new Dictionary<ParameterGroup, ParamGroupHolder>();
+        private readonly IDictionary<IGroupDescriptor, GroupViewModel> _groupViewModels =
+            new Dictionary<IGroupDescriptor, GroupViewModel>();
 
-        private readonly IDictionary<IParameterDescriptor, ParamHolder> _paramHolders =
-            new Dictionary<IParameterDescriptor, ParamHolder>();
+        private readonly IDictionary<IParameterDescriptor, ParamViewModel> _paramViewModels =
+            new Dictionary<IParameterDescriptor, ParamViewModel>();
 
         private Context _context = new Context(64);
 
-        private IDescriptor[] _descriptors;
+        public ParameterPanel() => VirtualizingPanel.SetVirtualizationMode(this, VirtualizationMode.Recycling);
 
-        private bool _initialized = false;
+        [CanBeNull] public GroupViewModel this[IGroupDescriptor group] => _groupViewModels.TryGetValue(group, out var viewModel) ? viewModel : null;
 
-        public ParameterPanel()
-        {
-            Loaded += (sender, args) =>
-            {
-                if (!_initialized) 
-                    InitializeConfigurationPanel();
-            };
-        }
+        [CanBeNull] public ParamViewModel this[IParameterDescriptor parameter] => _paramViewModels.TryGetValue(parameter, out var viewModel) ? viewModel : null;
 
-        [CanBeNull] public IParameterPresentAdapter Adapter { get; set; }
+        [CanBeNull] public IParameterPresentAdapter Adapter { get; private set; }
 
-        [CanBeNull] public IDescriptor[] Descriptors
-        {
-            get => _descriptors;
-            set
-            {
-                _descriptors = value;
-                InitializeConfigurationPanel();
-            }
-        }
+        [CanBeNull] public IReadOnlyCollection<IDescriptor> Descriptors { get; private set; }
 
         [NotNull] public IReadonlyContext Context
         {
             get
             {
                 var context = new Context();
-                foreach (var entry in _paramHolders)
+                foreach (var entry in _paramViewModels)
                     context[entry.Key] = _context.TryGet(entry.Key, out var val) 
                         ? val : entry.Value.ParameterDescriptor.DefaultValue;
                 return context;
@@ -66,9 +69,9 @@ namespace SharpBCI.Extensions.Windows
             set
             {
                 var context = new Context(value);
-                if (_paramHolders.Any())
+                if (_paramViewModels.Any())
                     using (_updateLock.Ref())
-                        foreach (var entry in _paramHolders)
+                        foreach (var entry in _paramViewModels)
                         {
                             if (context.TryGet(entry.Key, out var val))
                             {
@@ -77,62 +80,64 @@ namespace SharpBCI.Extensions.Windows
                             }
                             else
                                 val = entry.Value.ParameterDescriptor.DefaultValue;
-                            entry.Value.Delegates.Setter(val);
+                            entry.Value.PresentedParameter.SetValue(val);
                         }
                 _context = context;
                 OnParamsUpdated();
             }
         }
 
-        public void SetParamState(IParameterDescriptor parameter, ParameterStateType stateType, bool value) =>
-            _paramHolders[parameter].Delegates.Updater?.Invoke(stateType, value);
+        public void SetDescriptors(IParameterPresentAdapter adapter, IEnumerable<IDescriptor> descriptors)
+        {
+            Adapter = adapter;
+            Descriptors = descriptors.ToArray();
+            InitializeConfigurationPanel();
+        }
 
         public void Refresh()
         {
             if (_updateLock.IsReferred) return;
             var context = new Context();
-            foreach (var entry in _paramHolders)
-                try { context[entry.Key] = entry.Value.Delegates.Getter(); }
-                catch (Exception) { SetParamState(entry.Key, ParameterStateType.Valid, false); }
+            foreach (var entry in _paramViewModels)
+                try { context[entry.Key] = entry.Value.PresentedParameter.GetValue(); }
+                catch (Exception) { _paramViewModels[entry.Key].PresentedParameter.SetValid(false); }
             _context = context;
             OnParamsUpdated();
         }
 
         public void ResetToDefault() => Context = EmptyContext.Instance;
 
-        public IEnumerable<IParameterDescriptor> GetInvalidParams() => from holder in _paramHolders.Values where !holder.CheckValid() select holder.ParameterDescriptor;
+        public IEnumerable<IParameterDescriptor> GetInvalidParams() => 
+            from pvm in _paramViewModels.Values
+            where !pvm.PresentedParameter.IsValid
+            select pvm.ParameterDescriptor;
 
         private void InitializeConfigurationPanel()
         {
-            var window = Window.GetWindow(this);
-
-            if (window == null) return;
-
             Children.Clear();
-            _paramGroupHolders.Clear();
-            _paramHolders.Clear();
+            _groupViewModels.Clear();
+            _paramViewModels.Clear();
 
-            var stack = new Stack<Tuple<ParamGroupHolder, StackPanel, IEnumerator<IDescriptor>>>();
-            stack.Push(new Tuple<ParamGroupHolder, StackPanel, IEnumerator<IDescriptor>>(null, this,
-                ((IEnumerable<IDescriptor>)Descriptors ?? EmptyArray<IDescriptor>.Instance).GetEnumerator()));
+            var stack = new Stack<GroupMeta>();
+            stack.Push(new GroupMeta(null, this, (Descriptors ?? EmptyArray<IDescriptor>.Instance).GetEnumerator()));
             do
             {
-                var tuple = stack.Peek();
-                if (!tuple.Item3.MoveNext())
+                var groupMeta = stack.Peek();
+                if (!groupMeta.Items.MoveNext())
                 {
                     stack.Pop();
                     continue;
                 }
-                var currentItem = tuple.Item3.Current;
+                var currentItem = groupMeta.Items.Current;
                 switch (currentItem)
                 {
                     case null:
                         continue;
                     case IParameterDescriptor paramItem:
-                        if (_paramHolders.ContainsKey(paramItem)) throw new UserException($"Parameter duplicated: {paramItem.Key}");
+                        if (_paramViewModels.ContainsKey(paramItem)) throw new UserException($"Parameter duplicated: {paramItem.Key}");
                         var presentedParameter = paramItem.GetPresenter().Present(paramItem, () => OnParamChanged(paramItem));
                         using (_updateLock.Ref()) // SetValue Default Value;
-                            try { presentedParameter.Delegates.Setter(Context.TryGet(paramItem, out var val) ? val : paramItem.DefaultValue); } 
+                            try { presentedParameter.SetValue(Context.TryGet(paramItem, out var val) ? val : paramItem.DefaultValue); } 
                             catch (Exception e) { throw new ProgrammingException($"Invalid default value: parameter {paramItem.Key}", e); }
                         var canReset = Adapter?.CanReset(paramItem) ?? false;
                         var nameTextBlock = ViewHelper.CreateParamNameTextBlock(paramItem, canReset);
@@ -142,35 +147,35 @@ namespace SharpBCI.Extensions.Windows
                                 if (e.ClickCount != 2) return;
                                 if (MessageBox.Show($"Set param '{paramItem.Name}' to default?", "Set to default", MessageBoxButton.YesNo,
                                         MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes)
-                                    presentedParameter.Delegates.Setter(paramItem.DefaultValue);
+                                    presentedParameter.SetValue(paramItem.DefaultValue);
                                 OnParamChanged(paramItem);
                             };
-                        var rowContainer = tuple.Item2.AddRow(nameTextBlock, presentedParameter.Element);
-                        _paramHolders[paramItem] = new ParamHolder(tuple.Item1, rowContainer, nameTextBlock, presentedParameter);
+                        var rowGrid = groupMeta.Container.AddRow(nameTextBlock, presentedParameter.Element);
+                        _paramViewModels[paramItem] = new ParamViewModel(groupMeta.Group, rowGrid, nameTextBlock, presentedParameter);
                         break;
-                    case ParameterGroup groupItem:
-                        if (_paramGroupHolders.ContainsKey(groupItem)) throw new UserException($"Invalid experiment, parameter group duplicated: {groupItem.Name}");
+                    case IGroupDescriptor groupItem:
+                        if (_groupViewModels.ContainsKey(groupItem)) throw new UserException($"Invalid experiment, parameter group duplicated: {groupItem.Name}");
                         var depth = stack.Count - 1;
-                        var canCollapse = Adapter?.CanCollapse(groupItem) ?? false;
-                        var groupHolder = ViewHelper.CreateGroupHolder(groupItem, depth, canCollapse);
-                        tuple.Item2.Children.Add(groupHolder.GroupPanel);
-                        stack.Push(new Tuple<ParamGroupHolder, StackPanel, IEnumerator<IDescriptor>>(groupHolder, groupHolder.ItemsPanel, groupHolder.ParameterGroup.Items.GetEnumerator()));
-                        _paramGroupHolders[groupItem] = groupHolder;
+                        var canCollapse = Adapter?.CanCollapse(groupItem, depth) ?? false;
+                        var groupViewModel = ViewHelper.CreateGroupViewModel(groupItem, depth, canCollapse);
+                        groupMeta.Container.Children.Add(groupViewModel.GroupPanel);
+                        stack.Push(new GroupMeta(groupViewModel, groupViewModel.ItemsPanel, groupViewModel.Group.Items.GetEnumerator()));
+                        _groupViewModels[groupItem] = groupViewModel;
                         break;
                     default:
                         throw new UserException($"Unsupported group item: {currentItem.GetType().Name}");
                 }
             } while (stack.Any());
 
+            UpdateLayout();
             LayoutChanged?.Invoke(this, LayoutChangedEventArgs.Initialization);
-            _initialized = true;
         }
 
         private void OnParamChanged(IParameterDescriptor parameter)
         {
             if (_updateLock.IsReferred) return;
-            try { _context[parameter] = _paramHolders[parameter].Delegates.Getter(); }
-            catch (Exception) { SetParamState(parameter, ParameterStateType.Valid, false); }
+            try { _context[parameter] = _paramViewModels[parameter].PresentedParameter.GetValue(); }
+            catch (Exception) { /* ignored */ }
             OnParamsUpdated();
         }
 
@@ -189,21 +194,21 @@ namespace SharpBCI.Extensions.Windows
             var adapter = Adapter;
             if (adapter == null) return false;
             var visibilityChanged = false;
-            foreach (var groupHolder in _paramGroupHolders.Values)
+            foreach (var gViewModel in _groupViewModels.Values)
             {
-                var visible = adapter.IsVisible(context, groupHolder.ParameterGroup);
-                if (visible != groupHolder.IsVisible)
+                var visible = adapter.IsVisible(context, gViewModel.Group);
+                if (visible != gViewModel.IsVisible)
                 {
-                    groupHolder.IsVisible = visible;
+                    gViewModel.IsVisible = visible;
                     visibilityChanged = true;
                 }
             }
-            foreach (var paramHolder in _paramHolders.Values)
+            foreach (var pViewModel in _paramViewModels.Values)
             {
-                var visible = adapter.IsVisible(context, paramHolder.ParameterDescriptor);
-                if (visible != paramHolder.IsVisible)
+                var visible = adapter.IsVisible(context, pViewModel.ParameterDescriptor);
+                if (visible != pViewModel.IsVisible)
                 {
-                    paramHolder.IsVisible = visible;
+                    pViewModel.IsVisible = visible;
                     visibilityChanged = true;
                 }
             }
@@ -214,8 +219,8 @@ namespace SharpBCI.Extensions.Windows
         {
             var adapter = Adapter;
             if (adapter == null) return;
-            foreach (var paramHolder in _paramHolders.Values)
-                paramHolder.Delegates.Updater?.Invoke(ParameterStateType.Enabled, adapter.IsEnabled(@params, paramHolder.ParameterDescriptor));
+            foreach (var paramHolder in _paramViewModels.Values)
+                paramHolder.PresentedParameter.SetEnabled(adapter.IsEnabled(@params, paramHolder.ParameterDescriptor));
         }
 
     }

@@ -1,9 +1,16 @@
 ﻿using SharpBCI.Core.Experiment;
 using System;
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using MarukoLib.Logging;
+using JetBrains.Annotations;
+using MarukoLib.UI;
 using SharpBCI.Extensions.Presenters;
 
 namespace SharpBCI.Extensions.Windows
@@ -18,8 +25,8 @@ namespace SharpBCI.Extensions.Windows
 
         public GroupHeader()
         {
-            Children.Add(_separatorRectangle = new Rectangle { Margin = new Thickness { Left = 10, Right = 10, Top = 7 } });
-            Children.Add(_headerTextBlock = new TextBlock { Margin = new Thickness { Left = 15, Top = 2 }, IsHitTestVisible = false, Visibility = Visibility.Hidden });
+            Children.Add(_separatorRectangle = new Rectangle {Margin = new Thickness {Left = 10, Right = 10, Top = 7}});
+            Children.Add(_headerTextBlock = new TextBlock {Margin = new Thickness {Left = 15, Top = 2}, IsHitTestVisible = false, Visibility = Visibility.Hidden});
         }
 
         public Style SeparatorStyle
@@ -52,35 +59,134 @@ namespace SharpBCI.Extensions.Windows
 
     }
 
-    public class ParamGroupHolder
+    public class KeyValueRow : Grid
     {
 
-        public readonly ParameterGroup ParameterGroup;
+        private const int AlertImageSize = 15;
 
-        public readonly StackPanel GroupPanel, ItemsPanel;
+        private static readonly ImageSource AlertImageSource = new BitmapImage(new Uri(ViewConstants.AlertImageUri));
+
+        private readonly Rectangle _leftRect = new Rectangle
+        {
+            Fill = Brushes.Coral,
+            Visibility = Visibility.Hidden
+        };
+
+        private readonly Rectangle _bgRect = new Rectangle
+        {
+            Fill = Brushes.LightPink,
+            Stroke = Brushes.Coral,
+            StrokeThickness = 1,
+            Visibility = Visibility.Hidden
+        };
+
+        private readonly Image _alertImage = new Image
+        {
+            Source = AlertImageSource,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Visibility = Visibility.Hidden,
+            Width = AlertImageSize, Height = AlertImageSize
+        };
+
+        private bool _err = false;
+
+        public KeyValueRow(UIElement leftPart, UIElement rightPart)
+        {
+            Margin = ViewConstants.RowMargin;
+            RowDefinitions.Add(new RowDefinition { Height = new GridLength(2) });
+            RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto});
+            RowDefinitions.Add(new RowDefinition { Height = new GridLength(2) });
+            ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3) });
+            ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3) });
+            ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength, MaxWidth = 300});
+            ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MajorSpacingGridLength});
+            ColumnDefinitions.Add(new ColumnDefinition {Width = new GridLength(2.5, GridUnitType.Star)});
+            ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2) });
+
+            Children.Add(_leftRect);
+            SetRow(_leftRect, 0);
+            SetRowSpan(_leftRect, 3);
+            SetColumn(_leftRect, 0);
+            Children.Add(_bgRect);
+            SetRow(_bgRect, 0);
+            SetRowSpan(_bgRect, 3);
+            SetColumn(_bgRect, 1);
+            SetColumnSpan(_bgRect, 8);
+            Children.Add(_alertImage);
+            SetRow(_alertImage, 1);
+            SetColumn(_alertImage, 2);
+
+            Children.Add(leftPart);
+            SetRow(leftPart, 1);
+            SetColumn(leftPart, 2);
+            Children.Add(rightPart);
+            SetRow(rightPart, 1);
+            SetColumn(rightPart, 4);
+        }
+
+        public bool IsError
+        {
+            get => _err;
+            set
+            {
+                if (_err == value) return;
+                _err = value;
+                _leftRect.Visibility = _bgRect.Visibility = _alertImage.Visibility = _err ? Visibility.Visible : Visibility.Hidden;
+            }
+        }
+
+        public object ErrorMessage
+        {
+            get => _alertImage.ToolTip;
+            set => _alertImage.ToolTip = value;
+        }
+
+    }
+
+    public sealed class GroupViewModel
+    {
+
+        [NotNull] public readonly IGroupDescriptor Group;
+
+        [NotNull] public readonly StackPanel GroupPanel, ItemsPanel;
 
         public readonly int Depth;
 
         private bool _collapsed = false, _visible = true;
 
-        public ParamGroupHolder(ParameterGroup parameterGroup, StackPanel groupPanel, int depth) 
-            : this(parameterGroup, groupPanel, groupPanel, depth) { }
-
-        public ParamGroupHolder(ParameterGroup parameterGroup, StackPanel groupPanel, StackPanel itemsPanel, int depth)
+        public GroupViewModel(IGroupDescriptor group, StackPanel groupPanel, StackPanel itemsPanel, int depth)
         {
-            ParameterGroup = parameterGroup;
+            Group = group;
             GroupPanel = groupPanel;
             ItemsPanel = itemsPanel;
             Depth = depth;
         }
 
-        public bool Collapsed
+        [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
+        [SuppressMessage("ReSharper", "SwitchStatementMissingSomeCases")]
+        private static void ChangeVisibility(StackPanel stackPanel, Visibility visibility)
         {
-            get => _collapsed;
-            set
+            switch (visibility)
             {
-                _collapsed = value;
-                UpdateVisibility();
+                case Visibility.Visible:
+                {
+                    var contentHeight = stackPanel.Children.OfType<UIElement>()
+                        .Sum(a => ((FrameworkElement)a).ActualHeight);
+                    stackPanel.Height = 0;
+                    var animation = ViewHelper.CreateDoubleAnimation(0, contentHeight, FillBehavior.Stop, 
+                        () => stackPanel.DispatcherInvoke(sp => sp.Height = double.NaN));
+                    stackPanel.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
+                    break;
+                }
+                case Visibility.Collapsed:
+                {
+                    var animation = ViewHelper.CreateDoubleAnimation(stackPanel.ActualHeight, 0, FillBehavior.Stop, 
+                        () => stackPanel.DispatcherInvoke(sp => sp.Height = 0));
+                    stackPanel.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
+                    break;
+                }
+                default:
+                    throw new NotSupportedException(visibility.ToString());
             }
         }
 
@@ -89,104 +195,137 @@ namespace SharpBCI.Extensions.Windows
             get => _visible;
             set
             {
+                if (_visible == value) return;
                 _visible = value;
+                UpdateVisibility();
+            }
+        }
+
+        public bool IsCollapsed
+        {
+            get => _collapsed;
+            set
+            {
+                if (_collapsed == value) return;
+                _collapsed = value;
                 UpdateVisibility();
             }
         }
 
         private void UpdateVisibility()
         {
-            GroupPanel.Visibility = _visible ? Visibility.Visible : Visibility.Collapsed;
-            if (GroupPanel != ItemsPanel)
-                ItemsPanel.Visibility = _collapsed ? Visibility.Collapsed : Visibility.Visible;
+            ChangeVisibility(GroupPanel, _visible ? Visibility.Visible : Visibility.Collapsed);
+            ChangeVisibility(ItemsPanel, _collapsed ? Visibility.Collapsed : Visibility.Visible);
         }
 
     }
 
-    public class ParamHolder
+    public sealed class ParamViewModel
     {
 
-        private static readonly Logger Logger = Logger.GetLogger(typeof(ParamHolder));
+        [CanBeNull] public readonly GroupViewModel Group;
 
-        public readonly ParamGroupHolder GroupHolder;
+        [NotNull] public readonly KeyValueRow Container;
 
-        public readonly Grid RowContainer;
+        [CanBeNull] public readonly TextBlock NameTextBlock;
 
-        public readonly TextBlock NameTextBlock;
+        [NotNull] public readonly PresentedParameter PresentedParameter;
 
-        public readonly PresentedParameter PresentedParameter;
+        private bool _visible = true;
 
-        public ParamHolder(ParamGroupHolder groupHolder, 
-            Grid rowContainer, TextBlock nameTextBlock, PresentedParameter presentedParameter)
+        public ParamViewModel([CanBeNull] GroupViewModel group, [NotNull] KeyValueRow container, 
+            [CanBeNull] TextBlock nameTextBlock, [NotNull] PresentedParameter presentedParameter)
         {
-            GroupHolder = groupHolder;
-            RowContainer = rowContainer ?? throw new ArgumentNullException(nameof(rowContainer));
+            Group = group;
+            Container = container ?? throw new ArgumentNullException(nameof(container));
             NameTextBlock = nameTextBlock;
             PresentedParameter = presentedParameter ?? throw new ArgumentNullException(nameof(presentedParameter));
         }
 
-        public bool IsVisible
-        {
-            get => RowContainer.Visibility == Visibility.Visible;
-            set => RowContainer.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
-        }
-
         public IParameterDescriptor ParameterDescriptor => PresentedParameter.ParameterDescriptor;
 
-        public PresentedParameter.ParamDelegates Delegates => PresentedParameter.Delegates;
+        public bool IsVisible
+        {
+            get => _visible;
+            set
+            {
+                if (_visible == value) return;
+                _visible = value;
+                UpdateVisibility();
+            }
+        }
 
         public bool CheckValid()
         {
             try
             {
-                return CheckValid(PresentedParameter.Delegates.Getter());
+                PresentedParameter.GetValue();
+                return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Logger.Warn("CheckValid", e, "parameter", ParameterDescriptor.Key);
                 return false;
             }
-
         }
 
-        public bool CheckValid(object value)
+        private void UpdateVisibility()
         {
-            bool valid;
-            try
+            switch (_visible)
             {
-                valid = PresentedParameter.Delegates.Validator?.Invoke(value) ?? true;
+                case true:
+                {
+                    var contentHeight = (double)Container.Tag;
+                    Container.Height = 0;
+                    Container.Visibility = Visibility.Visible;
+                        var animation = ViewHelper.CreateDoubleAnimation(0, contentHeight, FillBehavior.Stop,
+                        () => Container.DispatcherInvoke(sp =>
+                        {
+                            sp.Height = double.NaN;
+
+                        }));
+                    Container.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
+                    break;
+                }
+                case false:
+                {
+                    Container.Tag = Container.ActualHeight;
+                    var animation = ViewHelper.CreateDoubleAnimation(Container.ActualHeight, 0, FillBehavior.Stop,
+                        () =>
+                        {
+                            Container.DispatcherInvoke(sp =>
+                            {
+                                sp.Height = double.NaN;
+                                sp.Visibility = Visibility.Collapsed;
+                            });
+                        });
+                    Container.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
+                    break;
+                }
             }
-            catch (Exception e)
-            {
-                Logger.Warn("CheckValid", e, "parameter", ParameterDescriptor.Key, "value", value);
-                valid = false;
-            }
-            Delegates.Updater?.Invoke(ParameterStateType.Valid, valid);
-            return valid;
         }
 
     }
 
-    public class SummaryHolder
+    public sealed class SummaryViewModel
     {
 
-        public readonly ISummary Summary;
+        [NotNull] public readonly ISummary Summary;
 
-        public readonly Grid RowContainer;
+        [NotNull] public readonly Grid Container;
 
-        public readonly TextBlock ValueTextBlock;
+        [NotNull] public readonly TextBlock ValueTextBlock;
 
-        public SummaryHolder(ISummary summary, Grid rowContainer, TextBlock valueTextBlock)
+        public SummaryViewModel([NotNull] ISummary summary, [NotNull] Grid container, [NotNull] TextBlock valueTextBlock)
         {
-            Summary = summary;
-            RowContainer = rowContainer;
-            ValueTextBlock = valueTextBlock;
+            Summary = summary ?? throw new ArgumentNullException(nameof(summary));
+            Container = container ?? throw new ArgumentNullException(nameof(container));
+            ValueTextBlock = valueTextBlock ?? throw new ArgumentNullException(nameof(valueTextBlock));
         }
 
         public bool IsVisible
         {
-            get => RowContainer.Visibility == Visibility.Visible;
-            set => RowContainer.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            get => Container.Visibility == Visibility.Visible;
+            set => Container.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
         }
 
     }

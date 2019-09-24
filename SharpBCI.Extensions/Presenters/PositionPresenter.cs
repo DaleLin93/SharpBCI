@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -12,6 +13,51 @@ namespace SharpBCI.Extensions.Presenters
 
     public class PositionPresenter : IPresenter
     {
+
+        private class Adapter : IPresentedParameterAdapter
+        {
+
+            private readonly IParameterDescriptor _parameter;
+
+            private readonly IList _enumValues;
+
+            private readonly Rectangle[] _checkBoxes;
+
+            private int _selectedIndex;
+
+            public Adapter(IParameterDescriptor parameter, IList enumValues, Rectangle[] checkBoxes)
+            {
+                _parameter = parameter;
+                _checkBoxes = checkBoxes;
+                _enumValues = enumValues;
+            }
+
+            public bool Select(int index)
+            {
+                if (_selectedIndex == index) return false;
+                for (var i = 0; i < _checkBoxes.Length; i++)
+                    _checkBoxes[i].Fill = i == index ? Brushes.DimGray : Brushes.White;
+                _selectedIndex = index;
+                return true;
+            }
+
+            public object GetValue() => _parameter.IsValidOrThrow(_enumValues[_selectedIndex]);
+
+            public void SetValue(object value) => Select((int)value);
+
+            public void SetEnabled(bool value)
+            {
+                foreach (var checkbox in _checkBoxes)
+                    checkbox.IsEnabled = value;
+            }
+
+            public void SetValid(bool value)
+            {
+                for (var i = 0; i < _checkBoxes.Length; i++)
+                    _checkBoxes[i].Fill = value ? (i == _selectedIndex ? Brushes.DimGray : Brushes.White) : ViewConstants.InvalidColorBrush;
+            }
+
+        }
 
         public static readonly NamedProperty<uint> CheckboxSizeProperty = new NamedProperty<uint>("CheckboxSize", 15);
 
@@ -35,15 +81,7 @@ namespace SharpBCI.Extensions.Presenters
             var enumNames = param.ValueType.GetEnumNames();
             var enumValues = param.ValueType.GetEnumValues();
             var checkboxes = new Rectangle[enumNames.Length];
-            var selectedIndex = -1;
-
-            void Select(int index)
-            {
-                if (selectedIndex == index) return;
-                for (var i = 0; i < checkboxes.Length; i++)
-                    checkboxes[i].Fill = i == index ? Brushes.DimGray : Brushes.White;
-                selectedIndex = index;
-            }
+            var adapter = new Adapter(param, enumValues, checkboxes);
 
             var grid = new Grid();
             if (labelVisible)
@@ -52,7 +90,7 @@ namespace SharpBCI.Extensions.Presenters
             for (var i = 0; i < enumNames.Length; i++)
             {
                 var index = i; /* Used in closure */
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
 
                 if (labelVisible)
                 {
@@ -70,28 +108,15 @@ namespace SharpBCI.Extensions.Presenters
                     Stroke = Brushes.Black,
                     Fill = Brushes.White
                 };
-                checkbox.MouseLeftButtonUp += (sender, e) => Select(index);
+                checkbox.MouseLeftButtonUp += (sender, e) =>
+                {
+                    if (adapter.Select(index)) updateCallback();
+                };
                 grid.Children.Add(checkbox);
                 if (labelVisible) Grid.SetRow(checkbox, 1);
                 Grid.SetColumn(checkbox, index);
             }
-            void Setter(object val) => Select((int)val);
-            object Getter() => enumValues.GetValue(selectedIndex);
-            void Updater(ParameterStateType state, bool value)
-            {
-                switch (state)
-                {
-                    case ParameterStateType.Enabled:
-                        foreach (var checkbox in checkboxes)
-                            checkbox.IsEnabled = value;
-                        break;
-                    case ParameterStateType.Valid:
-                        for (var i = 0; i < checkboxes.Length; i++)
-                            checkboxes[i].Fill = value ? (i == selectedIndex ? Brushes.DimGray : Brushes.White) : ViewConstants.InvalidColorBrush;
-                        break;
-                }
-            }
-            return new PresentedParameter(param, grid, new PresentedParameter.ParamDelegates(Getter, Setter, param.IsValid, Updater));
+            return new PresentedParameter(param, grid, adapter);
         }
 
         public PresentedParameter Present2D(IParameterDescriptor param, Action updateCallback)
@@ -100,15 +125,7 @@ namespace SharpBCI.Extensions.Presenters
             var enumNames = param.ValueType.GetEnumNames();
             var enumValues = param.ValueType.GetEnumValues();
             var checkboxes = new Rectangle[enumNames.Length];
-            var selectedIndex = -1;
-
-            void Select(int index)
-            {
-                if (selectedIndex == index) return;
-                for (var i = 0; i < checkboxes.Length; i++)
-                    checkboxes[i].Fill = i == index ? Brushes.DimGray : Brushes.White;
-                selectedIndex = index;
-            }
+            var adapter = new Adapter(param, enumValues, checkboxes);
 
             var grid = new Grid {VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 3, 0, 3)};
             switch (Position2DHorizontalAlignmentProperty.Get(param.Metadata))
@@ -144,28 +161,15 @@ namespace SharpBCI.Extensions.Presenters
                     Stroke = Brushes.Black, Fill = Brushes.White,
                     ToolTip = enumNames[index]
                 };
-                checkbox.MouseLeftButtonUp += (sender, e) => Select(index);
+                checkbox.MouseLeftButtonUp += (sender, e) =>
+                {
+                    if (adapter.Select(index)) updateCallback();
+                };
                 grid.Children.Add(checkbox);
                 Grid.SetRow(checkbox, rowIndex);
                 Grid.SetColumn(checkbox, colIndex);
             }
-            void Setter(object val) => Select((int)val);
-            object Getter() => enumValues.GetValue(selectedIndex);
-            void Updater(ParameterStateType state, bool value)
-            {
-                switch (state)
-                {
-                    case ParameterStateType.Enabled:
-                        foreach (var checkbox in checkboxes)
-                            checkbox.IsEnabled = value;
-                        break;
-                    case ParameterStateType.Valid:
-                        for (var i = 0; i < checkboxes.Length; i++)
-                            checkboxes[i].Fill = value ? (i == selectedIndex ? Brushes.DimGray : Brushes.White) : ViewConstants.InvalidColorBrush;
-                        break;
-                }
-            }
-            return new PresentedParameter(param, grid, new PresentedParameter.ParamDelegates(Getter, Setter, param.IsValid, Updater));
+            return new PresentedParameter(param, grid, adapter);
         }
 
     }

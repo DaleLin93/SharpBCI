@@ -182,7 +182,7 @@ namespace SharpBCI.Experiments.P300
 
             private static readonly Parameter<bool> UseBitmap = new Parameter<bool>("Use Bitmap", false);
 
-            public override IReadOnlyCollection<ParameterGroup> ParameterGroups => new ParameterGroupCollection()
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new ParameterGroupCollection()
                 .Add("Layout", Layout)
                 .Add("Paradigm", Paradigm)
                 .Add("Exp. Params", TargetRate, TrialCount, TrialDuration, SubTrialCount, TrialInterval, DoubleFlashTargetDelay)

@@ -73,10 +73,11 @@ namespace SharpBCI.Windows
             Title = $"{device.Identifier} Configuration";
         }
 
-        private static IDescriptor[] AsGroup(string name, IDescriptor[] @params)
+        private static IEnumerable<IDescriptor> AsGroup(string name, IEnumerable<IDescriptor> @params)
         {
-            if (@params == null || !@params.Any()) return EmptyArray<IDescriptor>.Instance;
-            return new IDescriptor[] {new ParameterGroup(name, @params)};
+            if (@params == null) return EmptyArray<IDescriptor>.Instance;
+            var array = @params.ToArray();
+            return array.Length == 0 ? array : new IDescriptor[] {new ParameterGroup(name, array) };
         }
 
         private static IList GetConsumerList(DeviceType deviceType)
@@ -103,8 +104,7 @@ namespace SharpBCI.Windows
 
         private void InitializeDeviceConfigurationPanel(PluginDevice device)
         {
-            DeviceConfigurationPanel.Adapter = device?.Factory as IParameterPresentAdapter;
-            DeviceConfigurationPanel.Descriptors = AsGroup("Device", device?.Factory.Parameters.Cast<IDescriptor>().ToArray() ?? EmptyArray<IDescriptor>.Instance);
+            DeviceConfigurationPanel.SetDescriptors(device?.Factory as IParameterPresentAdapter, AsGroup("Device", device?.Factory.Parameters));
 
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();
@@ -113,8 +113,7 @@ namespace SharpBCI.Windows
 
         private void InitializeConsumerConfigurationPanel(PluginStreamConsumer consumer)
         {
-            ConsumerConfigurationPanel.Adapter = consumer?.Factory as IParameterPresentAdapter;
-            ConsumerConfigurationPanel.Descriptors = AsGroup("", consumer?.Factory.Parameters.Cast<IDescriptor>().ToArray() ?? EmptyArray<IDescriptor>.Instance);
+            DeviceConfigurationPanel.SetDescriptors(consumer?.Factory as IParameterPresentAdapter, AsGroup("", consumer?.Factory.Parameters));
 
             _currentConsumer = consumer;
             ScrollView.InvalidateScrollInfo();

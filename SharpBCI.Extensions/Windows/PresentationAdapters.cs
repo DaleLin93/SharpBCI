@@ -9,7 +9,7 @@ namespace SharpBCI.Extensions.Windows
 
         bool CanReset(IParameterDescriptor parameter);
 
-        bool CanCollapse(ParameterGroup group);
+        bool CanCollapse(IGroupDescriptor group, int depth);
 
         bool IsEnabled(IReadonlyContext context, IParameterDescriptor parameter);
 

@@ -19,34 +19,20 @@ namespace SharpBCI.Extensions.Windows
 
         public event EventHandler<LayoutChangedEventArgs> LayoutChanged;
 
-        private readonly IList<SummaryHolder> _summaryHolders = new List<SummaryHolder>();
-
-        private ISummary[] _summaries;
-
-        private bool _initialized = false;
-
-        public SummaryPanel()
-        {
-            Loaded += (sender, args) =>
-            {
-                if (!_initialized) 
-                    InitializeConfigurationPanel();
-            };
-        }
+        private readonly IList<SummaryViewModel> _summaryViewModels = new List<SummaryViewModel>();
 
         public string GroupHeader { get; set; } = "Summaries";
 
-        [CanBeNull] public ISummary[] Summaries
-        {
-            get => _summaries;
-            set
-            {
-                _summaries = value;
-                InitializeConfigurationPanel();
-            }
-        }
+        [CanBeNull] public IReadOnlyCollection<ISummary> Summaries { get; private set; }
 
-        [CanBeNull] public ISummaryPresentAdapter Adapter { get; set; }
+        [CanBeNull] public ISummaryPresentAdapter Adapter { get; private set; }
+
+        public void SetSummaries(ISummaryPresentAdapter adapter, IEnumerable<ISummary> summaries)
+        {
+            Adapter = adapter;
+            Summaries = summaries.ToArray();
+            InitializeConfigurationPanel();
+        }
 
         public void Update([CanBeNull] IReadonlyContext context, [CanBeNull] IExperiment experiment)
         {
@@ -54,7 +40,7 @@ namespace SharpBCI.Extensions.Windows
 
             if (UpdateSummaryVisibility(context))
                 LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
-            foreach (var holder in _summaryHolders.Where(sh => sh.IsVisible))
+            foreach (var holder in _summaryViewModels.Where(sh => sh.IsVisible))
                 try
                 {
                     holder.ValueTextBlock.Text = holder.Summary.GetValue(context, experiment).ToString();
@@ -70,25 +56,21 @@ namespace SharpBCI.Extensions.Windows
 
         private void InitializeConfigurationPanel()
         {
-            var window = Window.GetWindow(this);
-
-            if (window == null) return;
-
             Children.Clear();
-            _summaryHolders.Clear();
+            _summaryViewModels.Clear();
 
-            if (_summaries.Any())
+            if (Summaries?.Any() ?? false)
             {
                 var groupPanel = GroupHeader == null ? this : this.AddGroupPanel(GroupHeader, null);
-                foreach (var summary in _summaries)
+                foreach (var summary in Summaries)
                 {
                     var valueTextBlock = new TextBlock { TextAlignment = TextAlignment.Right };
-                    _summaryHolders.Add(new SummaryHolder(summary, groupPanel.AddRow(summary.Name, valueTextBlock), valueTextBlock));
+                    _summaryViewModels.Add(new SummaryViewModel(summary, groupPanel.AddRow(summary.Name, valueTextBlock), valueTextBlock));
                 }
             }
 
+            UpdateLayout();
             LayoutChanged?.Invoke(this, LayoutChangedEventArgs.Initialization);
-            _initialized = true;
         }
 
         private bool UpdateSummaryVisibility(IReadonlyContext context)
@@ -96,7 +78,7 @@ namespace SharpBCI.Extensions.Windows
             var adapter = Adapter;
             if (adapter == null) return false;
             var visibilityChanged = false;
-            foreach (var summaryHolder in _summaryHolders)
+            foreach (var summaryHolder in _summaryViewModels)
             {
                 var visible = adapter.IsVisible(context, summaryHolder.Summary);
                 if (visible != summaryHolder.IsVisible)
