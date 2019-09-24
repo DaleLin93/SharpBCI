@@ -207,7 +207,6 @@ namespace SharpBCI.Core.Staging
             if (_cyclicExecutor.Stop(false))
             {
                 CurrentStage = null;
-                FreezableClock.Unfreeze();
                 return true;
             }
             return false;
