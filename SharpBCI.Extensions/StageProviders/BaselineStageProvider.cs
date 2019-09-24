@@ -1,6 +1,4 @@
-﻿using SharpBCI.Core.Staging;
-
-namespace SharpBCI.Extensions.StageProviders
+﻿namespace SharpBCI.Extensions.StageProviders
 {
 
     public class BaselineStageProvider : MarkedStageProvider

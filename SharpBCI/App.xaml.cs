@@ -17,7 +17,6 @@ using SharpBCI.Plugins;
 using File = System.IO.File;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
-using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Apps;
 using SharpBCI.Extensions.Devices;

@@ -2,7 +2,6 @@
 using System.Windows.Forms;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Concurrent;
-using MarukoLib.UI;
 
 namespace SharpBCI.Extensions.Devices
 {

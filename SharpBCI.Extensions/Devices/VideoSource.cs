@@ -4,8 +4,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using MarukoLib.IO;
-using MarukoLib.Lang;
-using SharpBCI.Core.IO;
 using SharpBCI.Extensions.Streamers;
 
 namespace SharpBCI.Extensions.Devices
