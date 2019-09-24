@@ -37,7 +37,7 @@ namespace SharpBCI.Experiments.P300
 
     }
 
-    [Experiment(ExperimentName, "1.0")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0")]
     public class P300Experiment : StagedExperiment.Basic
     {
 

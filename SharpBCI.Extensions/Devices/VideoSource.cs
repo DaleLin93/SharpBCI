@@ -181,8 +181,6 @@ namespace SharpBCI.Extensions.Devices
     public abstract class VideoSource : Device, IVideoSource
     {
 
-        protected VideoSource(string name) : base(name) { }
-
         public abstract Size FrameSize { get; }
 
         public abstract double MaxFrameRate { get; }

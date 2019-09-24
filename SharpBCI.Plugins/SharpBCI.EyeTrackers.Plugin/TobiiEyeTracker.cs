@@ -9,6 +9,7 @@ using Tobii.Interaction.Client;
 namespace SharpBCI.EyeTrackers
 {
 
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class TobiiEyeTracker : EyeTracker
     {
 
@@ -19,7 +20,7 @@ namespace SharpBCI.EyeTrackers
 
             public static readonly Parameter<string> HostNameParam = new Parameter<string>("Host Name", defaultValue: "SharpBCI");
 
-            public Factory() : base(TobiiEyeTracker.DeviceName, HostNameParam) { }
+            public Factory() : base(HostNameParam) { }
 
             public override TobiiEyeTracker Create(IReadonlyContext context)
             {
@@ -46,7 +47,7 @@ namespace SharpBCI.EyeTrackers
 
         private IGazePoint _lastGazePoint;
 
-        public TobiiEyeTracker(Host host) : base(DeviceName)
+        public TobiiEyeTracker(Host host)
         {
             _gazePointDataStream = host.Streams.CreateGazePointDataStream();
             _gazePointDataStream.IsEnabled = false;

@@ -10,19 +10,22 @@ namespace SharpBCI.Plugins
     public class PluginExperiment : ParameterizedRegistrable
     {
 
-        [NotNull] public readonly IExperimentFactory Factory;
+        [NotNull] public readonly Type ExperimentClass;
 
         [NotNull] public readonly ExperimentAttribute ExperimentAttribute;
 
-        internal PluginExperiment(Plugin plugin, IExperimentFactory factory) : base(plugin)
+        [NotNull] public readonly IExperimentFactory Factory;
+
+        internal PluginExperiment(Plugin plugin, Type experimentType, ExperimentAttribute experimentAttribute, IExperimentFactory factory) : base(plugin)
         {
+            ExperimentClass = experimentType ?? throw new ArgumentNullException(nameof(experimentType));
+            ExperimentAttribute = experimentAttribute ?? throw new ArgumentNullException(nameof(experimentAttribute));
             Factory = factory ?? throw new ArgumentNullException(nameof(factory));
-            ExperimentAttribute = factory.ExperimentType.GetExperimentAttribute();
         }
 
         public override string Identifier => ExperimentAttribute.Name;
 
-        public override IEnumerable<IParameterDescriptor> Parameters => Factory.ParameterGroups.GetAllParameters();
+        public override IEnumerable<IParameterDescriptor> AllParameters => Factory.GetParameterGroups(ExperimentClass).GetAllParameters();
 
     }
 

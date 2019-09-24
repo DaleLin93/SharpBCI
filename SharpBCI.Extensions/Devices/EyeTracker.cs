@@ -46,8 +46,6 @@ namespace SharpBCI.Extensions.Devices
     public abstract class EyeTracker : Device, IEyeTracker
     {
 
-        protected EyeTracker(string name) : base(name) { }
-
         public abstract IGazePoint Read();
 
     }

@@ -34,6 +34,7 @@ namespace SharpBCI.Experiments.Demo
 
             /* Set experiment parameters to this window. */
             CueTextBlock.Text = experiment.Text;
+            CueTextBlock.FontSize = experiment.FontSize;
             CueTextBlock.Foreground = new SolidColorBrush(experiment.BackgroundColor.ToSwmColor());
             Background = new SolidColorBrush(experiment.BackgroundColor.ToSwmColor());
         }

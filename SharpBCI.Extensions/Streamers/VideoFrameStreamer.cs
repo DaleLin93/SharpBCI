@@ -42,14 +42,12 @@ namespace SharpBCI.Extensions.Streamers
 
     }
 
-
+    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
     public class VideoFramesFileWriter : TimestampedFileWriter<IVideoFrame>
     {
 
         public sealed class Factory : StreamConsumerFactory<Timestamped<IVideoFrame>>
         {
-
-            public Factory() : base($"Video Frames File Writer (*{FileSuffix})") { }
 
             public override IStreamConsumer<Timestamped<IVideoFrame>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new VideoFramesFileWriter(session.GetDataFileName(FileSuffix), session.CreateTimestamp);
@@ -66,6 +64,8 @@ namespace SharpBCI.Extensions.Streamers
         }
 
         public const string FileSuffix = ".vfs";
+
+        public const string ConsumerName = "Video Frames File Writer (*" + FileSuffix + ")";
 
         private readonly byte[] _longBuffer = new byte[sizeof(long)];
 

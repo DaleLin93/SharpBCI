@@ -14,7 +14,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Experiments.MI
 {
 
-    [Experiment(ExperimentName, "1.0", Description = "A stimulation client for motor imagery paradigm.")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0", Description = "A stimulation client for motor imagery paradigm.")]
     public class MiExperiment : StagedExperiment
     {
 

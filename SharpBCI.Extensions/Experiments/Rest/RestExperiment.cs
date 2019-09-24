@@ -9,7 +9,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Extensions.Experiments.Rest
 {
 
-    [Experiment(ExperimentName, "1.0", Description = "A simple resting state experiment with specific cue.")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0", Description = "A simple resting state experiment with specific cue.")]
     public class RestExperiment : StagedExperiment.Basic
     {
 

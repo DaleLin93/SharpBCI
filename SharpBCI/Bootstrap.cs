@@ -169,7 +169,8 @@ namespace SharpBCI
                 if (!App.Instance.Registries.Registry<PluginDevice>().LookUp(entity.Device.Id, out var device))
                     throw new ArgumentException($"Cannot find device by id: {entity.Device.Id}");
                 var deviceInstance = device.NewInstance(device.DeserializeParams(entity.Device.Params));
-                var streamer = device.Factory.DeviceType.StreamerFactory?.Create(deviceInstance, clock);
+                var streamerFactory = device.Factory.GetDeviceType(device.DeviceClass).StreamerFactory;
+                var streamer = streamerFactory?.Create(deviceInstance, clock);
                 if (streamer != null) streamers.Add(deviceStreamers[deviceType.DeviceType] = streamer);
             }
             return streamers;
@@ -183,7 +184,7 @@ namespace SharpBCI
             experiment = null;
             try
             {
-                experiment = pluginExperiment.Factory.Create(context);
+                experiment = pluginExperiment.Factory.Create(null, context);
                 return true;
             }
             catch (Exception ex)

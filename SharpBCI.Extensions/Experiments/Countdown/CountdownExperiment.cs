@@ -9,7 +9,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Extensions.Experiments.Countdown
 {
 
-    [Experiment(ExperimentName, "1.0", Description = "A basic count down program.")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0", Description = "A basic count down program.")]
     public class CountdownExperiment : StagedExperiment.Basic
     {
 

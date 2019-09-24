@@ -212,21 +212,21 @@ namespace SharpBCI
                 new PluginAppEntry(null, new FileRenamingToolAppEntry()));
 
             Registries.Registry<PluginExperiment>().RegisterAll(
-                new PluginExperiment(null, new RestExperiment.Factory()),
-                new PluginExperiment(null, new CountdownExperiment.Factory()),
-                new PluginExperiment(null, new TextDisplayExperiment.Factory()));
+                Plugin.InitPluginExperiment(null, typeof(RestExperiment)),
+                Plugin.InitPluginExperiment(null, typeof(CountdownExperiment)),
+                Plugin.InitPluginExperiment(null, typeof(TextDisplayExperiment)));
 
             Registries.Registry<PluginDevice>().RegisterAll(
-                new PluginDevice(null, new CursorTracker.Factory()),
-                new PluginDevice(null, new GazeFileReader.Factory()),
-                new PluginDevice(null, new GenericOscillator.Factory()),
-                new PluginDevice(null, new DataFileReader.Factory()),
-                new PluginDevice(null, new ScreenCapturer.Factory()));
+                Plugin.InitPluginDevice(null, typeof(CursorTracker)),
+                Plugin.InitPluginDevice(null, typeof(GazeFileReader)),
+                Plugin.InitPluginDevice(null, typeof(GenericOscillator)),
+                Plugin.InitPluginDevice(null, typeof(DataFileReader)),
+                Plugin.InitPluginDevice(null, typeof(ScreenCapturer)));
 
             Registries.Registry<PluginStreamConsumer>().RegisterAll(
-                new PluginStreamConsumer(null, new BiosignalDataFileWriter.Factory()),
-                new PluginStreamConsumer(null, new GazePointFileWriter.Factory()),
-                new PluginStreamConsumer(null, new VideoFramesFileWriter.Factory()));
+                Plugin.InitPluginStreamConsumer(null, typeof(BiosignalDataFileWriter)),
+                Plugin.InitPluginStreamConsumer(null, typeof(GazePointFileWriter)),
+                Plugin.InitPluginStreamConsumer(null, typeof(VideoFramesFileWriter)));
 
             Plugin.ScanPlugins(Registries, (file, ex) => ShowErrorMessage(ex, "Failed to load plugin: " + file));
 

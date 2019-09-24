@@ -6,6 +6,7 @@ using MarukoLib.Lang.Concurrent;
 namespace SharpBCI.Extensions.Devices
 {
 
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class CursorTracker : EyeTracker
     {
 
@@ -16,7 +17,7 @@ namespace SharpBCI.Extensions.Devices
 
             public static readonly Parameter<double> MaxFrequencyParam = new Parameter<double>("Max Frequency", 100);
 
-            public Factory() : base(CursorTracker.DeviceName, MaxFrequencyParam) { }
+            public Factory() : base(MaxFrequencyParam) { }
 
             public override CursorTracker Create(IReadonlyContext context) => new CursorTracker(MaxFrequencyParam.Get(context));
 
@@ -26,7 +27,7 @@ namespace SharpBCI.Extensions.Devices
 
         private readonly FrequencyBarrier _frequencyBarrier;
 
-        public CursorTracker(double maxFrequency) : base(DeviceName)
+        public CursorTracker(double maxFrequency) 
         {
             MaxFrequency = maxFrequency;
             _frequencyBarrier = new FrequencyBarrier.MinimumInterval(Clock.SystemMillisClock, TimeSpan.FromSeconds(1 / maxFrequency));

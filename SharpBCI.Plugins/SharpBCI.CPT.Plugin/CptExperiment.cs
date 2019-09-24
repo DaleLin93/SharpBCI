@@ -14,7 +14,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Experiments.CPT
 {
 
-    [Experiment(ExperimentName, "1.0")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0")]
     public class CptExperiment : StagedExperiment.Basic
     {
 

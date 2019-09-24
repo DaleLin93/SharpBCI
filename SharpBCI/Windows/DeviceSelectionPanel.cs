@@ -230,7 +230,7 @@ namespace SharpBCI.Windows
             var controlGroup = (DeviceControlGroup) ((ComboBox) sender).Tag;
             var deviceType = controlGroup.DeviceType;
             var newDevice = controlGroup.DeviceComboBox.SelectedItem as PluginDevice;
-            controlGroup.ConfigButton.IsEnabled = (newDevice?.Factory.Parameters?.Count ?? 0) > 0;
+            controlGroup.ConfigButton.IsEnabled = (newDevice?.Factory.GetParameters(newDevice.DeviceClass).Count ?? 0) > 0;
             controlGroup.PreviewButton.IsEnabled = newDevice?.Factory != null;
             var selectedDevice = SelectedDevices[deviceType];
             var eventArgs = new DeviceChangedEventArgs(controlGroup.DeviceType, selectedDevice.Device, newDevice, selectedDevice.Params);
@@ -245,7 +245,7 @@ namespace SharpBCI.Windows
             var deviceType = controlGroup.DeviceType;
             var selectedItem = (PluginDevice) controlGroup.DeviceComboBox.SelectedItem;
             if (selectedItem?.Factory == null) return;
-            var parameters = selectedItem.Factory.Parameters;
+            var parameters = selectedItem.Factory.GetParameters(selectedItem.DeviceClass);
             if (CollectionUtils.IsNullOrEmpty(parameters)) return;
             var selectedDevice = SelectedDevices[deviceType];
             var selectedConsumer = SelectedConsumers[deviceType];

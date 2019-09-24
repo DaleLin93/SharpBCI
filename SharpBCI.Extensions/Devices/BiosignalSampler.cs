@@ -71,8 +71,6 @@ namespace SharpBCI.Extensions.Devices
     public abstract class BiosignalSampler : Device, IBiosignalSampler
     {
 
-        protected BiosignalSampler(string name) : base(name) { }
-
         public ushort ChannelNum { get; protected set; }
 
         public double Frequency { get; protected set; }

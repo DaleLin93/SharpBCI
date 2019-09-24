@@ -10,6 +10,7 @@ using SharpBCI.Extensions.Devices;
 namespace SharpBCI.BiosignalSamplers
 {
 
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class UnnamedDeviceSampler : BiosignalSampler
     {
 
@@ -20,7 +21,7 @@ namespace SharpBCI.BiosignalSamplers
 
             public static readonly Parameter<string> SerialPortParam = new Parameter<string>("Serial Port", defaultValue: null);
 
-            public Factory() : base(UnnamedDeviceSampler.DeviceName, SerialPortParam) { }
+            public Factory() : base(SerialPortParam) { }
 
             public override UnnamedDeviceSampler Create(IReadonlyContext context)
             {
@@ -36,7 +37,7 @@ namespace SharpBCI.BiosignalSamplers
 
         private IEnumerator<double[]> _enumerator;
 
-        public UnnamedDeviceSampler(string portName, ushort channelNum = 8, double frequency = 2000) : base(DeviceName)
+        public UnnamedDeviceSampler(string portName, ushort channelNum = 8, double frequency = 2000) 
         {
             PortName = portName;
             ChannelNum = channelNum;

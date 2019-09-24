@@ -40,38 +40,68 @@ namespace SharpBCI.Extensions.Experiments
     {
 
         /// <summary>
-        /// Target type of the experiment.
+        /// Get definitions of parameters used to create the experiment.
         /// </summary>
-        Type ExperimentType { get; }
+        [NotNull] IReadOnlyCollection<IGroupDescriptor> GetParameterGroups(Type experimentClass);
 
         /// <summary>
-        /// The definitions of parameters used to create the experiment.
+        /// Get summaries used to peek the information of experiment while creating.
         /// </summary>
-        IReadOnlyCollection<IGroupDescriptor> ParameterGroups { get; }
-
-        /// <summary>
-        /// The summaries used to peek the information of experiment while creating.
-        /// </summary>
-        IReadOnlyCollection<ISummary> Summaries { get; }
+        [NotNull] IReadOnlyCollection<ISummary> GetSummaries(Type experimentClass);
 
         /// <summary>
         /// Post validation after all parameters are validated separately and before experiment creation.
         /// </summary>
+        /// <param name="experimentClass"></param>
         /// <param name="context"></param>
         /// <param name="parameter"></param>
         /// <returns></returns>
-        ValidationResult CheckValid(IReadonlyContext context, IParameterDescriptor parameter);
+        ValidationResult CheckValid(Type experimentClass, IReadonlyContext context, IParameterDescriptor parameter);
 
         /// <summary>
         /// Create experiment instance.
         /// </summary>
+        /// <param name="experimentClass"></param>
         /// <param name="context">Experiment parameters</param>
         /// <returns></returns>
-        IExperiment Create(IReadonlyContext context);
+        [NotNull] IExperiment Create(Type experimentClass, IReadonlyContext context);
 
     }
 
-    public abstract class ExperimentFactory<T> : IExperimentFactory, IParameterPresentAdapter, ISummaryPresentAdapter where T : IExperiment
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
+    public sealed class ExperimentAttribute : Attribute
+    {
+
+        public ExperimentAttribute([NotNull] string name, [NotNull] Type factoryType, [CanBeNull] string version = null, [CanBeNull] string versionName = null)
+        {
+            Name = name.Trim2Null() ?? throw new ArgumentException(nameof(name));
+            FactoryType = factoryType ?? throw new ArgumentException(nameof(factoryType));
+            Version = version == null ? null : Version.Parse(version);
+            VersionName = versionName?.Trim2Null();
+        }
+
+        [NotNull] public string Name { get; }
+
+        [NotNull] public Type FactoryType { get; }
+
+        [CanBeNull] public Version Version { get; }
+
+        [CanBeNull] public string VersionName { get; }
+
+        public string FullVersionName
+        {
+            get
+            {
+                var versionStr = Version == null ? "un-versioned" : $"v{Version}";
+                return VersionName == null ? versionStr : $"{versionStr}-{VersionName}";
+            }
+        }
+
+        public string Description { get; set; }
+
+    }
+
+    public abstract class ExperimentFactory : IExperimentFactory 
     {
 
         public static IReadOnlyCollection<IGroupDescriptor> ScanGroups(Type type, bool findUngroupedParameters = true, bool recursively = true)
@@ -95,6 +125,19 @@ namespace SharpBCI.Extensions.Experiments
 
         public static IReadOnlyCollection<ISummary> ScanSummaries(Type type, bool recursively = true) => type.ReadFields<ISummary>(null, recursively);
 
+        public virtual IReadOnlyCollection<IGroupDescriptor> GetParameterGroups(Type experimentClass) => EmptyArray<IGroupDescriptor>.Instance;
+
+        public virtual IReadOnlyCollection<ISummary> GetSummaries(Type experimentClass) => EmptyArray<ISummary>.Instance;
+
+        public virtual ValidationResult CheckValid(Type experimentClass, IReadonlyContext context, IParameterDescriptor parameter) => ValidationResult.Ok;
+
+        public abstract IExperiment Create(Type experimentClass, IReadonlyContext context);
+
+    }
+
+    public abstract class ExperimentFactory<T> : ExperimentFactory, IParameterPresentAdapter, ISummaryPresentAdapter where T : IExperiment
+    {
+
         public Type ExperimentType => typeof(T);
 
         public virtual IReadOnlyCollection<IGroupDescriptor> ParameterGroups => EmptyArray<IGroupDescriptor>.Instance;
@@ -113,51 +156,15 @@ namespace SharpBCI.Extensions.Experiments
 
         public virtual ValidationResult CheckValid(IReadonlyContext context, IParameterDescriptor parameter) => ValidationResult.Ok;
 
+        public sealed override IReadOnlyCollection<IGroupDescriptor> GetParameterGroups(Type experimentClass) => ParameterGroups;
+
+        public sealed override IReadOnlyCollection<ISummary> GetSummaries(Type experimentClass) => Summaries;
+
+        public sealed override ValidationResult CheckValid(Type experimentClass, IReadonlyContext context, IParameterDescriptor parameter) => CheckValid(context, parameter);
+
+        public sealed override IExperiment Create(Type experimentClass, IReadonlyContext context) => Create(context);
+
         public abstract T Create(IReadonlyContext context);
-
-        IExperiment IExperimentFactory.Create(IReadonlyContext context) => Create(context);
-
-    }
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
-    public sealed class ExperimentAttribute : Attribute
-    {
-
-        public ExperimentAttribute([NotNull] string name, [CanBeNull] string version = null, [CanBeNull] string versionName = null)
-        {
-            Name = name.Trim2Null() ?? throw new ArgumentException(nameof(name));
-            Version = version == null ? null : Version.Parse(version);
-            VersionName = versionName?.Trim2Null();
-        }
-
-        [NotNull] public string Name { get; }
-
-        [CanBeNull] public Version Version { get; }
-
-        [CanBeNull] public string VersionName { get; }
-
-        public string FullVersionName
-        {
-            get
-            {
-                var versionStr = Version == null ? "un-versioned" : $"v{Version}";
-                return VersionName == null ? versionStr : $"{versionStr}-{VersionName}";
-            }
-        }
-
-        public string Description { get; set; }
-
-    }
-
-    public static class ExperimentExt
-    {
-
-        [NotNull]
-        public static ExperimentAttribute GetExperimentAttribute(this Type type)
-        {
-            if (!typeof(IExperiment).IsAssignableFrom(type)) throw new ArgumentException($"Given type '{type.FullName}' must implements interface IExperiment");
-            return type.GetCustomAttribute<ExperimentAttribute>() ?? throw new ProgrammingException($"ExperimentAttribute not declared, type: '{type.FullName}'");
-        }
 
     }
 

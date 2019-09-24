@@ -11,10 +11,11 @@ using Path = SharpBCI.Extensions.Data.Path;
 namespace SharpBCI.Extensions.Devices
 {
 
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class DataFileReader : BiosignalSampler
     {
 
-        public static readonly string DeviceName = $"Data File Reader (*{BiosignalDataFileWriter.FileSuffix})";
+        public const string DeviceName = "Data File Reader (*"+ BiosignalDataFileWriter.FileSuffix + ")";
 
         public class Factory : DeviceFactory<DataFileReader, IBiosignalSampler>
         {
@@ -27,7 +28,7 @@ namespace SharpBCI.Extensions.Devices
 
             public static readonly Parameter<double> FrequencyParam = new Parameter<double>("Frequency", Predicates.Positive, 1);
 
-            public Factory() : base(DataFileReader.DeviceName, DataFileParam, FrequencyParam) { }
+            public Factory() : base(DataFileParam, FrequencyParam) { }
 
             public override DataFileReader Create(IReadonlyContext context)
             {
@@ -50,7 +51,7 @@ namespace SharpBCI.Extensions.Devices
 
         private int _sampleOffset;
 
-        public DataFileReader(string file, double frequency, long? startTimestamp = null) : base(DeviceName)
+        public DataFileReader(string file, double frequency, long? startTimestamp = null) 
         {
             File = file;
             Frequency = frequency;

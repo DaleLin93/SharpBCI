@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Reflection;
 using System.Windows.Forms;
 using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
@@ -14,7 +13,7 @@ using Rectangle = SharpBCI.Extensions.Data.Rectangle;
 namespace SharpBCI.Experiments.WebBrowser
 {
 
-    [Experiment(ExperimentName, "1.0")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0")]
     public class WebBrowserAssistantExperiment : Experiment
     {
 

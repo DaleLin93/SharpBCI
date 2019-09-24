@@ -100,11 +100,42 @@ namespace SharpBCI.Extensions.Devices
     public interface IDevice
     {
 
-        [NotNull] string Name { get; }
-
         void Open();
 
         void Shutdown();
+
+    }
+
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
+    public sealed class DeviceAttribute : Attribute
+    {
+
+        public DeviceAttribute([NotNull] string name, [NotNull] Type factoryType, [CanBeNull] string version = null, [CanBeNull] string versionName = null)
+        {
+            Name = name.Trim2Null() ?? throw new ArgumentException(nameof(name));
+            FactoryType = factoryType ?? throw new ArgumentException(nameof(factoryType));
+            Version = version == null ? null : Version.Parse(version);
+            VersionName = versionName?.Trim2Null();
+        }
+
+        [NotNull] public string Name { get; }
+
+        [NotNull] public Type FactoryType { get; }
+
+        [CanBeNull] public Version Version { get; }
+
+        [CanBeNull] public string VersionName { get; }
+
+        public string FullVersionName
+        {
+            get
+            {
+                var versionStr = Version == null ? "un-versioned" : $"v{Version}";
+                return VersionName == null ? versionStr : $"{versionStr}-{VersionName}";
+            }
+        }
+
+        public string Description { get; set; }
 
     }
 
@@ -113,10 +144,6 @@ namespace SharpBCI.Extensions.Devices
     /// </summary>
     public abstract class Device : IDevice
     {
-
-        protected Device(string name) => Name = name;
-
-        public string Name { get; }
 
         public abstract void Open();
 
@@ -130,13 +157,11 @@ namespace SharpBCI.Extensions.Devices
     public interface IDeviceFactory
     {
 
-        [NotNull] string DeviceName { get; }
+        DeviceType GetDeviceType(Type deviceClass);
 
-        DeviceType DeviceType { get; }
+        [NotNull] IReadOnlyCollection<IParameterDescriptor> GetParameters(Type deviceClass);
 
-        IReadOnlyCollection<IParameterDescriptor> Parameters { get; }
-
-        IDevice Create(IReadonlyContext context);
+        [NotNull] IDevice Create(Type deviceClass, IReadonlyContext context);
 
     }
 
@@ -149,14 +174,11 @@ namespace SharpBCI.Extensions.Devices
         where TDevice : TDeviceBaseType where TDeviceBaseType : IDevice
     {
 
-        protected DeviceFactory(string deviceName, params IParameterDescriptor[] parameters)
+        protected DeviceFactory(params IParameterDescriptor[] parameters)
         {
-            DeviceName = deviceName;
             Parameters = parameters;
             DeviceType = DeviceType.Of(typeof(TDeviceBaseType));
         }
-
-        public string DeviceName { get; }
 
         public DeviceType DeviceType { get; }
 
@@ -172,7 +194,11 @@ namespace SharpBCI.Extensions.Devices
 
         public abstract TDevice Create(IReadonlyContext context);
 
-        IDevice IDeviceFactory.Create(IReadonlyContext context) => Create(context);
+        DeviceType IDeviceFactory.GetDeviceType(Type deviceClass) => DeviceType;
+
+        IReadOnlyCollection<IParameterDescriptor> IDeviceFactory.GetParameters(Type deviceClass) => Parameters;
+
+        IDevice IDeviceFactory.Create(Type deviceClass, IReadonlyContext context) => Create(context);
 
     }
 

@@ -16,6 +16,7 @@ namespace SharpBCI.BiosignalSamplers
 {
 
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class NeuroScanSampler : BiosignalSampler
     {
 
@@ -28,7 +29,7 @@ namespace SharpBCI.BiosignalSamplers
 
             public static readonly Parameter<int> PortParam = new Parameter<int>("Port", 9889);
 
-            public Factory() : base(NeuroScanSampler.DeviceName, IpAddressParam, PortParam) { }
+            public Factory() : base(IpAddressParam, PortParam) { }
 
             public override NeuroScanSampler Create(IReadonlyContext context) =>
                 new NeuroScanSampler(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context));
@@ -188,7 +189,7 @@ namespace SharpBCI.BiosignalSamplers
 
         public NeuroScanSampler(IPAddress address, int port) : this(new IPEndPoint(address, port)) { }
 
-        public NeuroScanSampler(IPEndPoint endPoint) : base(DeviceName)
+        public NeuroScanSampler(IPEndPoint endPoint) 
         {
             EndPoint = endPoint;
 

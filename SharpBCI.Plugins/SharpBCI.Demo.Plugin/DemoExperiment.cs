@@ -1,69 +1,57 @@
-﻿using MarukoLib.Lang;
-using MarukoLib.UI;
+﻿using System.Drawing;
+using System.Reflection;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Experiments;
-using System.Collections.Generic;
-using System.Drawing;
 
 namespace SharpBCI.Experiments.Demo
 {
 
-    [Experiment(ExperimentName, "1.0", Description = "This is a simple demo.")]
+    [Experiment(ExperimentName, typeof(AutoExperimentFactory), "1.0", Description = "This is a simple demo.")]
     public class DemoExperiment : Experiment
     {
 
         public const string ExperimentName = "Demo";
 
         /// <summary>
-        /// The factory class of demo experiment.
+        /// Implement 'IAutoParamAdapter' to provide value validation of parameter.
         /// </summary>
-        public class Factory : ExperimentFactory<DemoExperiment>
+        private class ParamAdapter : IAutoParamAdapter
         {
 
-            /// <summary>
-            /// Text parameter 
-            /// </summary>
-            private static readonly Parameter<string> Text = new Parameter<string>("Text", null, description: "The text to display", defaultValue: "Demo");
-
-            private static readonly Parameter<Color> ForegroundColor = new Parameter<Color>("Foreground Color", null, "The color of text", Color.Red);
-
-            private static readonly Parameter<Color> BackgroundColor = new Parameter<Color>("Background Color", null, "The background color of window", Color.Black);
-
-            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[] { new ParameterGroup(Text, ForegroundColor, BackgroundColor), };
-
-            /// <summary>
-            /// Create the demo experiment with given context.
-            /// </summary>
-            /// <param name="context">The context that containing required parameters.</param>
-            /// <returns>The created experiment instance.</returns>
-            public override DemoExperiment Create(IReadonlyContext context)
+            public bool IsValid(FieldInfo field, object value)
             {
-                var experiment = new DemoExperiment();
-                experiment.Text = Text.Get(context);
-                experiment.ForegroundColor = ForegroundColor.Get(context, ColorUtils.ToUIntArgb);
-                experiment.BackgroundColor = BackgroundColor.Get(context, ColorUtils.ToUIntArgb);
-                return experiment;
+                if (field.Name == nameof(FontSize)) return value is ushort val && val > 0;
+                return true;
             }
 
         }
 
         /// <summary>
-        /// Text to display in the window.
+        /// The text to display in the window.
         /// </summary>
-        public string Text;
+        [AutoParam]
+        public string Text = "Demo";
 
         /// <summary>
-        /// The color of text.
+        /// Font size of the text to display in the window.
         /// </summary>
-        public uint ForegroundColor;
+        [AutoParam("Font Size", Unit = "dp", Desc = "Font size of the text to display in the window.", AdapterType = typeof(ParamAdapter))]
+        public ushort FontSize = 80;
 
         /// <summary>
         /// The background color of window.
         /// </summary>
-        public uint BackgroundColor;
+        [AutoParam("Background Color", Desc = "The background color of the window.")]
+        public Color BackgroundColor = Color.Black;
 
-        internal DemoExperiment() : base(ExperimentName) { }
+        /// <summary>
+        /// The color of the text.
+        /// </summary>
+        [AutoParam("Foreground Color", Desc = "The color of the text.")]
+        public Color ForegroundColor = Color.Red;
+
+        public DemoExperiment() : base(ExperimentName) { }
 
         public override void Run(Session session) => new TestWindow(session, this).ShowDialog();
 

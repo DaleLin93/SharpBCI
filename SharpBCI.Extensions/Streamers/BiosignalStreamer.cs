@@ -60,13 +60,12 @@ namespace SharpBCI.Extensions.Streamers
     /// Format:  (N channels + 1 time)
     ///     C1, C2, C3, ..., Cn, Time (relative to session create time);
     /// </summary>
+    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
     public class BiosignalDataFileWriter : TimestampedFileWriter<ISample>
     {
 
         public sealed class Factory : StreamConsumerFactory<Timestamped<ISample>>
         {
-
-            public Factory() : base($"Biosignal Data File Writer (*{FileSuffix})") { }
 
             public override IStreamConsumer<Timestamped<ISample>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new BiosignalDataFileWriter(session.GetDataFileName(FileSuffix, num), session.CreateTimestamp);
@@ -74,6 +73,8 @@ namespace SharpBCI.Extensions.Streamers
         }
 
         public const string FileSuffix = ".dat";
+
+        public const string ConsumerName = "Biosignal Data File Writer (*" + FileSuffix + ")";
 
         public BiosignalDataFileWriter([NotNull] string fileName, long baseTime = 0, int bufferSize = 4096) : base(fileName, bufferSize, baseTime) { }
 

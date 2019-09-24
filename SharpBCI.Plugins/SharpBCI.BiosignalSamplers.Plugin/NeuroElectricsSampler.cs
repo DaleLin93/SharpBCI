@@ -11,6 +11,7 @@ using SharpBCI.Extensions.Devices;
 namespace SharpBCI.BiosignalSamplers
 {
 
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class NeuroElectricsSampler : BiosignalSampler
     {
 
@@ -23,7 +24,7 @@ namespace SharpBCI.BiosignalSamplers
 
             public static readonly Parameter<int> PortParam = new Parameter<int>("Port", 1234);
 
-            public Factory() : base(NeuroElectricsSampler.DeviceName, IpAddressParam, PortParam) { }
+            public Factory() : base(IpAddressParam, PortParam) { }
 
             public override NeuroElectricsSampler Create(IReadonlyContext context) => 
                 new NeuroElectricsSampler(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context));
@@ -42,7 +43,7 @@ namespace SharpBCI.BiosignalSamplers
 
         public NeuroElectricsSampler(IPAddress address, int port) : this(new IPEndPoint(address, port)) { }
 
-        public NeuroElectricsSampler(IPEndPoint endPoint) : base(DeviceName)
+        public NeuroElectricsSampler(IPEndPoint endPoint)
         {
             _localBuf = new ThreadLocal<byte[]>(() => new byte[4 * NumOfChannel]);
             _tcpClient = new TcpClient();

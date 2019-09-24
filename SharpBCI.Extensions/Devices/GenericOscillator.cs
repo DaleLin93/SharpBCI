@@ -4,6 +4,7 @@ using MarukoLib.Lang;
 namespace SharpBCI.Extensions.Devices
 {
 
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class GenericOscillator : BiosignalSampler
     {
 
@@ -18,7 +19,7 @@ namespace SharpBCI.Extensions.Devices
 
             public static readonly Parameter<double> WaveFrequencyParam = new Parameter<double>("Wave Frequency", 15);
 
-            public Factory() : base(GenericOscillator.DeviceName, ChannelNumParam, SamplingRateParam, WaveFrequencyParam) { }
+            public Factory() : base(ChannelNumParam, SamplingRateParam, WaveFrequencyParam) { }
 
             public override GenericOscillator Create(IReadonlyContext context) => new GenericOscillator(ChannelNumParam.Get(context), SamplingRateParam.Get(context), WaveFrequencyParam.Get(context));
 
@@ -32,7 +33,7 @@ namespace SharpBCI.Extensions.Devices
 
         private long _lastTimeTicks = 0;
 
-        public GenericOscillator(ushort channelNum, double frequency, double waveFrequency) : base(DeviceName)
+        public GenericOscillator(ushort channelNum, double frequency, double waveFrequency) 
         {
             ChannelNum = channelNum;
             Frequency = frequency;

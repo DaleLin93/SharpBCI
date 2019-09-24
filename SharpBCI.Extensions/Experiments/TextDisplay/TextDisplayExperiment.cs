@@ -10,7 +10,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Extensions.Experiments.TextDisplay
 {
 
-    [Experiment(ExperimentName, "1.0", Description = "A text display paradigm.")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0", Description = "A text display paradigm.")]
     public class TextDisplayExperiment : StagedExperiment.Basic
     {
 

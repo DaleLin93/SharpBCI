@@ -9,93 +9,17 @@ using MarukoLib.Lang;
 namespace SharpBCI.Extensions.Data
 {
 
-    public interface IAutoParamAdapter
-    {
-
-        bool IsValid(FieldInfo field, object value);
-
-    }
-
-    [AttributeUsage(AttributeTargets.Field)]
-    public class AutoParamAttribute : Attribute
-    {
-
-        private static readonly IDictionary<Type, IAutoParamAdapter> Adapters = new Dictionary<Type, IAutoParamAdapter>();
-
-        public AutoParamAttribute([NotNull] string name, [CanBeNull] string unit = null, [CanBeNull] string desc = null, [CanBeNull] Type adapterType = null)
-        {
-            Name = name;
-            Unit = unit;
-            Desc = desc;
-            Adapter = GetAdapter(adapterType);
-        }
-
-        [CanBeNull]
-        private static IAutoParamAdapter GetAdapter([CanBeNull] Type adapterType)
-        {
-            if (adapterType == null) return null;
-            if (Adapters.TryGetValue(adapterType, out var adapter)) return adapter;
-            return Adapters[adapterType] = (IAutoParamAdapter)adapterType.InitClassOrStruct();
-        }
-
-        [NotNull] public string Name { get; }
-
-        [CanBeNull] public string Unit { get; }
-
-        [CanBeNull] public string Desc { get; }
-
-        [CanBeNull] public IAutoParamAdapter Adapter { get; }
-
-    }
-
     public sealed class AutoParameterizedObjectFactory : IParameterizedObjectFactory
     {
-
-        private class AutoParam : IParameterDescriptor
-        {
-
-            internal AutoParam(FieldInfo field, AutoParamAttribute attribute)
-            {
-                Field = field;
-                Attribute = attribute;
-            }
-
-            public FieldInfo Field { get; }
-
-            public AutoParamAttribute Attribute { get; }
-
-            public Type ValueType => Field.FieldType;
-
-            public string Name => Attribute.Name;
-
-            public string Description => Attribute.Desc;
-
-            public string Key => ParameterUtils.GenerateKey(Attribute.Name);
-
-            public string Unit => Attribute.Unit;
-
-            public bool IsNullable => ValueType.IsNullableType();
-
-            public object DefaultValue => Activator.CreateInstance(ValueType);
-
-            public IEnumerable SelectableValues => ValueType.IsEnum ? Enum.GetValues(ValueType) : null;
-
-            public ITypeConverter TypeConverter => null;
-
-            public IReadonlyContext Metadata => EmptyContext.Instance;
-
-            public bool IsValid(object value) => IsNullable && value == null || ValueType.IsInstanceOfType(value) && (Attribute.Adapter?.IsValid(Field, value) ?? true);
-
-        }
 
         private struct AutoParameterizedObjectMeta
         {
 
             [NotNull] public readonly Func<IParameterizedObject> Constructor;
 
-            [NotNull] public readonly AutoParam[] Parameters;
+            [NotNull] public readonly AutoParameter[] Parameters;
 
-            public AutoParameterizedObjectMeta([NotNull] Func<IParameterizedObject> constructor, [NotNull] AutoParam[] parameters)
+            public AutoParameterizedObjectMeta([NotNull] Func<IParameterizedObject> constructor, [NotNull] AutoParameter[] parameters)
             {
                 Constructor = constructor;
                 Parameters = parameters;
@@ -118,13 +42,13 @@ namespace SharpBCI.Extensions.Data
             }
             else
                 constructor = () => (IParameterizedObject)Activator.CreateInstance(parameter.ValueType);
-            var parameters = new LinkedList<AutoParam>();
+            var parameters = new LinkedList<AutoParameter>();
             foreach (var field in parameter.ValueType.GetFields())
             {
                 if (field.IsStatic || field.IsInitOnly) continue;
                 var attribute = field.GetCustomAttribute<AutoParamAttribute>();
                 if (attribute == null) continue;
-                parameters.AddLast(new AutoParam(field, attribute));
+                parameters.AddLast(new AutoParameter(field, attribute));
             }
             return _autoParameters[parameter.ValueType] = new AutoParameterizedObjectMeta(constructor, parameters.ToArray());
         }

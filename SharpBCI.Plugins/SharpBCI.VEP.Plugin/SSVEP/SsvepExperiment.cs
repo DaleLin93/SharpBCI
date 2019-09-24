@@ -34,7 +34,7 @@ namespace SharpBCI.Experiments.VEP.SSVEP
 
     }
 
-    [Experiment(ExperimentName, "1.0")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0")]
     public class SsvepExperiment : StagedExperiment.Basic
     {
 

@@ -9,6 +9,7 @@ using MarukoLib.Lang;
 namespace SharpBCI.Extensions.Devices
 {
 
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class ScreenCapturer : VideoSource
     {
 
@@ -25,7 +26,7 @@ namespace SharpBCI.Extensions.Devices
 
             public static readonly Parameter<int> HeightParam = new Parameter<int>("Height", -1);
 
-            public Factory() : base(ScreenCapturer.DeviceName, MaxFpsParam, ScreenParam, WidthParam, HeightParam) { }
+            public Factory() : base(MaxFpsParam, ScreenParam, WidthParam, HeightParam) { }
 
             public override ScreenCapturer Create(IReadonlyContext context) => 
                 new ScreenCapturer(MaxFpsParam.Get(context), ScreenParam.Get(context), WidthParam.Get(context), HeightParam.Get(context));
@@ -48,7 +49,7 @@ namespace SharpBCI.Extensions.Devices
 
         private Bitmap _capturedBitmap, _scaledBitmap;
 
-        public ScreenCapturer(byte maxFps, int screenIndex, int width, int height) : base(DeviceName)
+        public ScreenCapturer(byte maxFps, int screenIndex, int width, int height) 
         {
             _screenIndex = screenIndex;
             _targetWidth = width;

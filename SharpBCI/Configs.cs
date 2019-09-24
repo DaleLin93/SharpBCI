@@ -166,7 +166,7 @@ namespace SharpBCI
             if (experimentPart.Params.Params != null && App.Instance.Registries.Registry<PluginExperiment>().LookUp(experimentPart.Params.Id, out var exp))
             {
                 var context = exp.DeserializeParams(experimentPart.Params.Params);
-                foreach (var group in exp.Factory.ParameterGroups)
+                foreach (var group in exp.Factory.GetParameterGroups(exp.ExperimentClass))
                 foreach (var parameter in group.GetParameters())
                     ((IDictionary<string, object>)expandoContext)[parameter.Key] = context.TryGet(parameter, out var val) ? val : parameter.DefaultValue;
             }

@@ -14,6 +14,7 @@ using IVideoSource = SharpBCI.Extensions.Devices.IVideoSource;
 namespace SharpBCI.VideoSources
 {
 
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class WebCamVideoSource : VideoSource
     {
 
@@ -45,7 +46,7 @@ namespace SharpBCI.VideoSources
                 .SetMetadata(SelectablePresenter.SelectableValuesFuncProperty, p => GetVideoCaptureDeviceMonikers())
                 .Build();
 
-            public Factory() : base(WebCamVideoSource.DeviceName, DeviceParam) { }
+            public Factory() : base(DeviceParam) { }
 
             [SuppressMessage("ReSharper", "CollectionNeverUpdated.Local")]
             private static IEnumerable<DeviceInfo> GetVideoCaptureDeviceMonikers()
@@ -74,7 +75,7 @@ namespace SharpBCI.VideoSources
 
         private volatile IVideoFrame _frame;
 
-        public WebCamVideoSource(string moniker) : base(DeviceName)
+        public WebCamVideoSource(string moniker) 
         {
             Device = new VideoCaptureDevice(moniker ?? throw new ArgumentNullException(nameof(moniker)));
             _videoSource = new AsyncVideoSource(Device);

@@ -23,7 +23,6 @@ using SharpBCI.Extensions.Windows;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
 using MarukoLib.UI;
-using SharpBCI.Extensions.Experiments;
 using ValidationResult = SharpBCI.Extensions.Experiments.ValidationResult;
 
 namespace SharpBCI.Windows
@@ -325,8 +324,8 @@ namespace SharpBCI.Windows
             _experimentDescriptionRow.Visibility = string.IsNullOrWhiteSpace(_experimentDescriptionTextBlock.Text) 
                 ? Visibility.Collapsed : Visibility.Visible;
 
-            ExperimentParamPanel.SetDescriptors(experiment.Factory as IParameterPresentAdapter, experiment.Factory.ParameterGroups);
-            ExperimentSummaryPanel.SetSummaries(experiment.Factory as ISummaryPresentAdapter, experiment.Factory.Summaries);
+            ExperimentParamPanel.SetDescriptors(experiment.Factory as IParameterPresentAdapter, experiment.Factory.GetParameterGroups(experiment.ExperimentClass));
+            ExperimentSummaryPanel.SetSummaries(experiment.Factory as ISummaryPresentAdapter, experiment.Factory.GetSummaries(experiment.ExperimentClass));
 
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();
@@ -402,7 +401,8 @@ namespace SharpBCI.Windows
 
         private bool ValidateExperimentParams(bool msgBox = true)
         {
-            var factory = _currentExperiment?.Factory;
+            var experiment = _currentExperiment;
+            var factory = experiment?.Factory;
             if (factory == null) return false;
             var adapter = factory as IParameterPresentAdapter;
             var invalidParamValidationResults = ExperimentParamPanel.GetInvalidParams()
@@ -417,10 +417,10 @@ namespace SharpBCI.Windows
                     .Select(pd =>
                     {
                         var valid = ValidationResult.Failed();
-                        try { valid = factory.CheckValid(context, pd); }
+                        try { valid = factory.CheckValid(experiment.ExperimentClass, context, pd); }
                         catch (Exception e) { Logger.Warn("ValidateExperimentParams", e, "parameter", pd.Key); }
-                        var row = ExperimentParamPanel[pd].Container;
-                        if (row.IsError = valid.IsFailed) row.ErrorMessage = valid.Message.Trim();
+                        var row = ExperimentParamPanel[pd]?.Container;
+                        if (row != null && (row.IsError = valid.IsFailed)) row.ErrorMessage = valid.Message.Trim();
                         return new ParamValidationResult(pd, valid);
                     })
                     .Where(result => result.Result.IsFailed)
@@ -513,6 +513,23 @@ namespace SharpBCI.Windows
                     var menuItem = new MenuItem { Style = style, Header = plugin.Name};
                     var children = new LinkedList<object>();
 
+                    foreach (var deviceType in _deviceConfigPanel.DeviceTypes)
+                    {
+                        var devices = plugin.Devices.Where(d => d.DeviceType == deviceType).ToArray();
+                        if (devices.Length <= 0)
+                            children.AddLast(new MenuItem { Style = style, Header = $"No {deviceType.DisplayName.ToLowerInvariant()} Implementations", IsEnabled = false });
+                        else
+                            foreach (var device in devices)
+                            {
+                                var deviceAttribute = device.DeviceAttribute;
+                                var menuItemHeader = $"{deviceAttribute.Name} ({deviceAttribute.FullVersionName}) - {device.DeviceClass.FullName}";
+                                var deviceMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
+                                deviceMenuItem.Click += (sender, e) => _deviceConfigPanel.FindAndSelectDevice(deviceType, device.DeviceName, null);
+                                children.AddLast(deviceMenuItem);
+                            }
+                        children.AddLast(new Separator());
+                    }
+
                     if (!plugin.AppEntries.Any())
                         children.AddLast(new MenuItem { Style = style, Header = "No App Entry Implementations", IsEnabled = false });
                     else
@@ -529,28 +546,26 @@ namespace SharpBCI.Windows
                     else
                         foreach (var experiment in plugin.Experiments)
                         {
-                            var experimentAttribute = experiment.Factory.ExperimentType.GetExperimentAttribute();
-                            var menuItemHeader = $"{experimentAttribute.Name} ({experimentAttribute.FullVersionName}) - {experiment.GetType().FullName}";
-                            var experimentMenuItem = new MenuItem {Style = style, Header = menuItemHeader};
+                            var experimentAttribute = experiment.ExperimentAttribute;
+                            var menuItemHeader = $"{experimentAttribute.Name} ({experimentAttribute.FullVersionName}) - {experiment.ExperimentClass.FullName}";
+                            var experimentMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
                             experimentMenuItem.Click += (sender, e) => _experimentComboBox.FindAndSelect(experimentAttribute.Name, null);
                             children.AddLast(experimentMenuItem);
                         }
                     children.AddLast(new Separator());
 
-                    foreach (var deviceType in _deviceConfigPanel.DeviceTypes)
-                    {
-                        var devices = plugin.Devices.Where(d => d.DeviceType == deviceType).ToArray();
-                        if (devices.Length <= 0)
-                            children.AddLast(new MenuItem { Style = style, Header = $"No {deviceType.DisplayName.ToLowerInvariant()} Implementations", IsEnabled = false });
-                        else
-                            foreach (var device in devices)
-                            {
-                                var deviceMenuItem = new MenuItem { Style = style, Header = $"{device.Factory.DeviceName} - {device.GetType().FullName}" };
-                                deviceMenuItem.Click += (sender, e) => _deviceConfigPanel.FindAndSelectDevice(deviceType, device.Factory.DeviceName, null);
-                                children.AddLast(deviceMenuItem);
-                            }
-                        children.AddLast(new Separator());
-                    }
+                    if (!plugin.StreamConsumers.Any())
+                        children.AddLast(new MenuItem { Style = style, Header = "No Stream-Consumer Implementations", IsEnabled = false });
+                    else
+                        foreach (var streamConsumer in plugin.StreamConsumers)
+                        {
+                            var consumerAttribute = streamConsumer.ConsumerAttribute;
+                            var menuItemHeader = $"{consumerAttribute.Name} ({consumerAttribute.FullVersionName}) - {streamConsumer.ConsumerClass.FullName}";
+                            var experimentMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
+                            experimentMenuItem.Click += (sender, e) => _experimentComboBox.FindAndSelect(consumerAttribute.Name, null);
+                            children.AddLast(experimentMenuItem);
+                        }
+                    children.AddLast(new Separator());
 
                     if (!plugin.Experiments.Any() && !plugin.CustomMarkers.Any())
                         children.AddLast(new MenuItem { Style = style, Header = "No Custom Marker Definitions", IsEnabled = false });

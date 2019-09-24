@@ -89,6 +89,7 @@
     <Compile Include="Apps\FileRenamingToolWindow.xaml.cs">
       <DependentUpon>FileRenamingToolWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AutoParameter.cs" />
     <Compile Include="Data\AutoParameterizedObject.cs" />
     <Compile Include="Data\ComplexObject.cs" />
     <Compile Include="Data\Dimensions.cs" />
@@ -114,6 +115,7 @@
     <Compile Include="Devices\GazeFileReader.cs" />
     <Compile Include="Devices\Device.cs" />
     <Compile Include="Devices\CursorTracker.cs" />
+    <Compile Include="Experiments\AutoExperimentFactory.cs" />
     <Compile Include="Experiments\TextDisplay\TextDisplayExperiment.cs" />
     <Compile Include="Experiments\TextDisplay\TestWindow.xaml.cs">
       <DependentUpon>TestWindow.xaml</DependentUpon>

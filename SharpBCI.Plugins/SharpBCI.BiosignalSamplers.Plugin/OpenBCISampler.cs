@@ -44,6 +44,7 @@ namespace SharpBCI.BiosignalSamplers
      *
      */
     [SuppressMessage("ReSharper", "InconsistentNaming")]
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class OpenBCISampler : BiosignalSampler
     {
 
@@ -56,7 +57,7 @@ namespace SharpBCI.BiosignalSamplers
 
             public static readonly Parameter<bool> DaisyModuleParam = new Parameter<bool>("Daisy Module", false);
 
-            public Factory() : base(OpenBCISampler.DeviceName, SerialPortParam, DaisyModuleParam) { }
+            public Factory() : base(SerialPortParam, DaisyModuleParam) { }
 
             public override OpenBCISampler Create(IReadonlyContext context) => new OpenBCISampler(SerialPortParam.Get(context), DaisyModuleParam.Get(context));
 
@@ -74,7 +75,7 @@ namespace SharpBCI.BiosignalSamplers
 
         public OpenBCISampler(string serialPortName, bool daisyMode = false) : this(serialPortName, (ushort) (daisyMode ? +16 : +8), daisyMode ? 250 : 500) { }
 
-        public OpenBCISampler(string serialPortName, ushort channelNum, double frequency) : base(DeviceName)
+        public OpenBCISampler(string serialPortName, ushort channelNum, double frequency) 
         {
             SerialPortName = serialPortName;
             ChannelNum = channelNum;

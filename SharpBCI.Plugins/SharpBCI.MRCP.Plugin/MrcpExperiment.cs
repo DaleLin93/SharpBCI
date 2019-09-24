@@ -10,7 +10,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Experiments.MRCP
 {
 
-    [Experiment(ExperimentName, "1.0")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0")]
     public class MrcpExperiment : StagedExperiment.Basic
     {
 

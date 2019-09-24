@@ -246,7 +246,7 @@ namespace SharpBCI.Extensions
 
             public IReadonlyContext Metadata;
 
-            public Builder(string name) : this(ParameterUtils.GenerateKey(name), name) { }
+            public Builder(string name) : this(ParameterUtils.GenerateKeyByName(name), name) { }
 
             public Builder(string key, string name)
             {
@@ -361,22 +361,22 @@ namespace SharpBCI.Extensions
         }
 
         public Parameter(string name, T defaultValue = default, IEnumerable<T> selectableValues = null)
-            : this(ParameterUtils.GenerateKey(name), name, null, null, defaultValue, selectableValues) { }
+            : this(ParameterUtils.GenerateKeyByName(name), name, null, null, defaultValue, selectableValues) { }
 
         public Parameter(string name, string description, T defaultValue = default, IEnumerable<T> selectableValues = null)
-            : this(ParameterUtils.GenerateKey(name), name, null, description, defaultValue, selectableValues) { }
+            : this(ParameterUtils.GenerateKeyByName(name), name, null, description, defaultValue, selectableValues) { }
 
         public Parameter(string name, string unit, string description, T defaultValue = default, IEnumerable<T> selectableValues = null)
-            : this(ParameterUtils.GenerateKey(name), name, unit, description, defaultValue, selectableValues) { }
+            : this(ParameterUtils.GenerateKeyByName(name), name, unit, description, defaultValue, selectableValues) { }
 
         public Parameter(string key, string name, string unit, string description, T defaultValue = default, IEnumerable<T> selectableValues = null)
             : this(CreateBuilderWithKey(key, name, defaultValue).SetUnit(unit).SetDescription(description).SetSelectableValues(selectableValues, false)) { }
 
         public Parameter(string name, Predicate<T> validator, T defaultValue = default)
-            : this(ParameterUtils.GenerateKey(name), name, null, null, validator, defaultValue) { }
+            : this(ParameterUtils.GenerateKeyByName(name), name, null, null, validator, defaultValue) { }
 
         public Parameter(string name, string unit, string description, Predicate<T> validator, T defaultValue = default)
-            : this(ParameterUtils.GenerateKey(name), name, unit, description, validator, defaultValue) { }
+            : this(ParameterUtils.GenerateKeyByName(name), name, unit, description, validator, defaultValue) { }
 
         public Parameter(string key, string name, string unit, string description, Predicate<T> validator, T defaultValue = default)
             : this(CreateBuilderWithKey(key, name, defaultValue).SetUnit(unit).SetDescription(description).SetValidator(validator)) { }
@@ -398,9 +398,9 @@ namespace SharpBCI.Extensions
 
         public static Builder CreateBuilderWithKey(string key, string name, T defaultValue = default) => new Builder(key, name).SetDefaultValue(defaultValue);
 
-        public static Parameter<T> OfEnum(string name, T defaultValue) => OfEnum(ParameterUtils.GenerateKey(name), name, null, null, defaultValue);
+        public static Parameter<T> OfEnum(string name, T defaultValue) => OfEnum(ParameterUtils.GenerateKeyByName(name), name, null, null, defaultValue);
 
-        public static Parameter<T> OfEnum(string name, string unit = null, string description = null) => OfEnum(ParameterUtils.GenerateKey(name), name, unit, description);
+        public static Parameter<T> OfEnum(string name, string unit = null, string description = null) => OfEnum(ParameterUtils.GenerateKeyByName(name), name, unit, description);
 
         public static Parameter<T> OfEnum(string key, string name, string unit, string description)
         {
@@ -475,7 +475,7 @@ namespace SharpBCI.Extensions
 
         public static object IsValidOrThrow(this IParameterDescriptor parameter, object value)
         {
-            if(!parameter.IsValid(value)) throw new ArgumentException();
+            if(!parameter.IsValid(value)) throw new ArgumentException($"Value is invalid, parameter: {parameter.Name}, value: {value}");
             return value;
         }
 
@@ -543,7 +543,7 @@ namespace SharpBCI.Extensions
     public static class ParameterUtils
     {
 
-        public static string GenerateKey(string paramName)
+        public static string GenerateKeyByName(string paramName)
         {
             var chars = paramName
                 .Filter(c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))

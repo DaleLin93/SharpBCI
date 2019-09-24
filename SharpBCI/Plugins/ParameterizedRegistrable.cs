@@ -15,11 +15,11 @@ namespace SharpBCI.Plugins
 
         public abstract string Identifier { get; }
 
-        public abstract IEnumerable<IParameterDescriptor> Parameters { get; } 
+        public abstract IEnumerable<IParameterDescriptor> AllParameters { get; } 
 
-        public IDictionary<string, string> SerializeParams(IReadonlyContext context) => Parameters.SerializeParams(context);
+        public IDictionary<string, string> SerializeParams(IReadonlyContext context) => AllParameters.SerializeParams(context);
 
-        public IContext DeserializeParams(IDictionary<string, string> input) => Parameters.DeserializeParams(input);
+        public IContext DeserializeParams(IDictionary<string, string> input) => AllParameters.DeserializeParams(input);
 
         public override string ToString() => Identifier;
 

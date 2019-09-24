@@ -48,13 +48,12 @@ namespace SharpBCI.Extensions.Streamers
     /// Format: 
     ///     X; Y; Time (relative to session create time);
     /// </summary>
+    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
     public class GazePointFileWriter : TimestampedFileWriter<IGazePoint>
     {
 
         public sealed class Factory : StreamConsumerFactory<Timestamped<IGazePoint>>
         {
-
-            public Factory() : base($"Gaze Point File Writer (*{FileSuffix})") { }
 
             public override IStreamConsumer<Timestamped<IGazePoint>> Create(Session session, IReadonlyContext context, byte? num) => 
                 new GazePointFileWriter(session.GetDataFileName(FileSuffix), session.CreateTimestamp);
@@ -62,6 +61,8 @@ namespace SharpBCI.Extensions.Streamers
         }
 
         public const string FileSuffix = ".gaz";
+
+        public const string ConsumerName = "Gaze Point File Writer (*" + FileSuffix + ")";
 
         public GazePointFileWriter([NotNull] string fileName, long baseTime = 0, int bufferSize = 2048) : base(fileName, bufferSize, baseTime) { }
 

@@ -11,10 +11,11 @@ using Path = SharpBCI.Extensions.Data.Path;
 namespace SharpBCI.Extensions.Devices
 {
 
+    [Device(DeviceName, typeof(Factory), "1.0")]
     public class GazeFileReader : EyeTracker
     {
 
-        public static readonly string DeviceName = $"Gaze File Reader (*{GazePointFileWriter.FileSuffix})";
+        public const string DeviceName = "Gaze File Reader (*"+ GazePointFileWriter.FileSuffix + ")";
 
         public class Factory : DeviceFactory<GazeFileReader, IEyeTracker>
         {
@@ -25,7 +26,7 @@ namespace SharpBCI.Extensions.Devices
                 .SetMetadata(PathPresenter.CheckExistenceProperty, true)
                 .Build();
 
-            public Factory() : base(GazeFileReader.DeviceName, GazeFileParam) { }
+            public Factory() : base(GazeFileParam) { }
 
             public override GazeFileReader Create(IReadonlyContext context)
             {
@@ -46,7 +47,7 @@ namespace SharpBCI.Extensions.Devices
 
         private int _sampleOffset;
 
-        public GazeFileReader(string file, long? startTimestamp = null) : base(DeviceName)
+        public GazeFileReader(string file, long? startTimestamp = null) 
         {
             File = file;
 

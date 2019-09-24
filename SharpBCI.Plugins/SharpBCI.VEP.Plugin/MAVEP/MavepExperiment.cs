@@ -14,7 +14,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Experiments.VEP.MAVEP
 {
 
-    [Experiment(ExperimentName, "1.0")]
+    [Experiment(ExperimentName, typeof(Factory), "1.0")]
     public class MavepExperiment : StagedExperiment.Basic
     {
 
@@ -29,19 +29,19 @@ namespace SharpBCI.Experiments.VEP.MAVEP
                 public struct StimulusSettings : IAutoParameterizedObject, IAutoParamAdapter
                 {
 
-                    [AutoParam("Count", null, "positive", typeof(StimulusSettings))]
+                    [AutoParam("Count", Desc = "positive", AdapterType = typeof(StimulusSettings))]
                     public uint Count;
 
-                    [AutoParam("Size", "dp", null, typeof(StimulusSettings))]
+                    [AutoParam("Size", Unit = "dp", AdapterType = typeof(StimulusSettings))]
                     public double Size;
 
-                    [AutoParam("Horizontal Offset", "dp", null, typeof(StimulusSettings))]
+                    [AutoParam("Horizontal Offset", Unit = "dp", AdapterType = typeof(StimulusSettings))]
                     public double HorizontalOffset;
 
-                    [AutoParam("Vertical Offset", "dp", null, typeof(StimulusSettings))]
+                    [AutoParam("Vertical Offset", Unit = "dp", AdapterType = typeof(StimulusSettings))]
                     public double VerticalOffset;
 
-                    [AutoParam("Tolerance", "dp", null, typeof(StimulusSettings))]
+                    [AutoParam("Tolerance", Unit = "dp", AdapterType = typeof(StimulusSettings))]
                     public double Tolerance;
 
                     public bool IsValid(FieldInfo field, object value)

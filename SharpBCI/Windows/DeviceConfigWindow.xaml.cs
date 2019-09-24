@@ -85,7 +85,8 @@ namespace SharpBCI.Windows
             var streamerValueType = deviceType.StreamerFactory?.ValueType;
             if (streamerValueType == null) return new object[] { NoneIdentifier };
             var list = new List<object> {NoneIdentifier};
-            list.AddRange(App.Instance.Registries.Registry<PluginStreamConsumer>().Registered.Where(rc => rc.Factory.AcceptType.IsAssignableFrom(streamerValueType)));
+            list.AddRange(App.Instance.Registries.Registry<PluginStreamConsumer>().Registered
+                .Where(pc => pc.Factory.GetAcceptType(pc.ConsumerClass).IsAssignableFrom(streamerValueType)));
             return list;
         }
 
@@ -104,7 +105,7 @@ namespace SharpBCI.Windows
 
         private void InitializeDeviceConfigurationPanel(PluginDevice device)
         {
-            DeviceConfigurationPanel.SetDescriptors(device?.Factory as IParameterPresentAdapter, AsGroup("Device", device?.Factory.Parameters));
+            DeviceConfigurationPanel.SetDescriptors(device?.Factory as IParameterPresentAdapter, AsGroup("Device", device?.Factory.GetParameters(device.DeviceClass)));
 
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();
@@ -113,7 +114,7 @@ namespace SharpBCI.Windows
 
         private void InitializeConsumerConfigurationPanel(PluginStreamConsumer consumer)
         {
-            DeviceConfigurationPanel.SetDescriptors(consumer?.Factory as IParameterPresentAdapter, AsGroup("", consumer?.Factory.Parameters));
+            DeviceConfigurationPanel.SetDescriptors(consumer?.Factory as IParameterPresentAdapter, AsGroup("", consumer?.Factory.GetParameters(consumer.ConsumerClass)));
 
             _currentConsumer = consumer;
             ScrollView.InvalidateScrollInfo();
