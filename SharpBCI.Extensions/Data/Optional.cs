@@ -1,18 +1,29 @@
-﻿namespace SharpBCI.Extensions.Data
+﻿using Newtonsoft.Json;
+using SharpBCI.Extensions.Presenters;
+
+namespace SharpBCI.Extensions.Data
 {
 
-    public sealed class Optional<T>
+    [Presenter(typeof(OptionalPresenter))]
+    public struct Optional<T>
     {
 
-        public Optional(bool set, T value)
+        private const string HasKey = "Has";
+
+        private const string ValueKey = "Value";
+
+        public Optional(T value) : this(true, value) { }
+
+        [JsonConstructor]
+        public Optional([JsonProperty(HasKey)] bool has, [JsonProperty(ValueKey)] T value)
         {
-            Set = set;
+            Has = has;
             Value = value;
         }
 
-        public bool Set { get; }
+        [JsonProperty(HasKey)] public bool Has { get; }
 
-        public T Value { get; }
+        [JsonProperty(ValueKey)] public T Value { get; }
 
     }
 
