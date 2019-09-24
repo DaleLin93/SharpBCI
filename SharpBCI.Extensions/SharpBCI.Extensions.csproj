@@ -92,6 +92,7 @@
     <Compile Include="Data\AutoParameterizedObject.cs" />
     <Compile Include="Data\ComplexObject.cs" />
     <Compile Include="Data\Dimensions.cs" />
+    <Compile Include="Data\Interval.cs" />
     <Compile Include="Data\Positions.cs" />
     <Compile Include="Data\RectangleLayout.cs" />
     <Compile Include="Data\Colors.cs" />
@@ -123,6 +124,9 @@
     </Compile>
     <Compile Include="Experiments\ExperimentFactory.cs" />
     <Compile Include="MarkerDefinitions.cs" />
+    <Compile Include="Presenters\DateTimePresenter.cs" />
+    <Compile Include="Presenters\IntervalPresenter.cs" />
+    <Compile Include="Presenters\SliderNumberPresenter.cs" />
     <Compile Include="StageProviders\BaselineStageProvider.cs" />
     <Compile Include="StageProviders\CountdownStageProvider.cs" />
     <Compile Include="StageProviders\DelayStageProvider.cs" />
@@ -250,16 +254,14 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\MinusButtonHighlighted.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\MinusButtonNormal.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Resources\BackgroundPattern.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Alert.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
