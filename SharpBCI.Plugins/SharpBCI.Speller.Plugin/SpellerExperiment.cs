@@ -364,29 +364,6 @@ namespace SharpBCI.Experiments.Speller
 
             private static readonly Parameter<SubBandMixingParams> SubBandMixingParams = new Parameter<SubBandMixingParams>("Sub-Band Mixing Params", new SubBandMixingParams(1.25F, 0.25));
 
-            private static readonly Parameter<SubBandMixingParams[]> SubBandMixingParams2 = Parameter<SubBandMixingParams[]>.CreateBuilder("Sub-Band Mixing Params2")
-                .SetDefaultValue(new[] { new SubBandMixingParams(1.25F, 5) })
-                .SetMetadata(MultiValuePresenter.FixedElementCountProperty, 2)
-                .Build();
-
-            private static readonly Parameter<SubBandMixingParams[]> SubBandMixingParams3 = Parameter<SubBandMixingParams[]>.CreateBuilder("Sub-Band Mixing Params3")
-                .SetDefaultValue(new[] { new SubBandMixingParams(1.25F, 5), new SubBandMixingParams(1.25F, 22) })
-                .Build();
-
-            private static readonly Parameter<DateTime> DATE0 = Parameter<DateTime>.CreateBuilder("Sub-DATE0").Build();
-            private static readonly Parameter<DateTime?> DATE1 = Parameter<DateTime?>.CreateBuilder("Sub-DATE1").Build();
-            private static readonly Parameter<Optional<DateTime>> DATE2 = Parameter<Optional<DateTime>>.CreateBuilder("Sub-DATE2").Build();
-            private static readonly Parameter<double> NUM = Parameter<double>.CreateBuilder("NUM")
-                .SetMetadata(Presenters.PresenterProperty, SliderNumberPresenter.Instance)
-                .SetMetadata(SliderNumberPresenter.MinimumValueProperty, 10)
-                .SetMetadata(SliderNumberPresenter.MaximumValueProperty, 100)
-                .Build();
-            private static readonly Parameter<Interval> Interval = Parameter<Interval>.CreateBuilder("Interval")
-                .SetMetadata(Presenters.PresenterProperty, IntervalPresenter.Instance)
-                .SetMetadata(SliderNumberPresenter.MinimumValueProperty, 10)
-                .SetMetadata(SliderNumberPresenter.MaximumValueProperty, 100)
-                .Build();
-
             private static readonly Parameter<uint> HarmonicsCount = new Parameter<uint>("Harmonics Count", null, null, Predicates.Positive, 1);
 
             private static readonly Parameter<uint> SsvepDelay = new Parameter<uint>("SSVEP Delay", unit: "ms", null, 0);
