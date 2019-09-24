@@ -7,6 +7,7 @@ using SharpBCI.Windows;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Security.Principal;
 using System.Text;
 using MarukoLib.IO;
 using MarukoLib.Lang.Exceptions;
@@ -68,10 +69,16 @@ namespace SharpBCI
 
         public static string SystemVariableFilePath => Path.Combine(FileUtils.ExecutableDirectory, SystemVariableFile);
 
+        public static bool IsAdministrator()
+        {
+            using (var identity = WindowsIdentity.GetCurrent())
+                return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
         public static void SetRealTimePriority()
         {
             Process.GetCurrentProcess().PriorityBoostEnabled = true;
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.RealTime;
+            Process.GetCurrentProcess().PriorityClass = IsAdministrator() ? ProcessPriorityClass.RealTime : ProcessPriorityClass.High;
         }
 
         /// <summary>
