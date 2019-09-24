@@ -197,7 +197,7 @@ namespace SharpBCI.Extensions.Windows
             {
                 if (_visible == value) return;
                 _visible = value;
-                UpdateVisibility();
+                ChangeVisibility(GroupPanel, _visible ? Visibility.Visible : Visibility.Collapsed);
             }
         }
 
@@ -208,14 +208,8 @@ namespace SharpBCI.Extensions.Windows
             {
                 if (_collapsed == value) return;
                 _collapsed = value;
-                UpdateVisibility();
+                ChangeVisibility(ItemsPanel, _collapsed ? Visibility.Collapsed : Visibility.Visible);
             }
-        }
-
-        private void UpdateVisibility()
-        {
-            ChangeVisibility(GroupPanel, _visible ? Visibility.Visible : Visibility.Collapsed);
-            ChangeVisibility(ItemsPanel, _collapsed ? Visibility.Collapsed : Visibility.Visible);
         }
 
     }
