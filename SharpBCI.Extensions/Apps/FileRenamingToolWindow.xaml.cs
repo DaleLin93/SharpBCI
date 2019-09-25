@@ -73,7 +73,7 @@ namespace SharpBCI.Extensions.Apps
             public override string ToString()
             {
                 var nameWithExt = Name;
-                if (Extensions.Count > 1) nameWithExt += ".*";
+                if (Extensions.Count > 1) nameWithExt += $".* ({Extensions.Count})";
                 else if (Extensions.Count == 1 && !string.IsNullOrWhiteSpace(Extensions[0])) nameWithExt += Extensions[0];
                 return nameWithExt;
             }
@@ -83,8 +83,19 @@ namespace SharpBCI.Extensions.Apps
 
         public FileRenamingToolWindow() => InitializeComponent();
 
+        public static string GetFileNameWithoutSuffix(string path)
+        {
+            if (path == null) return null;
+            int length;
+            if ((length = path.LastIndexOf('.')) == -1) length = path.Length;
+            var sharpAt = path.LastIndexOf('#', length - 1);
+            if (sharpAt >= 0 && int.TryParse(path.Substring(sharpAt + 1, length - sharpAt - 1), out _)) return path.Substring(0, sharpAt);
+            return path.Substring(0, length);
+        }
+
         private void UpdateFileList()
         {
+            if (!IsLoaded) return;
             var searchingDirectory = DirectoryTextBox.Text;
             if (!Directory.Exists(searchingDirectory))
             {
@@ -99,18 +110,30 @@ namespace SharpBCI.Extensions.Apps
             var directoryNames = Directory.EnumerateDirectories(searchingDirectory);
             if (regex != null) directoryNames = directoryNames.Where(d => regex.IsMatch(Path.GetFileName(d) ?? ""));
             foreach (var directory in directoryNames) list.AddLast(new DirectoryNode(searchingDirectory, Path.GetFileName(directory)));
-            var fileNames = Directory.EnumerateFiles(DirectoryTextBox.Text);
-            if (regex != null) fileNames = fileNames.Where(f => regex.IsMatch(Path.GetFileNameWithoutExtension(f) ?? ""));
-            var fileNameDict = new Dictionary<string, LinkedList<string>>();
-            foreach (var file in fileNames)
+            var filePaths = Directory.EnumerateFiles(DirectoryTextBox.Text);
+            if (GroupingCheckBox.IsChecked ?? false)
             {
-                var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
-                if (string.IsNullOrWhiteSpace(fileNameWithoutExt)) continue;
-                if (!fileNameDict.TryGetValue(fileNameWithoutExt, out var filePathList))
-                    fileNameDict[fileNameWithoutExt] = filePathList = new LinkedList<string>();
-                filePathList.AddLast(file);
+                var fileNameAndSuffixes = new Dictionary<string, LinkedList<string>>();
+                foreach (var file in filePaths)
+                {
+                    var fileName = Path.GetFileName(file);
+                    if (string.IsNullOrWhiteSpace(fileName)) continue;
+                    var fileNameWithoutSuffix = GetFileNameWithoutSuffix(fileName);
+                    if (string.IsNullOrWhiteSpace(fileNameWithoutSuffix)) continue;
+                    var suffix = fileName.Substring(fileNameWithoutSuffix.Length);
+                    if (regex != null && !regex.IsMatch(fileNameWithoutSuffix)) continue;
+                    if (!fileNameAndSuffixes.TryGetValue(fileNameWithoutSuffix, out var filePathList))
+                        fileNameAndSuffixes[fileNameWithoutSuffix] = filePathList = new LinkedList<string>();
+                    filePathList.AddLast(suffix);
+                }
+                foreach (var entry in fileNameAndSuffixes) list.AddLast(new FileNode(searchingDirectory, entry.Key, entry.Value));
             }
-            foreach (var entry in fileNameDict) list.AddLast(new FileNode(searchingDirectory, entry.Key, entry.Value.Select(Path.GetExtension)));
+            else
+            {
+                if (regex != null) filePaths = filePaths.Where(f => regex.IsMatch(Path.GetFileNameWithoutExtension(f) ?? ""));
+                foreach (var file in filePaths)
+                    list.AddLast(new FileNode(searchingDirectory, Path.GetFileNameWithoutExtension(file), new[] { Path.GetExtension(file) }));
+            }
             FilesListBox.ItemsSource = list;
         }
 
@@ -145,6 +168,8 @@ namespace SharpBCI.Extensions.Apps
         private void RenamePatternTextBox_OnTextChanged(object sender, TextChangedEventArgs e) => UpdateNewName();
 
         private void DirectoryTextBox_OnTextChanged(object sender, TextChangedEventArgs e) => UpdateFileList();
+
+        private void GroupingCheckBox_OnIsCheckedChanged(object sender, RoutedEventArgs e) => UpdateFileList();
 
         private void FilesListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateNewName();
 

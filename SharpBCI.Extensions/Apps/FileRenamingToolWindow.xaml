@@ -16,6 +16,12 @@
             <TextBlock Text="Directory" FontSize="9" Margin="5 6 5 2" />
             <TextBox x:Name="DirectoryTextBox" Margin="5 0 5 2" TextChanged="DirectoryTextBox_OnTextChanged" />
 
+            <TextBlock Text="Options" FontSize="9" Margin="5 6 5 2" />
+            <StackPanel Margin="5 0 5 2">
+                <CheckBox x:Name="GroupingCheckBox" Content="Grouping" FontSize="9" IsChecked="True" VerticalContentAlignment="Center"
+                          Checked="GroupingCheckBox_OnIsCheckedChanged" Unchecked="GroupingCheckBox_OnIsCheckedChanged" />
+            </StackPanel>
+
             <TextBlock Text="Files" FontSize="9" Margin="5 6 5 2" />
         </StackPanel>
         <StackPanel DockPanel.Dock="Bottom">
