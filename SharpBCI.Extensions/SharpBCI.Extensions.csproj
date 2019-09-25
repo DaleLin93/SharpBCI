@@ -94,6 +94,7 @@
     <Compile Include="Data\ComplexObject.cs" />
     <Compile Include="Data\Dimensions.cs" />
     <Compile Include="Data\Interval.cs" />
+    <Compile Include="Data\TimeInterval.cs" />
     <Compile Include="Data\Positions.cs" />
     <Compile Include="Data\RectangleLayout.cs" />
     <Compile Include="Data\Colors.cs" />
