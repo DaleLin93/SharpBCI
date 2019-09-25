@@ -44,27 +44,27 @@ namespace SharpBCI.Extensions.Streamers
     }
 
     /// <summary>
-    /// Gaze point file writer: *.gaze
+    /// Gaze point ASCII file writer (<see cref="FileSuffix"/>).
     /// Format: 
     ///     X; Y; Time (relative to session create time);
     /// </summary>
     [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
-    public class GazePointFileWriter : TimestampedFileWriter<IGazePoint>
+    public class GazePointAsciiFileWriter : TimestampedFileWriter<IGazePoint>
     {
 
         public sealed class Factory : StreamConsumerFactory<Timestamped<IGazePoint>>
         {
 
             public override IStreamConsumer<Timestamped<IGazePoint>> Create(Session session, IReadonlyContext context, byte? num) => 
-                new GazePointFileWriter(session.GetDataFileName(FileSuffix), session.CreateTimestamp);
+                new GazePointAsciiFileWriter(session.GetDataFileName(FileSuffix), session.CreateTimestamp);
 
         }
 
         public const string FileSuffix = ".gaz";
 
-        public const string ConsumerName = "Gaze Point File Writer (*" + FileSuffix + ")";
+        public const string ConsumerName = "Gaze Point Ascii File Writer (*" + FileSuffix + ")";
 
-        public GazePointFileWriter([NotNull] string fileName, long baseTime = 0, int bufferSize = 2048) : base(fileName, bufferSize, baseTime) { }
+        public GazePointAsciiFileWriter([NotNull] string fileName, long baseTime = 0, int bufferSize = 2048) : base(fileName, bufferSize, baseTime) { }
 
         protected override void Write(Stream stream, Timestamped<IGazePoint> data)
         {
@@ -75,6 +75,48 @@ namespace SharpBCI.Extensions.Streamers
             stream.WriteByte((byte)',');
             stream.WriteAscii(data.TimeStamp - BaseTime);
             stream.WriteByte((byte)'\n');
+        }
+
+    }
+
+    /// <summary>
+    /// Gaze point ASCII file writer (<see cref="FileSuffix"/>) in network order.
+    /// Format:  (X (double) + Y (double) + time (long))
+    /// Time is relative to session create time.
+    /// </summary>
+    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
+    public class GazePointBinaryFileWriter : TimestampedFileWriter<IGazePoint>
+    {
+
+        public sealed class Factory : StreamConsumerFactory<Timestamped<IGazePoint>>
+        {
+
+            public override IStreamConsumer<Timestamped<IGazePoint>> Create(Session session, IReadonlyContext context, byte? num) =>
+                new GazePointBinaryFileWriter(session.GetDataFileName(FileSuffix, num), session.CreateTimestamp);
+
+        }
+
+        public const string FileSuffix = ".bgaz";
+
+        public const string ConsumerName = "Gaze Point Binary File Writer (*" + FileSuffix + ")";
+
+        private readonly byte[] _buf = new byte[Math.Max(sizeof(double), sizeof(long))];
+
+        public GazePointBinaryFileWriter([NotNull] string fileName, long baseTime = 0, int bufferSize = 4096) : base(fileName, bufferSize, baseTime) { }
+
+        protected override void Write(Stream stream, Timestamped<IGazePoint> sample)
+        {
+            lock (_buf)
+            {
+                var bytes = _buf;
+                var gazePoint = sample.Value;
+                bytes.WriteDoubleAsNetworkOrder(gazePoint.X);
+                stream.Write(bytes, 0, sizeof(double));
+                bytes.WriteDoubleAsNetworkOrder(gazePoint.Y);
+                stream.Write(bytes, 0, sizeof(double));
+                bytes.WriteInt64AsNetworkOrder(sample.TimeStamp - BaseTime);
+                stream.Write(bytes, 0, sizeof(long));
+            }
         }
 
     }

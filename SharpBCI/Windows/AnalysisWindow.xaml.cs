@@ -93,7 +93,7 @@ namespace SharpBCI.Windows
 
         private static IList<BiosignalRecord> LoadBiosignalRecords(string dataFilePrefix, double? frequency)
         {
-            var file = dataFilePrefix + BiosignalDataFileWriter.FileSuffix;
+            var file = dataFilePrefix + BiosignalAsciiFileWriter.FileSuffix;
             if (!File.Exists(file)) return EmptyArray<BiosignalRecord>.Instance;
             var sampleRecords = new LinkedList<BiosignalRecord>();
             foreach (var line in File.ReadLines(file, Encoding.UTF8))
@@ -104,7 +104,7 @@ namespace SharpBCI.Windows
 
         private static IList<GazePointRecord> LoadGazePointRecords(string dataFilePrefix)
         {
-            var file = dataFilePrefix + GazePointFileWriter.FileSuffix;
+            var file = dataFilePrefix + GazePointAsciiFileWriter.FileSuffix;
             if (!File.Exists(file)) return EmptyArray<GazePointRecord>.Instance;
             var gazePointRecords = new LinkedList<GazePointRecord>();
             foreach (var line in File.ReadLines(file, Encoding.UTF8))

@@ -15,14 +15,14 @@ namespace SharpBCI.Extensions.Devices
     public class GazeFileReader : EyeTracker
     {
 
-        public const string DeviceName = "Gaze File Reader (*"+ GazePointFileWriter.FileSuffix + ")";
+        public const string DeviceName = "Gaze File Reader (*"+ GazePointAsciiFileWriter.FileSuffix + ")";
 
         public class Factory : DeviceFactory<GazeFileReader, IEyeTracker>
         {
 
             public static readonly Parameter<Path> GazeFileParam = Parameter<Path>.CreateBuilder("Gaze File", new Path(""))
                 .SetMetadata(PathPresenter.PathTypeProperty, PathPresenter.PathType.File)
-                .SetMetadata(PathPresenter.FilterProperty, FileUtils.GetFileFilter("Gaze File", GazePointFileWriter.FileSuffix))
+                .SetMetadata(PathPresenter.FilterProperty, FileUtils.GetFileFilter("Gaze File", GazePointAsciiFileWriter.FileSuffix))
                 .SetMetadata(PathPresenter.CheckExistenceProperty, true)
                 .Build();
 

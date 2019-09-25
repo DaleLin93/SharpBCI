@@ -224,8 +224,8 @@ namespace SharpBCI
                 Plugin.InitPluginDevice(null, typeof(ScreenCapturer)));
 
             Registries.Registry<PluginStreamConsumer>().RegisterAll(
-                Plugin.InitPluginStreamConsumer(null, typeof(BiosignalDataFileWriter)),
-                Plugin.InitPluginStreamConsumer(null, typeof(GazePointFileWriter)),
+                Plugin.InitPluginStreamConsumer(null, typeof(BiosignalAsciiFileWriter)),
+                Plugin.InitPluginStreamConsumer(null, typeof(GazePointAsciiFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(VideoFramesFileWriter)));
 
             Plugin.ScanPlugins(Registries, (file, ex) => ShowErrorMessage(ex, "Failed to load plugin: " + file));

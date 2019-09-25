@@ -15,14 +15,14 @@ namespace SharpBCI.Extensions.Devices
     public class DataFileReader : BiosignalSampler
     {
 
-        public const string DeviceName = "Data File Reader (*"+ BiosignalDataFileWriter.FileSuffix + ")";
+        public const string DeviceName = "Data File Reader (*"+ BiosignalAsciiFileWriter.FileSuffix + ")";
 
         public class Factory : DeviceFactory<DataFileReader, IBiosignalSampler>
         {
 
             public static readonly Parameter<Path> DataFileParam = Parameter<Path>.CreateBuilder("Data File", new Path(""))
                 .SetMetadata(PathPresenter.PathTypeProperty, PathPresenter.PathType.File)
-                .SetMetadata(PathPresenter.FilterProperty, FileUtils.GetFileFilter("Biosignal Data File", BiosignalDataFileWriter.FileSuffix))
+                .SetMetadata(PathPresenter.FilterProperty, FileUtils.GetFileFilter("Biosignal Data File", BiosignalAsciiFileWriter.FileSuffix))
                 .SetMetadata(PathPresenter.CheckExistenceProperty, true)
                 .Build();
 
