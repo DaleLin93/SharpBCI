@@ -27,6 +27,12 @@ namespace SharpBCI.Extensions.Windows
 
         public const string MinusRedImageUri = "pack://application:,,,/SharpBCI.Extensions;component/Resources/MinusRed.png";
 
+        public const string PreviewImageUri = "pack://application:,,,/SharpBCI.Extensions;component/Resources/Preview.png";
+
+        public const string ConfigImageUri = "pack://application:,,,/SharpBCI.Extensions;component/Resources/Config.png";
+
+        public const string ResetImageUri = "pack://application:,,,/SharpBCI.Extensions;component/Resources/Reset.png";
+
         public static readonly Duration DefaultAnimationDuration = new Duration(TimeSpan.FromMilliseconds(300));
 
         public static readonly IEasingFunction DefaultEasingFunction = new QuadraticEase();

@@ -299,15 +299,6 @@
   <ItemGroup>
     <Resource Include="Resources\collapse_left.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\preview.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\config.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\reset.png" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>

@@ -285,5 +285,14 @@
   <ItemGroup>
     <Resource Include="Resources\Alert.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Config.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Preview.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Reset.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
