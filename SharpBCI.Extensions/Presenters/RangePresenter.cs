@@ -10,7 +10,7 @@ using SharpBCI.Extensions.Windows;
 namespace SharpBCI.Extensions.Presenters
 {
 
-    public class IntervalPresenter : IPresenter
+    public class RangePresenter : IPresenter
     {
 
         private class Accessor : IPresentedParameterAccessor
@@ -29,11 +29,11 @@ namespace SharpBCI.Extensions.Presenters
                 _slider = slider;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(new Interval(_slider.SelectionStart, _slider.SelectionEnd));
+            public object GetValue() => _parameter.IsValidOrThrow(new Range(_slider.SelectionStart, _slider.SelectionEnd));
 
             public void SetValue(object value)
             {
-                if (value is Interval interval)
+                if (value is Range interval)
                 {
                     _slider.SelectionStart = interval.MinValue;
                     _slider.SelectionEnd = interval.MaxValue;
@@ -71,7 +71,7 @@ namespace SharpBCI.Extensions.Presenters
         /// </summary>
         public static readonly NamedProperty<TickPlacement> TickPlacementProperty = SliderNumberPresenter.TickPlacementProperty;
 
-        public static readonly IntervalPresenter Instance = new IntervalPresenter();
+        public static readonly RangePresenter Instance = new RangePresenter();
 
         public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {

@@ -5,8 +5,8 @@ using SharpBCI.Extensions.Presenters;
 namespace SharpBCI.Extensions.Data
 {
 
-    [Presenter(typeof(IntervalPresenter))]
-    public struct Interval
+    [Presenter(typeof(RangePresenter))]
+    public struct Range
     {
 
         private const string MinKey = "Min";
@@ -14,7 +14,7 @@ namespace SharpBCI.Extensions.Data
         private const string MaxKey = "Max";
 
         [JsonConstructor]
-        public Interval([JsonProperty(MinKey)] double a, [JsonProperty(MaxKey)] double b)
+        public Range([JsonProperty(MinKey)] double a, [JsonProperty(MaxKey)] double b)
         {
             MinValue = Math.Min(a, b);
             MaxValue = Math.Max(a, b);

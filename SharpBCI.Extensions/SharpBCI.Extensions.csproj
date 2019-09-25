@@ -93,8 +93,8 @@
     <Compile Include="Data\AutoParameterizedObject.cs" />
     <Compile Include="Data\ComplexObject.cs" />
     <Compile Include="Data\Dimensions.cs" />
-    <Compile Include="Data\Interval.cs" />
     <Compile Include="Data\TimeInterval.cs" />
+    <Compile Include="Data\Range.cs" />
     <Compile Include="Data\Positions.cs" />
     <Compile Include="Data\RectangleLayout.cs" />
     <Compile Include="Data\Colors.cs" />
@@ -128,7 +128,7 @@
     <Compile Include="Experiments\ExperimentFactory.cs" />
     <Compile Include="MarkerDefinitions.cs" />
     <Compile Include="Presenters\DateTimePresenter.cs" />
-    <Compile Include="Presenters\IntervalPresenter.cs" />
+    <Compile Include="Presenters\RangePresenter.cs" />
     <Compile Include="Presenters\SliderNumberPresenter.cs" />
     <Compile Include="StageProviders\BaselineStageProvider.cs" />
     <Compile Include="StageProviders\CountdownStageProvider.cs" />
