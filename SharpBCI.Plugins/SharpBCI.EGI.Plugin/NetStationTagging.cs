@@ -11,6 +11,7 @@ using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
+using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Streamers;
 
 namespace SharpBCI.EGI
@@ -20,12 +21,12 @@ namespace SharpBCI.EGI
     /// See: https://github.com/Psychtoolbox-3/Psychtoolbox-3/blob/fab0b49fd38ec477e3b4573f23dbd7766b0a89aa/Psychtoolbox/PsychHardware/NetStation.m
     /// </summary>
     [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
-    public class NetStationTagging : StreamConsumer<int>, IDisposable
+    public class NetStationTagging : StreamConsumer<Timestamped<IMark>>, IDisposable
     {
 
         public const string ConsumerName = "Net Station Tagging";
 
-        public class Factory : StreamConsumerFactory<int>
+        public class Factory : StreamConsumerFactory<Timestamped<IMark>>
         {
 
             public static readonly Parameter<string> IpAddressParam = new Parameter<string>("IP Address", defaultValue: "127.0.0.1");
@@ -38,7 +39,7 @@ namespace SharpBCI.EGI
 
             public Factory() : base(IpAddressParam, PortParam, SyncLimitParam, SyncRetryCountParam) { }
 
-            public override IStreamConsumer<int> Create(Session session, IReadonlyContext context, byte? num) =>
+            public override IStreamConsumer<Timestamped<IMark>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new NetStationTagging(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context),
                     TimeSpan.FromMilliseconds(SyncLimitParam.Get(context)), SyncRetryCountParam.Get(context));
 
@@ -267,7 +268,7 @@ namespace SharpBCI.EGI
             if (waitForAck) _stream.ReadByte();
         }
 
-        public override void Accept(int value) => SendEvent("MARK", value, false);
+        public override void Accept(Timestamped<IMark> value) => SendEvent(value.Value.Label, value.Value.Code, false);
 
         public void Dispose() => Stop();
 

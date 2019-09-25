@@ -57,9 +57,9 @@ namespace SharpBCI.Extensions.Devices
 
     }
 
-    [DeviceType("biosignalSampler", "Biosignal Sampler", 
-        StreamerFactoryType = typeof(BiosignalStreamer.Factory),
-        DataVisualizerType = typeof(BiosignalSamplerDataVisualizer))]
+    [DeviceType("Biosignal Sampler", 
+        StreamerFactory = typeof(BiosignalStreamer.Factory),
+        DataVisualizer = typeof(BiosignalSamplerDataVisualizer))]
     public interface IBiosignalSampler : IDevice
     {
 

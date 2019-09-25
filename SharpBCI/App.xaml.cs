@@ -204,6 +204,7 @@ namespace SharpBCI
             MarukoLib.DirectX.Direct2D.CreateIndependentResource();
 
             Registries.Registry<PluginDeviceType>().RegisterAll(
+                new PluginDeviceType(null, DeviceType.Of(typeof(IMarkSource))),
                 new PluginDeviceType(null, DeviceType.Of(typeof(IBiosignalSampler))),
                 new PluginDeviceType(null, DeviceType.Of(typeof(IEyeTracker))),
                 new PluginDeviceType(null, DeviceType.Of(typeof(IVideoSource))));
@@ -217,6 +218,9 @@ namespace SharpBCI
                 Plugin.InitPluginExperiment(null, typeof(TextDisplayExperiment)));
 
             Registries.Registry<PluginDevice>().RegisterAll(
+                Plugin.InitPluginDevice(null, typeof(BuiltInMarkSource)),
+                Plugin.InitPluginDevice(null, typeof(HeartbeatMarkSource)),
+                Plugin.InitPluginDevice(null, typeof(SerialPortMarkSource)),
                 Plugin.InitPluginDevice(null, typeof(CursorTracker)),
                 Plugin.InitPluginDevice(null, typeof(GazeFileReader)),
                 Plugin.InitPluginDevice(null, typeof(GenericOscillator)),
@@ -224,6 +228,7 @@ namespace SharpBCI
                 Plugin.InitPluginDevice(null, typeof(ScreenCapturer)));
 
             Registries.Registry<PluginStreamConsumer>().RegisterAll(
+                Plugin.InitPluginStreamConsumer(null, typeof(MarkAsciiFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(BiosignalAsciiFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(BiosignalBinaryFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(GazePointAsciiFileWriter)),

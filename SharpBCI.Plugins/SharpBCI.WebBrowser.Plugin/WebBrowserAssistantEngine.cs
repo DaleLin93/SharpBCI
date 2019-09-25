@@ -104,7 +104,7 @@ namespace SharpBCI.Experiments.WebBrowser
                 if (_cancellable && _inTrial) Cancelled?.Invoke(this, EventArgs.Empty);
                 return;
             }
-            if (_inTrial || _clock.Unit.ToMilliseconds(Math.Abs(now - _point.Value.TimeStamp)) < _dwellToSelectDelay) return;
+            if (_inTrial || _clock.Unit.ToMilliseconds(Math.Abs(now - _point.Value.Timestamp)) < _dwellToSelectDelay) return;
             _point = new Timestamped<Point>(now, pNew);
             _inTrial = true;
             Triggered?.Invoke(this, EventArgs.Empty);

@@ -115,7 +115,7 @@ namespace SharpBCI.Windows
 
         private static IList<MarkerRecord> LoadMarkerRecords(string dataFilePrefix)
         {
-            var file = dataFilePrefix + MarkerFileWriter.FileSuffix;
+            var file = dataFilePrefix + MarkAsciiFileWriter.FileSuffix;
             if (!File.Exists(file)) return EmptyArray<MarkerRecord>.Instance;
             var markerRecords = new LinkedList<MarkerRecord>();
             foreach (var line in File.ReadLines(file, Encoding.UTF8))

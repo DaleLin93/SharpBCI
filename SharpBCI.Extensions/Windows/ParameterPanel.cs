@@ -52,6 +52,8 @@ namespace SharpBCI.Extensions.Windows
 
         [CanBeNull] public ParamViewModel this[IParameterDescriptor parameter] => _paramViewModels.TryGetValue(parameter, out var viewModel) ? viewModel : null;
 
+        public bool AllowCollapse { get; set; } = true;
+
         [CanBeNull] public IParameterPresentAdapter Adapter { get; private set; }
 
         [CanBeNull] public IReadOnlyCollection<IDescriptor> Descriptors { get; private set; }
@@ -73,12 +75,7 @@ namespace SharpBCI.Extensions.Windows
                     using (_updateLock.Ref())
                         foreach (var entry in _paramViewModels)
                         {
-                            if (context.TryGet(entry.Key, out var val))
-                            {
-                                if (!entry.Key.IsValid(val))
-                                    throw new ArgumentException($"invalid parameter: {entry.Key}, value: {val}");
-                            }
-                            else
+                            if (!context.TryGet(entry.Key, out var val) || !entry.Key.IsValid(val))
                                 val = entry.Value.ParameterDescriptor.DefaultValue;
                             entry.Value.PresentedParameter.SetValue(val);
                         }
@@ -90,7 +87,7 @@ namespace SharpBCI.Extensions.Windows
         public void SetDescriptors(IParameterPresentAdapter adapter, IEnumerable<IDescriptor> descriptors)
         {
             Adapter = adapter;
-            Descriptors = descriptors.ToArray();
+            Descriptors = descriptors?.ToArray() ?? EmptyArray<IDescriptor>.Instance;
             InitializeConfigurationPanel();
         }
 
@@ -157,7 +154,7 @@ namespace SharpBCI.Extensions.Windows
                         if (_groupViewModels.ContainsKey(groupItem)) throw new UserException($"Invalid experiment, parameter group duplicated: {groupItem.Name}");
                         var depth = stack.Count - 1;
                         var canCollapse = Adapter?.CanCollapse(groupItem, depth) ?? false;
-                        var groupViewModel = ViewHelper.CreateGroupViewModel(groupItem, depth, canCollapse);
+                        var groupViewModel = ViewHelper.CreateGroupViewModel(groupItem, depth, canCollapse, () => AllowCollapse);
                         groupMeta.Container.Children.Add(groupViewModel.GroupPanel);
                         stack.Push(new GroupMeta(groupViewModel, groupViewModel.ItemsPanel, groupViewModel.Group.Items.GetEnumerator()));
                         _groupViewModels[groupItem] = groupViewModel;

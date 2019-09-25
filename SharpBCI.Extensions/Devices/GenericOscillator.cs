@@ -66,5 +66,7 @@ namespace SharpBCI.Extensions.Devices
 
         public override void Shutdown() { }
 
+        public override void Dispose() { }
+
     }
 }

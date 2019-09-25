@@ -111,7 +111,11 @@
     <Compile Include="Data\TrialPreference.cs" />
     <Compile Include="Data\Rectangle.cs" />
     <Compile Include="Data\Path.cs" />
+    <Compile Include="Devices\HeartbeatMarkSource.cs" />
+    <Compile Include="Devices\SerialPortMarkSource.cs" />
+    <Compile Include="Devices\BuiltInMarkSource.cs" />
     <Compile Include="Devices\ScreenCapturer.cs" />
+    <Compile Include="Devices\MarkSource.cs" />
     <Compile Include="Devices\VideoSource.cs" />
     <Compile Include="Devices\GazeFileReader.cs" />
     <Compile Include="Devices\Device.cs" />
@@ -178,7 +182,7 @@
     <Compile Include="Devices\GenericOscillator.cs" />
     <Compile Include="Devices\BiosignalSampler.cs" />
     <Compile Include="Streamers\GazePointStreamer.cs" />
-    <Compile Include="Streamers\MarkerStreamer.cs" />
+    <Compile Include="Streamers\MarkStreamer.cs" />
     <Compile Include="Streamers\BiosignalStreamer.cs" />
     <Compile Include="TypeConverters.cs" />
     <Compile Include="Windows\BiosignalVisualizationWindow.cs">
@@ -186,6 +190,9 @@
     </Compile>
     <Compile Include="Windows\GazePointVisualizationWindow.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\MarkDisplayWindow.xaml.cs">
+      <DependentUpon>MarkDisplayWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Windows\VideoFramePresentationWindow.cs">
       <SubType>Form</SubType>
@@ -264,6 +271,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Resources\SharedResourceDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Windows\MarkDisplayWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

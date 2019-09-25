@@ -74,9 +74,11 @@ namespace SharpBCI.BiosignalSamplers
 
         public override void Open() { }
 
+        public override void Shutdown() => _tcpClient.Close();
+
         public override ISample Read() => new GenericSample(ReadValues(_stream, _localBuf.Value, 2000));
 
-        public override void Shutdown() => _tcpClient.Close();
+        public override void Dispose() { }
 
     }
 }

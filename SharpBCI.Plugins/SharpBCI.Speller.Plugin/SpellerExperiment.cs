@@ -381,8 +381,8 @@ namespace SharpBCI.Experiments.Speller
                 .SetMetadata(SliderNumberPresenter.MinimumValueProperty, 10)
                 .SetMetadata(SliderNumberPresenter.MaximumValueProperty, 100)
                 .Build();
-            private static readonly Parameter<Interval> Interval = Parameter<Interval>.CreateBuilder("Interval")
-                .SetMetadata(Presenters.PresenterProperty, IntervalPresenter.Instance)
+            private static readonly Parameter<Range> Interval = Parameter<Range>.CreateBuilder("Interval")
+                .SetMetadata(Presenters.PresenterProperty, RangePresenter.Instance)
                 .SetMetadata(SliderNumberPresenter.MinimumValueProperty, 10)
                 .SetMetadata(SliderNumberPresenter.MaximumValueProperty, 100)
                 .Build();

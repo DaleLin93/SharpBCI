@@ -284,17 +284,6 @@ namespace SharpBCI.BiosignalSamplers
             SendCommand(_stream, ControlCode.Client, RequestStartData);
         }
 
-        public override ISample Read()
-        {
-            lock (_lock)
-                while (true)
-                {
-                    if (_enumerator?.MoveNext() ?? false)
-                        return _enumerator.Current;
-                    _enumerator = ReadBlock(_stream, _settings, _dataBuffer, 8000).GetEnumerator();
-                }
-        }
-
         public override void Shutdown()
         {
             SendCommand(_stream, ControlCode.Client, RequestStopData);
@@ -306,6 +295,19 @@ namespace SharpBCI.BiosignalSamplers
             _tcpClient.Dispose();
             try { Thread.Sleep(500); } catch (Exception) { /* ignored */ }
         }
+
+        public override ISample Read()
+        {
+            lock (_lock)
+                while (true)
+                {
+                    if (_enumerator?.MoveNext() ?? false)
+                        return _enumerator.Current;
+                    _enumerator = ReadBlock(_stream, _settings, _dataBuffer, 8000).GetEnumerator();
+                }
+        }
+
+        public override void Dispose() { }
 
     }
 

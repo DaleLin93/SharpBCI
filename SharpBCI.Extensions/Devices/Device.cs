@@ -30,12 +30,13 @@ namespace SharpBCI.Extensions.Devices
 
         private static readonly IDictionary<Type, DeviceType> DeviceTypes = new Dictionary<Type, DeviceType>();
 
-        public DeviceType([NotNull] string name, [NotNull] string displayName, [NotNull] Type baseType,
+        public DeviceType([NotNull] string name, [NotNull] string displayName, [NotNull] Type baseType, bool required,
             [CanBeNull] Type streamerFactoryType, [CanBeNull] Type dataVisualizerType)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
             BaseType = baseType ?? throw new ArgumentNullException(nameof(baseType));
+            IsRequired = required;
             StreamerFactory = (IStreamerFactory)streamerFactoryType?.InitClassOrStruct();
             DataVisualizer = (IDataVisualizer)dataVisualizerType?.InitClassOrStruct();
         }
@@ -54,28 +55,29 @@ namespace SharpBCI.Extensions.Devices
 
         public static bool TryGet(Type type, out DeviceType deviceType)
         {
-            var attribute = type.GetCustomAttribute<DeviceTypeAttribute>();
-            if (attribute == null)
+            var attr = type.GetCustomAttribute<DeviceTypeAttribute>();
+            if (attr == null)
             {
                 deviceType = default;
                 return false;
             }
-            deviceType = new DeviceType(attribute.Name, attribute.DisplayName, type, 
-                attribute.StreamerFactoryType, attribute.DataVisualizerType);
+            deviceType = new DeviceType(attr.Name, attr.DisplayName, type, attr.IsRequired, attr.StreamerFactory, attr.DataVisualizer);
             return true;
         }
-        
+
         [NotNull] public string Name { get; }
 
         [NotNull] public string DisplayName { get; }
 
         [NotNull] public Type BaseType { get; }
+        
+        public bool IsRequired { get; }
 
         [CanBeNull] public IStreamerFactory StreamerFactory { get; }
 
         [CanBeNull] public IDataVisualizer DataVisualizer { get; }
 
-        public bool Equals(DeviceType other) => string.Equals(Name, other.Name);
+        public bool Equals(DeviceType other) => BaseType == other.BaseType;
 
         public override bool Equals(object obj) => obj is DeviceType other && Equals(other);
 
@@ -87,7 +89,7 @@ namespace SharpBCI.Extensions.Devices
     public class DeviceTypeAttribute : Attribute
     {
 
-        public DeviceTypeAttribute([NotNull] string name) : this(name, name) { }
+        public DeviceTypeAttribute([NotNull] string displayName) : this(ParameterUtils.GenerateKeyByName(displayName), displayName) { }
 
         public DeviceTypeAttribute([NotNull] string name, [NotNull] string displayName)
         {
@@ -99,16 +101,18 @@ namespace SharpBCI.Extensions.Devices
 
         [NotNull] public string DisplayName { get; }
 
-        [CanBeNull] public Type StreamerFactoryType { get; set; }
+        public bool IsRequired { get; set; }
 
-        [CanBeNull] public Type DataVisualizerType { get; set; }
+        [CanBeNull] public Type StreamerFactory { get; set; }
+
+        [CanBeNull] public Type DataVisualizer { get; set; }
 
     }
 
     /// <summary>
     /// Device interface.
     /// </summary>
-    public interface IDevice
+    public interface IDevice : IDisposable
     {
 
         void Open();
@@ -159,6 +163,8 @@ namespace SharpBCI.Extensions.Devices
         public abstract void Open();
 
         public abstract void Shutdown();
+
+        public abstract void Dispose();
 
     }
 

@@ -85,7 +85,7 @@ namespace SharpBCI.Extensions.Streamers
                 stream.WriteAscii(value);
                 stream.WriteByte((byte)',');
             }
-            stream.WriteAscii(sample.TimeStamp - BaseTime);
+            stream.WriteAscii(sample.Timestamp - BaseTime);
             stream.WriteByte((byte)'\n');
         }
 
@@ -126,7 +126,7 @@ namespace SharpBCI.Extensions.Streamers
                     bytes.WriteDoubleAsNetworkOrder(value);
                     stream.Write(bytes, 0, sizeof(double));
                 }
-                bytes.WriteInt64AsNetworkOrder(sample.TimeStamp - BaseTime);
+                bytes.WriteInt64AsNetworkOrder(sample.Timestamp - BaseTime);
                 stream.Write(bytes, 0, sizeof(long));
             }
         }

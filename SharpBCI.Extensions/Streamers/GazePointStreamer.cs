@@ -56,7 +56,7 @@ namespace SharpBCI.Extensions.Streamers
         {
 
             public override IStreamConsumer<Timestamped<IGazePoint>> Create(Session session, IReadonlyContext context, byte? num) => 
-                new GazePointAsciiFileWriter(session.GetDataFileName(FileSuffix), session.CreateTimestamp);
+                new GazePointAsciiFileWriter(session.GetDataFileName(FileSuffix, num), session.CreateTimestamp);
 
         }
 
@@ -73,7 +73,7 @@ namespace SharpBCI.Extensions.Streamers
             stream.WriteByte((byte)',');
             stream.WriteAscii(point.Y);
             stream.WriteByte((byte)',');
-            stream.WriteAscii(data.TimeStamp - BaseTime);
+            stream.WriteAscii(data.Timestamp - BaseTime);
             stream.WriteByte((byte)'\n');
         }
 
@@ -114,7 +114,7 @@ namespace SharpBCI.Extensions.Streamers
                 stream.Write(bytes, 0, sizeof(double));
                 bytes.WriteDoubleAsNetworkOrder(gazePoint.Y);
                 stream.Write(bytes, 0, sizeof(double));
-                bytes.WriteInt64AsNetworkOrder(sample.TimeStamp - BaseTime);
+                bytes.WriteInt64AsNetworkOrder(sample.Timestamp - BaseTime);
                 stream.Write(bytes, 0, sizeof(long));
             }
         }

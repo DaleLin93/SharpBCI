@@ -241,7 +241,7 @@ namespace SharpBCI.Experiments.Speller
             }
             if (_inTrial) return;
             if (_clock.Unit.ToMilliseconds(Math.Abs(now - _startAt)) < _minTrialInterval) return;
-            if (_clock.Unit.ToMilliseconds(Math.Abs(now - _point.Value.TimeStamp)) < _hoverToSelectDuration) return;
+            if (_clock.Unit.ToMilliseconds(Math.Abs(now - _point.Value.Timestamp)) < _hoverToSelectDuration) return;
             _point = new Timestamped<Point>(now, position.Value);
             _inTrial = true;
             _spellerController.CreateTrial();

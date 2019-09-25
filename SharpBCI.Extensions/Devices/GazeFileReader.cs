@@ -58,7 +58,7 @@ namespace SharpBCI.Extensions.Devices
                 samples.AddLast(ReadGazePoints(line));
             _samples = samples.ToArray();
 
-            _startTimestamp = startTimestamp ?? (_samples.TryGet(0, out var gazePoint) ? gazePoint.TimeStamp : 0);
+            _startTimestamp = startTimestamp ?? (_samples.TryGet(0, out var gazePoint) ? gazePoint.Timestamp : 0);
         }
 
         private static Timestamped<double[]> ReadGazePoints(string line) // IO Blocking
@@ -84,19 +84,21 @@ namespace SharpBCI.Extensions.Devices
                     if (_sampleOffset >= _samples.Length) return null;
                     var sampleValues = _samples[_sampleOffset++];
                     var gazePoint = new GazePoint(sampleValues.Value[0], sampleValues.Value[1]);
-                    var waitUntil = _startTimeTicks + (sampleValues.TimeStamp - _startTimestamp) * TimeSpan.TicksPerMillisecond;
+                    var waitUntil = _startTimeTicks + (sampleValues.Timestamp - _startTimestamp) * TimeSpan.TicksPerMillisecond;
                     while (DateTimeUtils.CurrentTimeTicks < waitUntil) { }
                     return gazePoint;
                 }
         }
 
         public override void Shutdown() { }
-
+        
         public void Reset()
         {
             _startTimeTicks = DateTimeUtils.CurrentTimeTicks;
             _sampleOffset = 0;
         }
+
+        public override void Dispose() { }
 
     }
 }

@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
+using MarukoLib.UI;
 using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Presenters
@@ -32,9 +33,14 @@ namespace SharpBCI.Extensions.Presenters
                 _comboBox = comboBox;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(ToStringOverridenWrapper.TryUnwrap(_comboBox.SelectedValue));
+            public object GetValue()
+            {
+                var value = ToStringOverridenWrapper.TryUnwrap(_comboBox.SelectedValue);
+                if (ReferenceEquals(NullValue, value)) value = null;
+                return _parameter.IsValidOrThrow(value);
+            }
 
-            public void SetValue(object value) => _comboBox.SelectedValue = ToStringOverridenWrapper.Wrap(value, _toStringFunc);
+            public void SetValue(object value) => _comboBox.FindAndSelect(_toStringFunc(value), 0);
 
         }
 
@@ -57,12 +63,23 @@ namespace SharpBCI.Extensions.Presenters
                 _radioButtons = radioButtons;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(ToStringOverridenWrapper.TryUnwrap(_radioButtons.First(rb => rb.IsChecked ?? false).Content));
+            public object GetValue()
+            {
+                var value = ToStringOverridenWrapper.TryUnwrap(_radioButtons.First(rb => rb.IsChecked ?? false).Content);
+                if (ReferenceEquals(NullValue, value)) value = null;
+                return _parameter.IsValidOrThrow(value);
+            }
 
             public void SetValue(object value)
             {
+                var @checked = false;
                 foreach (var radioButton in _radioButtons)
-                    radioButton.IsChecked = Equals(ToStringOverridenWrapper.TryUnwrap(radioButton.Content), value);
+                {
+                    bool equal;
+                    if (equal = Equals(ToStringOverridenWrapper.TryUnwrap(radioButton.Content), value)) @checked = true;
+                    radioButton.IsChecked = equal;
+                }
+                if (!@checked && _radioButtons.Any()) _radioButtons[0].IsChecked = true;
             }
 
             public void SetEnabled(bool value) => _container.IsEnabled = value;
@@ -70,6 +87,9 @@ namespace SharpBCI.Extensions.Presenters
             public void SetValid(bool value) => _rectangle.Fill = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
 
         }
+
+        // ReSharper disable once ConvertToConstant.Local
+        private static readonly string NullValue = "<NULL>";
 
         public static readonly NamedProperty<bool> UseRadioGroupProperty = new NamedProperty<bool>("UseRadioGroup", false);
 
@@ -87,6 +107,10 @@ namespace SharpBCI.Extensions.Presenters
                 items = selectableValuesFunc(param);
             else if (param.IsSelectable())
                 items = param.SelectableValues;
+            else if (param.ValueType.IsEnum)
+                items = Enum.GetValues(param.ValueType);
+            else if (param.ValueType.IsNullableType(out var underlyingType) && underlyingType.IsEnum)
+                items = new object[] {NullValue}.Concat(Enum.GetValues(underlyingType).OfType<object>());
             else
                 throw new ProgrammingException("Parameter.SelectableValues or SelectablePresenter.SelectableValuesFuncProperty must be assigned");
             return UseRadioGroupProperty.Get(param.Metadata)

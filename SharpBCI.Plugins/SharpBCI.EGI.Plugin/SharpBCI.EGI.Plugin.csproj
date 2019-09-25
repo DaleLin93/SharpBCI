@@ -67,4 +67,7 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>"$(ProjectDir)..\..\Build\build-tool.bat" "$(ProjectDir)" "$(OutDir)" $(ConfigurationName)</PostBuildEvent>
+  </PropertyGroup>
 </Project>

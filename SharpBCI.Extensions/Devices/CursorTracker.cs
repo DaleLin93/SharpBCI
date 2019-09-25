@@ -42,13 +42,15 @@ namespace SharpBCI.Extensions.Devices
             while (true)
                 lock (_lock)
                 {
-                    _frequencyBarrier.Acquire();
+                    _frequencyBarrier.WaitOne();
                     var position = Cursor.Position;
                     return new GazePoint(position.X, position.Y);
                 }
         }
 
         public override void Shutdown() { }
+
+        public override void Dispose() { }
 
     }
 

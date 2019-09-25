@@ -107,7 +107,7 @@ namespace SharpBCI.Extensions.Streamers
 
         protected override void Write(Stream stream, Timestamped<IVideoFrame> data)
         {
-            var t = data.TimeStamp - BaseTime;
+            var t = data.Timestamp - BaseTime;
             lock (_longBuffer)
             {
                 _longBuffer.WriteInt64AsNetworkOrder(t);

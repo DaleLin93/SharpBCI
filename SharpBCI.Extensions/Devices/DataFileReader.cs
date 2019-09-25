@@ -100,7 +100,7 @@ namespace SharpBCI.Extensions.Devices
                     if (_startTimestamp == null)
                         waitUntil = _startTimeTicks + _sampleIntervalTicks * (long)LineReadCount;
                     else
-                        waitUntil = _startTimeTicks + (sampleValues.TimeStamp - _startTimestamp.Value) * TimeSpan.TicksPerMillisecond;
+                        waitUntil = _startTimeTicks + (sampleValues.Timestamp - _startTimestamp.Value) * TimeSpan.TicksPerMillisecond;
                     while (DateTimeUtils.CurrentTimeTicks < waitUntil) { }
                     return sample;
                 }
@@ -113,6 +113,8 @@ namespace SharpBCI.Extensions.Devices
             _startTimeTicks = DateTimeUtils.CurrentTimeTicks;
             _sampleOffset = 0;
         }
+
+        public override void Dispose() { }
 
     }
 }

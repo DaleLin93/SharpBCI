@@ -1,15 +1,16 @@
 ﻿using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Streamers;
 using SharpBCI.Plugins;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using JetBrains.Annotations;
 using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Windows
@@ -43,83 +44,123 @@ namespace SharpBCI.Windows
 
         public const int DeviceRowHeight = ViewConstants.DefaultRowHeight;
 
-        public class DeviceControlGroup
+        private class DeviceTypeViewModel
         {
 
-            private static readonly Uri ConfigImageUri = new Uri("pack://application:,,,/Resources/config.png", UriKind.Absolute);
+            private const int ConsumerStateIndicatorSize = 10;
 
-            private static readonly Uri PreviewImageUri = new Uri("pack://application:,,,/Resources/preview.png", UriKind.Absolute);
+            private static readonly GridLength ZeroGridLength = new GridLength(0);
 
-            public DeviceType DeviceType;
+            private static readonly GridLength ConsumerStateGridLength = new GridLength(ViewConstants.MinorSpacing + ConsumerStateIndicatorSize);
 
-            public readonly ComboBox DeviceComboBox;
+            public readonly DeviceType DeviceType;
 
-            public readonly Button ConfigButton, PreviewButton;
+            [NotNull] public readonly Grid Container;
 
-            internal DeviceControlGroup(DeviceType deviceType, bool designMode)
+            [NotNull] public readonly ComboBox DeviceComboBox;
+
+            [NotNull] public readonly Rectangle ConsumerStateRectangle;
+
+            [NotNull] public readonly Button ConfigButton, PreviewButton;
+
+            private Constructable<PluginStreamConsumer>[] _currentConsumers = null;
+
+            internal DeviceTypeViewModel(DeviceType deviceType)
             {
                 DeviceType = deviceType;
-                Grid.SetColumn(DeviceComboBox = new ComboBox {Tag = this}, 0);
-                Grid.SetColumn(ConfigButton = new Button
+
+                Container = new Grid();
+                Container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
+                Container.ColumnDefinitions.Add(new ColumnDefinition {Width = ConsumerStateGridLength});
+                Container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength});
+                Container.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
+                Container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength});
+                Container.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
+
+                Container.Children.Add(DeviceComboBox = new ComboBox {Tag = this});
+                Grid.SetColumn(DeviceComboBox, 0);
+
+                Container.Children.Add(ConsumerStateRectangle = new Rectangle
                 {
-                    IsEnabled = false,
-                    FontSize = 10,
-                    Width = DeviceRowHeight,
-                    ToolTip = "Config",
-                    Content = designMode ? null : CreateImage(2, ConfigImageUri),
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Width = ConsumerStateIndicatorSize,
+                    Height = ConsumerStateIndicatorSize, 
+                    RadiusX = ConsumerStateIndicatorSize / 2.0, 
+                    RadiusY = ConsumerStateIndicatorSize / 2.0, 
                     Tag = this
-                }, 2);
-                Grid.SetColumn(PreviewButton = new Button
-                {
-                    IsEnabled = false,
-                    FontSize = 10,
-                    Width = DeviceRowHeight,
-                    ToolTip = "Preview",
-                    Content = designMode ? null : CreateImage(1, PreviewImageUri),
-                    Tag = this
-                }, 4);
+                });
+                Grid.SetColumn(ConsumerStateRectangle, 1);
+
+                Container.Children.Add(ConfigButton = CreateConfigButton(this));
+                Grid.SetColumn(ConfigButton, 3);
+
+                Container.Children.Add(PreviewButton = CreatePreviewButton(this));
+                Grid.SetColumn(PreviewButton, 5);
+
+                IsShowConsumerState = true;
+                IsShowPreviewButton = true;
+                SetConsumerState(null, false);
             }
 
-            private static Image CreateImage(double margin, Uri imageUri) => new Image
+            public bool IsShowConsumerState
             {
-                Margin = new Thickness(margin),
-                Source = new BitmapImage(imageUri)
-            };
+                set => Container.ColumnDefinitions[1].Width = value ? ConsumerStateGridLength : ZeroGridLength;
+            }
 
-            public Grid CreateContainer(bool addPreviewButton)
+            public bool IsShowPreviewButton
             {
-                var container = new Grid();
-                container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
-                container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength });
-                container.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
-                container.Children.Add(DeviceComboBox);
-                container.Children.Add(ConfigButton);
-                if (addPreviewButton)
+                set
                 {
-                    container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength });
-                    container.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
-                    container.Children.Add(PreviewButton);
+                    if (value && DeviceType.DataVisualizer != null)
+                    {
+                        Container.ColumnDefinitions[4].Width = ViewConstants.MinorSpacingGridLength;
+                        Container.ColumnDefinitions[5].Width = GridLength.Auto;
+                    }
+                    else
+                    {
+                        Container.ColumnDefinitions[4].Width = ZeroGridLength;
+                        Container.ColumnDefinitions[5].Width = ZeroGridLength;
+                    }
                 }
-                return container;
+            }
+
+            public Constructable<PluginDevice> CurrentDevice { get; } = new Constructable<PluginDevice>();
+
+            public Constructable<PluginStreamConsumer>[] CurrentConsumers
+            {
+                get => _currentConsumers ?? EmptyArray<Constructable<PluginStreamConsumer>>.Instance;
+                set
+                {
+                    _currentConsumers = value;
+                    UpdateConsumerState(_currentConsumers);
+                }
+            }
+
+            public void SetConsumerState(string message, bool available)
+            {
+                ConsumerStateRectangle.Fill = available ? Brushes.SeaGreen : Brushes.DimGray;
+                ConsumerStateRectangle.ToolTip = message ?? (available ? "Consumer attached" : "No consumer attached");
+            }
+
+            private void UpdateConsumerState(IReadOnlyCollection<Constructable<PluginStreamConsumer>> consumers)
+            {
+                var hasConsumers = consumers != null && consumers.Any();
+                SetConsumerState(hasConsumers ? consumers.Select(c => c.Target.Identifier).Join("\n") : null, hasConsumers);
             }
 
         }
 
-        public sealed class SelectedDevice
+        private sealed class Constructable<T>
         {
 
-            public PluginDevice Device { get; set; }
+            public T Target { get; set; }
 
             public IReadonlyContext Params { get; set; } = EmptyContext.Instance;
 
-        }
+            public static Constructable<T> Of(Tuple<T, IReadonlyContext> tuple) => new Constructable<T> {Target = tuple.Item1, Params = tuple.Item2};
 
-        public sealed class SelectedConsumer
-        {
-
-            public PluginStreamConsumer Consumer { get; set; }
-
-            public IReadonlyContext Params { get; set; } = EmptyContext.Instance;
+            public static Tuple<T, IReadonlyContext> ToTuple(Constructable<T> c) => new Tuple<T, IReadonlyContext>(c.Target, c.Params);
 
         }
 
@@ -127,48 +168,75 @@ namespace SharpBCI.Windows
 
         public event EventHandler<ConsumerChangedEventArgs> ConsumerChanged;
 
-        private readonly IDictionary<DeviceType, DeviceControlGroup> _deviceControlGroups;
+        private readonly IDictionary<DeviceType, DeviceTypeViewModel> _deviceControlGroups = new Dictionary<DeviceType, DeviceTypeViewModel>(16);
 
         public DeviceSelectionPanel()
         {
             DeviceTypes = App.Instance.Registries.Registry<PluginDeviceType>().Registered.Select(el => el.DeviceType).ToArray();
-            _deviceControlGroups = new Dictionary<DeviceType, DeviceControlGroup>(DeviceTypes.Length * 2);
-
-            var designMode = DesignerProperties.GetIsInDesignMode(this);
             foreach (var deviceType in DeviceTypes)
             {
-                var controlGroup = _deviceControlGroups[deviceType] = new DeviceControlGroup(deviceType, designMode);
+                var controlGroup = _deviceControlGroups[deviceType] = new DeviceTypeViewModel(deviceType);
                 controlGroup.DeviceComboBox.SelectionChanged += DeviceComboBox_SelectionChanged;
                 controlGroup.ConfigButton.Click += DeviceConfigBtn_Click;
                 controlGroup.PreviewButton.Click += DevicePreviewBtn_Click;
-                SelectedDevices[deviceType] = new SelectedDevice();
-                SelectedConsumers[deviceType] = new SelectedConsumer();
             }
-            InitializePanel();
+
+            Children.Add(ViewHelper.CreateGroupHeader(DisplayHeader ? "Devices" : null, "Device Configuration"));
+            foreach (var deviceType in DeviceTypes) this.AddRow(deviceType.DisplayName, _deviceControlGroups[deviceType].Container);
+
             Loaded += (sender, args) => UpdateDevices();
         }
+
+        internal static Button CreateConfigButton(object tag) => CreateIconButton("Config", ViewConstants.ConfigImageUri, 2, tag);
+
+        internal static Button CreatePreviewButton(object tag) => CreateIconButton("Preview", ViewConstants.PreviewImageUri, 1, tag);
+
+        internal static Button CreateIconButton(string tooltip, string imageUri, double imageMargin, object tag) => new Button
+        {
+            IsEnabled = false,
+            FontSize = 10,
+            Width = DeviceRowHeight,
+            ToolTip = tooltip,
+            Content = CreateImage(imageMargin, imageUri),
+            Tag = tag
+        };
+
+        private static Image CreateImage(double margin, string imageUri) => new Image
+        {
+            Margin = new Thickness(margin),
+            Source = new BitmapImage(new Uri(imageUri))
+        };
 
         public DeviceParams this[DeviceType deviceType]
         {
             get
             {
-                var selectedDevice = SelectedDevices[deviceType];
-                var device = PluginDevice.CreateParameterizedEntity(selectedDevice.Device, selectedDevice.Params);
-                var selectedConsumer = SelectedConsumers[deviceType];
-                var consumer = PluginStreamConsumer.CreateParameterizedEntity(selectedConsumer.Consumer, selectedConsumer.Params);
-                return new DeviceParams { Device = device, Consumers = new[] { consumer } };
+                var controlGroup = _deviceControlGroups[deviceType];
+                var currentDevice = controlGroup.CurrentDevice;
+                var device = PluginDevice.CreateParameterizedEntity(currentDevice.Target, currentDevice.Params);
+                var consumers = controlGroup.CurrentConsumers.Select(c => PluginStreamConsumer.CreateParameterizedEntity(c.Target, c.Params));
+                return new DeviceParams {Device = device, Consumers = consumers.ToArray()};
             }
             set
             {
-                if (_deviceControlGroups[deviceType].DeviceComboBox.FindAndSelect(value.Device.Id ?? NoneIdentifier, null))
+                var controlGroup = _deviceControlGroups[deviceType];
+                if (controlGroup.DeviceComboBox.FindAndSelect(value.Device.Id ?? NoneIdentifier, null))
                 {
-                    var selectedDevice = SelectedDevices[deviceType];
-                    selectedDevice.Params = selectedDevice.Device?.DeserializeParams(value.Device.Params) ?? (IReadonlyContext)EmptyContext.Instance;
+                    var cDevice = controlGroup.CurrentDevice;
+                    cDevice.Params = cDevice.Target?.DeserializeParams(value.Device.Params) ?? (IReadonlyContext)EmptyContext.Instance;
                 }
-                var consumerEntity = value.Consumers.Length > 0 ? value.Consumers[0] : new ParameterizedEntity();
-                App.Instance.Registries.Registry<PluginStreamConsumer>().LookUp(consumerEntity.Id ?? NoneIdentifier, out var streamConsumer);
-                SelectedConsumers[deviceType].Consumer = streamConsumer;
-                SelectedConsumers[deviceType].Params = streamConsumer?.DeserializeParams(consumerEntity.Params) ?? (IReadonlyContext)EmptyContext.Instance;
+                var consumerRegistry = App.Instance.Registries.Registry<PluginStreamConsumer>();
+                var consumers = new LinkedList<Constructable<PluginStreamConsumer>>();
+                foreach (var consumerEntity in value.Consumers?.Where(p => p.Id != null).ToArray() ?? EmptyArray<ParameterizedEntity>.Instance)
+                {
+                    if(!consumerRegistry.LookUp(consumerEntity.Id ?? NoneIdentifier, out var streamConsumer)) continue;
+                    consumers.AddLast(new Constructable<PluginStreamConsumer>
+                    {
+                        Target = streamConsumer,
+                        Params = streamConsumer?.DeserializeParams(consumerEntity.Params) ?? (IReadonlyContext) EmptyContext.Instance
+                    });
+                }
+                controlGroup.CurrentConsumers = consumers.ToArray();
             }
         }
 
@@ -176,11 +244,23 @@ namespace SharpBCI.Windows
 
         public bool DisplayHeader { get; set; } = true;
 
-        public bool IsPreviewButtonVisible { get; set; } = true;
+        public bool IsShowConsumerState
+        {
+            set
+            {
+                foreach (var group in _deviceControlGroups.Values)
+                    group.IsShowConsumerState = value;
+            }
+        }
 
-        public IDictionary<DeviceType, SelectedDevice> SelectedDevices { get; set; } = new Dictionary<DeviceType, SelectedDevice>();
-
-        public IDictionary<DeviceType, SelectedConsumer> SelectedConsumers { get; set; } = new Dictionary<DeviceType, SelectedConsumer>();
+        public bool IsShowPreviewButton
+        {
+            set
+            {
+                foreach (var group in _deviceControlGroups.Values)
+                    group.IsShowPreviewButton = value;
+            }
+        }
 
         public IDictionary<string, DeviceParams> DeviceConfig
         {
@@ -203,71 +283,53 @@ namespace SharpBCI.Windows
 
         public void UpdateDevices()
         {
-            var registries = App.Instance?.Registries;
-            if (registries == null) return;
-
-            var devices = registries.Registry<PluginDevice>().Registered;
+            var devices = App.Instance.Registries.Registry<PluginDevice>().Registered;
             foreach (var deviceType in DeviceTypes)
             {
                 var list = new LinkedList<object>();
                 foreach (var device in devices.Where(d => d.DeviceType == deviceType).OrderBy(d => d.Identifier))
                     list.AddLast(device);
-                list.AddFirst(NoneIdentifier);
+                if (!deviceType.IsRequired) list.AddFirst(NoneIdentifier);
                 _deviceControlGroups[deviceType].DeviceComboBox.ItemsSource = list;
             }
         }
-
-        private void InitializePanel()
-        {
-            Children.Clear();
-            Children.Add(ViewHelper.CreateGroupHeader(DisplayHeader ? "Devices" : null, "Device Configuration"));
-            foreach (var deviceType in DeviceTypes)
-                this.AddRow(deviceType.DisplayName, _deviceControlGroups[deviceType].CreateContainer(IsPreviewButtonVisible));
-        }
-
+        
         private void DeviceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var controlGroup = (DeviceControlGroup) ((ComboBox) sender).Tag;
-            var deviceType = controlGroup.DeviceType;
+            var controlGroup = (DeviceTypeViewModel) ((ComboBox) sender).Tag;
             var newDevice = controlGroup.DeviceComboBox.SelectedItem as PluginDevice;
-            controlGroup.ConfigButton.IsEnabled = (newDevice?.Factory.GetParameters(newDevice.DeviceClass).Count ?? 0) > 0;
+            controlGroup.ConfigButton.IsEnabled = newDevice?.Factory != null;
             controlGroup.PreviewButton.IsEnabled = newDevice?.Factory != null;
-            var selectedDevice = SelectedDevices[deviceType];
-            var eventArgs = new DeviceChangedEventArgs(controlGroup.DeviceType, selectedDevice.Device, newDevice, selectedDevice.Params);
+            var cDevice = controlGroup.CurrentDevice;
+            var eventArgs = new DeviceChangedEventArgs(controlGroup.DeviceType, cDevice.Target, newDevice, cDevice.Params);
             DeviceChanged?.Invoke(this, eventArgs);
-            selectedDevice.Device = newDevice;
-            selectedDevice.Params = eventArgs.NewDeviceParams ?? EmptyContext.Instance;
+            cDevice.Target = newDevice;
+            cDevice.Params = eventArgs.NewDeviceParams ?? EmptyContext.Instance;
         }
 
         private void DeviceConfigBtn_Click(object sender, RoutedEventArgs e)
         {
-            var controlGroup = (DeviceControlGroup) ((Button) sender).Tag;
-            var deviceType = controlGroup.DeviceType;
+            var controlGroup = (DeviceTypeViewModel) ((Button) sender).Tag;
             var selectedItem = (PluginDevice) controlGroup.DeviceComboBox.SelectedItem;
             if (selectedItem?.Factory == null) return;
-            var parameters = selectedItem.Factory.GetParameters(selectedItem.DeviceClass);
-            if (CollectionUtils.IsNullOrEmpty(parameters)) return;
-            var selectedDevice = SelectedDevices[deviceType];
-            var selectedConsumer = SelectedConsumers[deviceType];
-            var deviceConfigWindow = new DeviceConfigWindow(selectedItem, selectedDevice.Params,
-                selectedConsumer.Consumer, selectedConsumer.Params) {Width = 500};
+            var deviceConfigWindow = new DeviceConfigWindow(selectedItem, controlGroup.CurrentDevice.Params,
+                controlGroup.CurrentConsumers.Select(Constructable<PluginStreamConsumer>.ToTuple).ToArray()) {Width = 500};
             deviceConfigWindow.ConsumerChanged += (s0, e0) => ConsumerChanged?.Invoke(this, e0);
-            if (deviceConfigWindow.ShowDialog(out var deviceParams, out var consumer, out var consumerParams))
+            if (deviceConfigWindow.ShowDialog(out var deviceParams, out var consumers))
             {
-                selectedDevice.Params = deviceParams;
-                selectedConsumer.Consumer = consumer;
-                selectedConsumer.Params = consumerParams;
+                controlGroup.CurrentDevice.Params = deviceParams;
+                controlGroup.CurrentConsumers = consumers.Select(Constructable<PluginStreamConsumer>.Of).ToArray();
             }
         }
 
-        private void DevicePreviewBtn_Click(object sender, RoutedEventArgs e)
+        private static void DevicePreviewBtn_Click(object sender, RoutedEventArgs e)
         {
-            var controlGroup = (DeviceControlGroup) ((Button) sender).Tag;
+            var controlGroup = (DeviceTypeViewModel) ((Button) sender).Tag;
             var deviceType = controlGroup.DeviceType;
             var selectedItem = (PluginDevice)controlGroup.DeviceComboBox.SelectedItem;
             if (selectedItem?.Factory == null) return;
             if (deviceType.DataVisualizer == null) return;
-            var device = selectedItem.NewInstance(SelectedDevices[deviceType].Params);
+            var device = selectedItem.NewInstance(controlGroup.CurrentDevice.Params);
             deviceType.DataVisualizer.Visualize(device);
         }
 

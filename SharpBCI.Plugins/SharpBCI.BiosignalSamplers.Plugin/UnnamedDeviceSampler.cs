@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Threading;
 using MarukoLib.Lang;
+using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
 
@@ -19,13 +20,15 @@ namespace SharpBCI.BiosignalSamplers
         public class Factory : DeviceFactory<UnnamedDeviceSampler, IBiosignalSampler>
         {
 
-            public static readonly Parameter<string> SerialPortParam = new Parameter<string>("Serial Port", defaultValue: null);
+            public static readonly Parameter<string> SerialPortParam = Parameter<string>.CreateBuilder("Serial Port")
+                .SetSelectableValues(SerialPort.GetPortNames)
+                .Build();
 
             public Factory() : base(SerialPortParam) { }
 
             public override UnnamedDeviceSampler Create(IReadonlyContext context)
             {
-                if (SerialPortParam.Get(context) == null) throw new ArgumentException("Serial Port must set for SignalSource");
+                if (SerialPortParam.Get(context) == null) throw new UserException("Serial Port must set for SignalSource");
                 return new UnnamedDeviceSampler(SerialPortParam.Get(context));
             }
 
@@ -115,6 +118,8 @@ namespace SharpBCI.BiosignalSamplers
 
         public override void Open() { }
 
+        public override void Shutdown() => _serialPort.Close();
+
         public override ISample Read()
         {
             if (_enumerator == null || !_enumerator.MoveNext())
@@ -122,7 +127,7 @@ namespace SharpBCI.BiosignalSamplers
             return new GenericSample(_enumerator.Current);
         }
 
-        public override void Shutdown() => _serialPort.Close();
+        public override void Dispose() { }
 
     }
 }

@@ -15,6 +15,7 @@ using SharpDX;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Patterns;
 using SharpBCI.Extensions.Streamers;
+using SharpBCI.Core.IO;
 
 namespace SharpBCI.Experiments.Speller.SSVEP
 {

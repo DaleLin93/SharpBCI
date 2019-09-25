@@ -1,0 +1,23 @@
+﻿<Window x:Class="SharpBCI.Extensions.Windows.MarkDisplayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SharpBCI.Extensions.Windows"
+        mc:Ignorable="d"
+        Title="Mark Display" Height="500" Width="600" >
+    <Grid>
+        <ListView x:Name="MarkListView">
+            <ListView.View>
+                <GridView>
+                    <GridView.Columns>
+                        <GridViewColumn Header="Timestamp" Width="160" DisplayMemberBinding="{Binding Path=Timestamp}" />
+                        <GridViewColumn Header="Label" Width="180" DisplayMemberBinding="{Binding Path=Value.Label}" />
+                        <GridViewColumn Header="Code" Width="80" DisplayMemberBinding="{Binding Path=Value.Code}" />
+                    </GridView.Columns>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+
+</Window>

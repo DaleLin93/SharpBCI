@@ -8,6 +8,7 @@ using MarukoLib.IO;
 using MarukoLib.Lang;
 using MarukoLib.Logging;
 using SharpBCI.Core.Experiment;
+using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Experiments;
@@ -203,7 +204,7 @@ namespace SharpBCI.Plugins
             var streamConsumers = new LinkedList<PluginStreamConsumer>();
             foreach (var type in Assembly.GetExportedTypes())
             {
-                if (type.IsClass && !type.IsAbstract && typeof(IStreamConsumerFactory).IsAssignableFrom(type))
+                if (type.IsClass && !type.IsAbstract && typeof(IStreamConsumer).IsAssignableFrom(type))
                 {
                     var consumerAttribute = type.GetCustomAttribute<StreamConsumerAttribute>();
                     if (consumerAttribute == null)

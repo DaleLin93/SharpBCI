@@ -39,7 +39,7 @@
         </StackPanel>
 
         <StackPanel DockPanel.Dock="Bottom" >
-            <local:DeviceSelectionPanel x:Name="DeviceConfigPanel" IsPreviewButtonVisible="False" />
+            <local:DeviceSelectionPanel x:Name="DeviceConfigPanel" IsShowPreviewButton="False" />
             <StackPanel Orientation="Vertical" Margin="0 6 0 0">
                 <Button x:Name="RunExperimentsBtn" Content="Run Experiments" Height="30" FontWeight="Black" IsEnabled="False" Click="RunExperiments_OnClick" />
             </StackPanel>

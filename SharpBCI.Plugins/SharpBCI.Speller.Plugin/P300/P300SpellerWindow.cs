@@ -10,6 +10,7 @@ using D2D1 = SharpDX.Direct2D1;
 using MarukoLib.Lang;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Streamers;
+using SharpBCI.Core.IO;
 
 namespace SharpBCI.Experiments.Speller.P300
 {

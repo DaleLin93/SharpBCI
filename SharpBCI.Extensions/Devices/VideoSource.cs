@@ -168,9 +168,9 @@ namespace SharpBCI.Extensions.Devices
 
     }
 
-    [DeviceType("videoSource", "Video Source", 
-        StreamerFactoryType = typeof(VideoFrameStreamer.Factory),
-        DataVisualizerType = typeof(VideoSourceDataVisualizer))]
+    [DeviceType("Video Source", 
+        StreamerFactory = typeof(VideoFrameStreamer.Factory),
+        DataVisualizer = typeof(VideoSourceDataVisualizer))]
     public interface IVideoSource : IDevice
     {
 

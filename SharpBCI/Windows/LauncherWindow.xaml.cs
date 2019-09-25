@@ -292,7 +292,7 @@ namespace SharpBCI.Windows
             _experimentComboBox = new ComboBox {Margin = new Thickness {Right = ViewConstants.DefaultRowHeight + ViewConstants.MinorSpacing}};
             _experimentComboBox.SelectionChanged += ExperimentComboBox_OnSelectionChanged;
             experimentComboBoxContainer.Children.Add(_experimentComboBox);
-            var loadDefaultCfgBtnImageSource = new BitmapImage(new Uri("pack://application:,,,/Resources/reset.png", UriKind.Absolute));
+            var loadDefaultCfgBtnImageSource = new BitmapImage(new Uri(ViewConstants.ResetImageUri, UriKind.Absolute));
             var loadDefaultCfgImage = new Image {Margin = new Thickness(2), Source = loadDefaultCfgBtnImageSource};
             var loadDefaultCfgBtn = new Button {ToolTip = "Load Default Config", HorizontalAlignment = HorizontalAlignment.Right, Width = ViewConstants.DefaultRowHeight, Content = loadDefaultCfgImage};
             loadDefaultCfgBtn.Click += ExperimentResetBtn_OnClick;

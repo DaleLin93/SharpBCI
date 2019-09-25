@@ -5,6 +5,7 @@ using System.IO.Ports;
 using System.Text;
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using MarukoLib.Lang;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
@@ -53,14 +54,23 @@ namespace SharpBCI.BiosignalSamplers
         public class Factory : DeviceFactory<OpenBCISampler, IBiosignalSampler>
         {
 
-            public static readonly Parameter<string> SerialPortParam = new Parameter<string>("Serial Port", defaultValue: null);
+            private const string AutoSearchPort = "<Auto Search>";
+
+            public static readonly Parameter<string> SerialPortParam = Parameter<string>.CreateBuilder("Serial Port")
+                .SetSelectableValues(() => new[] {AutoSearchPort}.Concat(SerialPort.GetPortNames()))
+                .SetDefaultValue(AutoSearchPort)
+                .Build();
 
             public static readonly Parameter<bool> DaisyModuleParam = new Parameter<bool>("Daisy Module", false);
 
             public Factory() : base(SerialPortParam, DaisyModuleParam) { }
 
-            public override OpenBCISampler Create(IReadonlyContext context) => new OpenBCISampler(SerialPortParam.Get(context), DaisyModuleParam.Get(context));
-
+            public override OpenBCISampler Create(IReadonlyContext context)
+            {
+                var serialPort = SerialPortParam.Get(context);
+                if (serialPort == AutoSearchPort) serialPort = null;
+                return new OpenBCISampler(serialPort, DaisyModuleParam.Get(context));
+            }
         }
 
         private const byte SampleStartByte = 0xA0;
@@ -212,7 +222,11 @@ namespace SharpBCI.BiosignalSamplers
                 }
                 catch (Exception e)
                 {
-                    if (serialPort.IsOpen) serialPort.Close();
+                    if (serialPort.IsOpen)
+                    {
+                        serialPort.Close();
+                        serialPort.Dispose();
+                    }
                     if (Equals(portName, name)) throw new IOException("Cannot open " + name + ": " + e.Message);
                 }
             }
@@ -223,13 +237,15 @@ namespace SharpBCI.BiosignalSamplers
 
         public override void Open() => _serialPort.Write("b");
 
-        public override ISample Read() => new GenericSample(ReadValues(_serialPort, _localBuf.Value, ChannelNum, 2000));
-
         public override void Shutdown()
         {
             _serialPort.Write("s");
             _serialPort.Close();
         }
+
+        public override ISample Read() => new GenericSample(ReadValues(_serialPort, _localBuf.Value, ChannelNum, 2000));
+
+        public override void Dispose() => _serialPort.Dispose();
 
     }
 }

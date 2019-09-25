@@ -83,6 +83,8 @@ namespace SharpBCI.EyeTrackers
             return null;
         }
 
+        public override void Dispose() { }
+
         private void GazePointDataStream_Next(object sender, StreamData<GazePointData> data)
         {
             var gazePoint = data.Data;

@@ -78,7 +78,7 @@ namespace SharpBCI.Extensions.Windows
             return stackPanel;
         }
 
-        public static GroupViewModel CreateGroupViewModel(IGroupDescriptor group, int depth = 0, bool click2Collapse = false)
+        public static GroupViewModel CreateGroupViewModel(IGroupDescriptor group, int depth = 0, bool click2Collapse = false, Func<bool> collapseControl = null)
         {
             var stackPanel = new StackPanel();
             if (depth > 0) stackPanel.Margin = new Thickness { Left = ViewConstants.Intend * depth };
@@ -87,7 +87,12 @@ namespace SharpBCI.Extensions.Windows
             var itemsPanel = new StackPanel();
             stackPanel.Children.Add(itemsPanel);
             var viewModel = new GroupViewModel(group, stackPanel, itemsPanel, depth);
-            if (click2Collapse) groupHeader.MouseLeftButtonUp += (sender, e) => viewModel.IsCollapsed = !viewModel.IsCollapsed;
+            if (click2Collapse) groupHeader.MouseLeftButtonUp += (sender, e) =>
+            {
+                var collapse = !viewModel.IsCollapsed;
+                if (collapse && collapseControl != null && !collapseControl()) return;
+                viewModel.IsCollapsed = collapse;
+            };
             return viewModel;
         }
 

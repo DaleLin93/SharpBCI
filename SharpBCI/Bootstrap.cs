@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using MarukoLib.Lang;
@@ -63,13 +64,15 @@ namespace SharpBCI
                 formattedSessionDescriptors[i] = expConf.GetFormattedSessionDescriptor();
             }
 
+            var deviceTypes = App.Instance.Registries.Registry<PluginDeviceType>().Registered.Select(pdt => pdt.DeviceType).ToArray();
+
             /* Parse consumer configurations. */
             var deviceConsumerLists = new Dictionary<DeviceType, IList<Tuple<PluginStreamConsumer, IReadonlyContext>>>();
-            foreach (var deviceType in App.Instance.Registries.Registry<PluginDeviceType>().Registered)
+            foreach (var deviceType in deviceTypes)
             {
-                if (!devicePart.TryGetValue(deviceType.DeviceType.Name, out var deviceParams) || deviceParams.Device.Id == null) continue;
+                if (!devicePart.TryGetValue(deviceType.Name, out var deviceParams) || deviceParams.Device.Id == null) continue;
                 var list = new List<Tuple<PluginStreamConsumer, IReadonlyContext>>();
-                deviceConsumerLists[deviceType.DeviceType] = list;
+                deviceConsumerLists[deviceType] = list;
                 foreach (var consumerConf in deviceParams.Consumers)
                 {
                     if (consumerConf.Id == null) continue;
@@ -81,11 +84,13 @@ namespace SharpBCI
 
             /* IMPORTANT: ALL EXPERIMENT RELATED CONFIG SHOULD BE CHECKED BEFORE STEAMERS WERE INITIALIZED */
 
+            var deviceInstances = InitiateDevices(deviceTypes, devicePart);
+
             var monitorWindow = monitor ? MonitorWindow.Show() : null;
 
             var sessions = new Session[experimentParts.Count];
             var baseClock = Clock.SystemMillisClock;
-            var streamers = CreateStreamerCollection(devicePart, baseClock, out var deviceStreamers);
+            var streamers = CreateStreamerCollection(deviceTypes, deviceInstances, baseClock, out var deviceStreamers);
 
             using (var disposablePool = new DisposablePool())
             {
@@ -103,16 +108,6 @@ namespace SharpBCI
 
                         new SessionConfig { ExperimentPart = experimentPart, DevicePart = devicePart }
                             .JsonSerializeToFile(session.GetDataFileName(SessionConfig.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
-
-                        var writerBaseTime = session.CreateTimestamp;
-
-                        if (ExperimentProperties.RecordMarkers.Get(experiment.Metadata) && streamers.TryFindFirst<MarkerStreamer>(out var markerStreamer))
-                        {
-                            var markerFileWriter = new MarkerFileWriter(session.GetDataFileName(MarkerFileWriter.FileSuffix), writerBaseTime);
-                            disposablePool.Add(markerFileWriter);
-                            markerStreamer.Attach(markerFileWriter);
-                            disposablePool.Add(new DelegatedDisposable(() => markerStreamer.Detach(markerFileWriter)));
-                        }
 
                         foreach (var entry in deviceConsumerLists)
                             if (deviceStreamers.TryGetValue(entry.Key, out var deviceStreamer))
@@ -152,26 +147,53 @@ namespace SharpBCI
                 }
             }
             sessionListener?.AfterAllCompleted(sessions);
+            foreach (var instance in deviceInstances.Values) instance.Dispose();
+        }
+
+        public static IDictionary<DeviceType, IDevice> InitiateDevices(IReadOnlyCollection<DeviceType> deviceTypes, IDictionary<string, DeviceParams> devices)
+        {
+            var deviceLookups = new Dictionary<DeviceType, Tuple<PluginDevice, IReadonlyContext>>();
+            foreach (var deviceType in deviceTypes)
+            {
+                if (!devices.TryGetValue(deviceType.Name, out var entity) || entity.Device.Id == null)
+                {
+                    if (deviceType.IsRequired) throw new ArgumentException($"Device type '{deviceType.Name}' is required.");
+                    continue;
+                }
+                if (!App.Instance.Registries.Registry<PluginDevice>().LookUp(entity.Device.Id, out var device))
+                    throw new ArgumentException($"Cannot find device by id: {entity.Device.Id}");
+                deviceLookups[deviceType] = new Tuple<PluginDevice, IReadonlyContext>(device, device.DeserializeParams(entity.Device.Params));
+            }
+            var deviceInstances = new Dictionary<DeviceType, IDevice>();
+            var success = false;
+            try
+            {
+                foreach (var entry in deviceLookups)
+                    deviceInstances[entry.Key] = entry.Value.Item1.NewInstance(entry.Value.Item2);
+                success = true;
+            }
+            finally
+            {
+                if (!success)
+                    foreach (var device in deviceInstances.Values)
+                        device.Dispose();
+            }
+            return deviceInstances;
         }
 
         /// <summary>
         /// Create streamer collection by given device params.
         /// </summary>
-        public static StreamerCollection CreateStreamerCollection(IDictionary<string, DeviceParams> devices, IClock clock,
+        public static StreamerCollection CreateStreamerCollection(DeviceType[] deviceTypes, IDictionary<DeviceType, IDevice> devices, IClock clock,
             out IDictionary<DeviceType, IStreamer> deviceStreamers)
         {
             deviceStreamers = new Dictionary<DeviceType, IStreamer>();
             var streamers = new StreamerCollection();
-            streamers.Add(new MarkerStreamer(clock));
-            foreach (var deviceType in App.Instance.Registries.Registry<PluginDeviceType>().Registered)
+            foreach (var deviceType in deviceTypes)
             {
-                if (!devices.TryGetValue(deviceType.DeviceType.Name, out var entity) || entity.Device.Id == null) continue;
-                if (!App.Instance.Registries.Registry<PluginDevice>().LookUp(entity.Device.Id, out var device))
-                    throw new ArgumentException($"Cannot find device by id: {entity.Device.Id}");
-                var deviceInstance = device.NewInstance(device.DeserializeParams(entity.Device.Params));
-                var streamerFactory = device.Factory.GetDeviceType(device.DeviceClass).StreamerFactory;
-                var streamer = streamerFactory?.Create(deviceInstance, clock);
-                if (streamer != null) streamers.Add(deviceStreamers[deviceType.DeviceType] = streamer);
+                if (!devices.TryGetValue(deviceType, out var instance) || instance == null) continue;
+                var streamer = deviceType.StreamerFactory?.Create(instance, clock);
+                if (streamer != null) streamers.Add(deviceStreamers[deviceType] = streamer);
             }
             return streamers;
         }

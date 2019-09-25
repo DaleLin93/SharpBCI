@@ -120,6 +120,8 @@ namespace SharpBCI.VideoSources
             return null;
         }
 
+        public override void Dispose() { }
+
         private void Device_NewFrame(object sender, NewFrameEventArgs eventArgs)
         {
             _frame = new VideoFrame(eventArgs.Frame);

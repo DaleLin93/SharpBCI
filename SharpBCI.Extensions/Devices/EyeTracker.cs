@@ -36,9 +36,9 @@ namespace SharpBCI.Extensions.Devices
 
     }
 
-    [DeviceType("eyeTracker", "Eye-Tracker", 
-        StreamerFactoryType = typeof(GazePointStreamer.Factory),
-        DataVisualizerType = typeof(EyeTrackerDataVisualizer))]
+    [DeviceType("Eye-Tracker", 
+        StreamerFactory = typeof(GazePointStreamer.Factory),
+        DataVisualizer = typeof(EyeTrackerDataVisualizer))]
     public interface IEyeTracker : IDevice
     {
 

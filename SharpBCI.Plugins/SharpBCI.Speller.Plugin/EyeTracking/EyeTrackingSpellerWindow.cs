@@ -9,6 +9,7 @@ using D2D1 = SharpDX.Direct2D1;
 using SharpDX;
 using SharpBCI.Extensions;
 using Point = System.Drawing.Point;
+using SharpBCI.Core.IO;
 
 namespace SharpBCI.Experiments.Speller.EyeTracking
 {
