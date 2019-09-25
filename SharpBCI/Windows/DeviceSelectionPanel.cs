@@ -266,21 +266,9 @@ namespace SharpBCI.Windows
             var deviceType = controlGroup.DeviceType;
             var selectedItem = (PluginDevice)controlGroup.DeviceComboBox.SelectedItem;
             if (selectedItem?.Factory == null) return;
-            if (deviceType.BaseType == typeof(IEyeTracker))
-            {
-                var device = (IEyeTracker)selectedItem.NewInstance(SelectedDevices[deviceType].Params);
-                new GazePointVisualizationWindow(new GazePointStreamer(device, Clock.SystemMillisClock), 50).Show();
-            }
-            else if (deviceType.BaseType == typeof(IBiosignalSampler))
-            {
-                var device = (IBiosignalSampler)selectedItem.NewInstance(SelectedDevices[deviceType].Params);
-                new BiosignalVisualizationWindow(new BiosignalStreamer(device, Clock.SystemMillisClock), device.ChannelNum, (long)(device.Frequency * 5)).Show();
-            }
-            else if (deviceType.BaseType == typeof(IVideoSource))
-            {
-                var device = (IVideoSource)selectedItem.NewInstance(SelectedDevices[deviceType].Params);
-                new VideoFramePresentationWindow(new VideoFrameStreamer(device, Clock.SystemMillisClock)).Show();
-            }
+            if (deviceType.DataVisualizer == null) return;
+            var device = selectedItem.NewInstance(SelectedDevices[deviceType].Params);
+            deviceType.DataVisualizer.Visualize(device);
         }
 
     }

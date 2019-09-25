@@ -10,7 +10,7 @@ using SharpBCI.Extensions.Streamers;
 using SharpDX.Mathematics.Interop;
 using Color = SharpDX.Color;
 
-namespace SharpBCI.Windows
+namespace SharpBCI.Extensions.Windows
 {
 
     internal class VideoFramePresentationWindow : Direct2DForm, IStreamConsumer<Timestamped<IVideoFrame>>

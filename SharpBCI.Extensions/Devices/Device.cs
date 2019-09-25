@@ -14,7 +14,14 @@ namespace SharpBCI.Extensions.Devices
 
         [NotNull] Type ValueType { get; }
 
-        [NotNull] IStreamer Create(IDevice device, IClock clock);
+        [NotNull] IStreamer Create([NotNull] IDevice device, [NotNull] IClock clock);
+
+    }
+
+    public interface IDataVisualizer
+    {
+
+        void Visualize([NotNull] IDevice device);
 
     }
 
@@ -23,13 +30,14 @@ namespace SharpBCI.Extensions.Devices
 
         private static readonly IDictionary<Type, DeviceType> DeviceTypes = new Dictionary<Type, DeviceType>();
 
-        public DeviceType(string name, string displayName, Type baseType, Type streamerFactoryType)
+        public DeviceType([NotNull] string name, [NotNull] string displayName, [NotNull] Type baseType,
+            [CanBeNull] Type streamerFactoryType, [CanBeNull] Type dataVisualizerType)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
             BaseType = baseType ?? throw new ArgumentNullException(nameof(baseType));
-            StreamerFactoryType = streamerFactoryType;
-            StreamerFactory = (IStreamerFactory) streamerFactoryType?.InitClassOrStruct();
+            StreamerFactory = (IStreamerFactory)streamerFactoryType?.InitClassOrStruct();
+            DataVisualizer = (IDataVisualizer)dataVisualizerType?.InitClassOrStruct();
         }
 
         public static bool operator ==(DeviceType left, DeviceType right) => left.Equals(right);
@@ -52,7 +60,8 @@ namespace SharpBCI.Extensions.Devices
                 deviceType = default;
                 return false;
             }
-            deviceType = new DeviceType(attribute.Name, attribute.DisplayName, type, attribute.StreamerFactoryType);
+            deviceType = new DeviceType(attribute.Name, attribute.DisplayName, type, 
+                attribute.StreamerFactoryType, attribute.DataVisualizerType);
             return true;
         }
         
@@ -62,9 +71,9 @@ namespace SharpBCI.Extensions.Devices
 
         [NotNull] public Type BaseType { get; }
 
-        [CanBeNull] public Type StreamerFactoryType { get; }
-
         [CanBeNull] public IStreamerFactory StreamerFactory { get; }
+
+        [CanBeNull] public IDataVisualizer DataVisualizer { get; }
 
         public bool Equals(DeviceType other) => string.Equals(Name, other.Name);
 
@@ -91,6 +100,8 @@ namespace SharpBCI.Extensions.Devices
         [NotNull] public string DisplayName { get; }
 
         [CanBeNull] public Type StreamerFactoryType { get; set; }
+
+        [CanBeNull] public Type DataVisualizerType { get; set; }
 
     }
 

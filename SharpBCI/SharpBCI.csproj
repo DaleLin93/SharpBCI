@@ -133,15 +133,6 @@
     <Compile Include="Windows\VideoFrameAnalysisWindow.xaml.cs">
       <DependentUpon>VideoFrameAnalysisWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Windows\VideoFramePresentationWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\GazePointVisualizationWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\BiosignalVisualizationWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Windows\MonitorWindow.xaml.cs">
       <DependentUpon>MonitorWindow.xaml</DependentUpon>
     </Compile>

@@ -12,7 +12,7 @@ using SharpBCI.Extensions.Streamers;
 using SharpDX.Mathematics.Interop;
 using Color = SharpDX.Color;
 
-namespace SharpBCI.Windows
+namespace SharpBCI.Extensions.Windows
 {
 
     internal class GazePointVisualizationWindow : Direct2DForm, IStreamConsumer<Timestamped<IGazePoint>>

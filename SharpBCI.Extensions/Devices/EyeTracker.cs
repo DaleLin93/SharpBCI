@@ -1,6 +1,7 @@
 ﻿using MarukoLib.Lang;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions.Streamers;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Devices
 {
@@ -35,7 +36,9 @@ namespace SharpBCI.Extensions.Devices
 
     }
 
-    [DeviceType("eyeTracker", "Eye-Tracker", StreamerFactoryType = typeof(GazePointStreamer.Factory))]
+    [DeviceType("eyeTracker", "Eye-Tracker", 
+        StreamerFactoryType = typeof(GazePointStreamer.Factory),
+        DataVisualizerType = typeof(EyeTrackerDataVisualizer))]
     public interface IEyeTracker : IDevice
     {
 
@@ -47,6 +50,17 @@ namespace SharpBCI.Extensions.Devices
     {
 
         public abstract IGazePoint Read();
+
+    }
+
+    internal class EyeTrackerDataVisualizer : IDataVisualizer
+    {
+
+        public void Visualize(IDevice device)
+        {
+            var eyeTracker = (IEyeTracker)device;
+            new GazePointVisualizationWindow(new GazePointStreamer(eyeTracker, Clock.SystemMillisClock), 50).Show();
+        }
 
     }
 

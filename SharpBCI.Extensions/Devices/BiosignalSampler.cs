@@ -1,5 +1,6 @@
 ﻿using MarukoLib.Lang;
 using SharpBCI.Extensions.Streamers;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Devices
 {
@@ -56,7 +57,9 @@ namespace SharpBCI.Extensions.Devices
 
     }
 
-    [DeviceType("biosignalSampler", "Biosignal Sampler", StreamerFactoryType = typeof(BiosignalStreamer.Factory))]
+    [DeviceType("biosignalSampler", "Biosignal Sampler", 
+        StreamerFactoryType = typeof(BiosignalStreamer.Factory),
+        DataVisualizerType = typeof(BiosignalSamplerDataVisualizer))]
     public interface IBiosignalSampler : IDevice
     {
 
@@ -76,6 +79,18 @@ namespace SharpBCI.Extensions.Devices
         public double Frequency { get; protected set; }
 
         public abstract ISample Read();
+
+    }
+
+    internal class BiosignalSamplerDataVisualizer : IDataVisualizer
+    {
+
+        public void Visualize(IDevice device)
+        {
+            var biosignalSampler = (IBiosignalSampler) device;
+            new BiosignalVisualizationWindow(new BiosignalStreamer(biosignalSampler, Clock.SystemMillisClock), 
+                biosignalSampler.ChannelNum, (long) (biosignalSampler.Frequency * 5)).Show();
+        }
 
     }
 

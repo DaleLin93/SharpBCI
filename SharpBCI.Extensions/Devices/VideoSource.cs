@@ -4,7 +4,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using MarukoLib.IO;
+using MarukoLib.Lang;
 using SharpBCI.Extensions.Streamers;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Devices
 {
@@ -166,7 +168,9 @@ namespace SharpBCI.Extensions.Devices
 
     }
 
-    [DeviceType("videoSource", "Video Source", StreamerFactoryType = typeof(VideoFrameStreamer.Factory))]
+    [DeviceType("videoSource", "Video Source", 
+        StreamerFactoryType = typeof(VideoFrameStreamer.Factory),
+        DataVisualizerType = typeof(VideoSourceDataVisualizer))]
     public interface IVideoSource : IDevice
     {
 
@@ -186,6 +190,17 @@ namespace SharpBCI.Extensions.Devices
         public abstract double MaxFrameRate { get; }
 
         public abstract IVideoFrame Read();
+
+    }
+
+    internal class VideoSourceDataVisualizer : IDataVisualizer
+    {
+
+        public void Visualize(IDevice device)
+        {
+            var videoSource = (IVideoSource)device;
+            new VideoFramePresentationWindow(new VideoFrameStreamer(videoSource, Clock.SystemMillisClock)).Show();
+        }
 
     }
 
