@@ -6,15 +6,15 @@ using System.Text;
 using System.Threading;
 using MarukoLib.IO;
 using MarukoLib.Lang.Concurrent;
-using SharpBCI.Core.Experiment;
 using ToastNotifications;
 using ToastNotifications.Lifetime;
 using ToastNotifications.Messages;
 using ToastNotifications.Position;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
+using SharpBCI.Core.Experiment;
 
-namespace SharpBCI.Experiments.MI
+namespace SharpBCI.Paradigms.MI
 {
     internal class MiStimClient
     {
@@ -85,8 +85,8 @@ namespace SharpBCI.Experiments.MI
 
         public MiStimClient(Session session)
         {
-            var experiment = (MiExperiment) session.Experiment;
-            var config = experiment.Config;
+            var paradigm = (MiParadigm) session.Paradigm;
+            var config = paradigm.Config;
             var commConfig = config.Comm;
             _notifier = new Notifier(cfg =>
             {

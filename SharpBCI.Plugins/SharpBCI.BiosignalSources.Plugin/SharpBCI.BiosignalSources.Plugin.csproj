@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{420156EE-A59F-4DDD-AE6A-440DAE4EC2AD}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SharpBCI.BiosignalSources</RootNamespace>
+    <AssemblyName>SharpBCI.BiosignalSources.Plugin</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="NeuroElectricsSampler.cs" />
+    <Compile Include="NeuroScanSampler.cs" />
+    <Compile Include="OpenBCISampler.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UnnamedDeviceSampler.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Lang\MarukoLib.Lang.csproj">
+      <Project>{cdc6516e-2114-4e81-8ba0-9d3e93f8da15}</Project>
+      <Name>MarukoLib.Lang</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Logging\MarukoLib.Logging.csproj">
+      <Project>{36b35a27-9e3c-4a7b-870b-9df3b1fe534b}</Project>
+      <Name>MarukoLib.Logging</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib.Threading\MarukoLib.Threading.csproj">
+      <Project>{334d2ca4-eba9-4977-a3ca-2badffa0c9bb}</Project>
+      <Name>MarukoLib.Threading</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\MarukoLib\MarukoLib\MarukoLib.csproj">
+      <Project>{2f30247b-bb53-41d0-ad4e-845550366a96}</Project>
+      <Name>MarukoLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\SharpBCI.Core\SharpBCI.Core.csproj">
+      <Project>{b0dd9d7d-1944-4a32-a7a8-c41f00e350e7}</Project>
+      <Name>SharpBCI.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\SharpBCI.Extensions\SharpBCI.Extensions.csproj">
+      <Project>{ad675d2d-c113-4460-bedc-c6abdbe1a929}</Project>
+      <Name>SharpBCI.Extensions</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>"$(ProjectDir)..\..\Build\build-tool.bat" "$(ProjectDir)" "$(OutDir)" $(ConfigurationName)</PostBuildEvent>
+  </PropertyGroup>
+</Project>

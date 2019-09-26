@@ -34,16 +34,16 @@ namespace SharpBCI.Extensions.Windows
             InitializeConfigurationPanel();
         }
 
-        public void Update([CanBeNull] IReadonlyContext context, [CanBeNull] IExperiment experiment)
+        public void Update([CanBeNull] IReadonlyContext context, [CanBeNull] IParadigm paradigm)
         {
             context = context ?? EmptyContext.Instance;
 
-            if (UpdateSummaryVisibility(context))
+            if (UpdateSummaryVisibility(context, false))
                 LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
             foreach (var holder in _summaryViewModels.Where(sh => sh.IsVisible))
                 try
                 {
-                    holder.ValueTextBlock.Text = holder.Summary.GetValue(context, experiment).ToString();
+                    holder.ValueTextBlock.Text = holder.Summary.GetValue(context, paradigm).ToString();
                     holder.ValueTextBlock.Foreground = SystemColors.WindowTextBrush;
                 }
                 catch (Exception e)
@@ -65,15 +65,17 @@ namespace SharpBCI.Extensions.Windows
                 foreach (var summary in Summaries)
                 {
                     var valueTextBlock = new TextBlock { TextAlignment = TextAlignment.Right };
-                    _summaryViewModels.Add(new SummaryViewModel(summary, groupPanel.AddRow(summary.Name, valueTextBlock), valueTextBlock));
+                    var summaryViewModel = new SummaryViewModel(summary, groupPanel.AddRow(summary.Name, valueTextBlock), valueTextBlock);
+                    summaryViewModel.AnimationCompleted += (sender, e) => LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
+                    _summaryViewModels.Add(summaryViewModel);
                 }
             }
 
-            UpdateLayout();
+            UpdateSummaryVisibility(EmptyContext.Instance, true);
             LayoutChanged?.Invoke(this, LayoutChangedEventArgs.Initialization);
         }
 
-        private bool UpdateSummaryVisibility(IReadonlyContext context)
+        private bool UpdateSummaryVisibility(IReadonlyContext context, bool initializing)
         {
             var adapter = Adapter;
             if (adapter == null) return false;
@@ -83,7 +85,7 @@ namespace SharpBCI.Extensions.Windows
                 var visible = adapter.IsVisible(context, summaryHolder.Summary);
                 if (visible != summaryHolder.IsVisible)
                 {
-                    summaryHolder.IsVisible = visible;
+                    summaryHolder.SetVisible(visible, !initializing);
                     visibilityChanged = true;
                 }
             }

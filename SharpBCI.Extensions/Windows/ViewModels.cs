@@ -1,6 +1,5 @@
-﻿using SharpBCI.Core.Experiment;
-using System;
-using System.Collections;
+﻿using System;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Windows;
@@ -19,35 +18,27 @@ namespace SharpBCI.Extensions.Windows
     public class GroupHeader : Grid
     {
 
-        private readonly Rectangle _separatorRectangle;
-
-        private readonly TextBlock _headerTextBlock;
-
         public GroupHeader()
         {
-            Children.Add(_separatorRectangle = new Rectangle {Margin = new Thickness {Left = 10, Right = 10, Top = 7}});
-            Children.Add(_headerTextBlock = new TextBlock {Margin = new Thickness {Left = 15, Top = 2}, IsHitTestVisible = false, Visibility = Visibility.Hidden});
+            Children.Add(SeparatorRectangle = new Rectangle {Margin = new Thickness {Left = 10, Right = 10, Top = 7}});
+            Children.Add(HeaderTextBlock = new TextBlock {Margin = new Thickness {Left = 15, Top = 2}, IsHitTestVisible = false, Visibility = Visibility.Hidden});
+
+            Style = ViewHelper.GetResource("ParamGroupHeader") as Style;
+            SeparatorRectangle.Style = ViewHelper.GetResource("ParamGroupHeaderLine") as Style;
+            HeaderTextBlock.Style = ViewHelper.GetResource("ParamGroupHeaderText") as Style;
         }
 
-        public Style SeparatorStyle
-        {
-            get => _separatorRectangle.Style;
-            set => _separatorRectangle.Style = value;
-        }
+        public Rectangle SeparatorRectangle { get; }
 
-        public Style HeaderTextStyle
-        {
-            get => _headerTextBlock.Style;
-            set => _headerTextBlock.Style = value;
-        }
+        public TextBlock HeaderTextBlock { get; }
 
         public string Header
         {
-            get => _headerTextBlock.Text;
+            get => HeaderTextBlock.Text;
             set
             {
-                _headerTextBlock.Text = value;
-                _headerTextBlock.Visibility = string.IsNullOrWhiteSpace(value) ? Visibility.Hidden : Visibility.Visible;
+                HeaderTextBlock.Text = value;
+                HeaderTextBlock.Visibility = string.IsNullOrWhiteSpace(value) ? Visibility.Hidden : Visibility.Visible;
             }
         }
 
@@ -143,7 +134,56 @@ namespace SharpBCI.Extensions.Windows
 
     }
 
-    public sealed class GroupViewModel
+    public abstract class AnimatingViewModel
+    {
+
+        public event EventHandler AnimationCompleted;
+
+        protected void UpdateVisibility(FrameworkElement element, bool visible, bool animate = true)
+        {
+            if (!animate)
+            {
+                element.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+                element.Height = double.NaN;
+                return;
+            }
+            switch (visible)
+            {
+                case true:
+                {
+                    element.Height = double.NaN;
+                    element.Visibility = Visibility.Visible;
+                    element.UpdateLayout();
+                    element.Height = 0;
+                    var contentHeight = element.DesiredSize.Height;
+                    var animation = ViewHelper.CreateDoubleAnimation(0, contentHeight, FillBehavior.Stop,
+                        () => element.DispatcherInvoke(sp =>
+                        {
+                            sp.Height = double.NaN;
+                            AnimationCompleted?.Invoke(this, EventArgs.Empty);
+                        }));
+                    element.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
+                    break;
+                }
+                case false:
+                {
+                    element.Tag = element.ActualHeight;
+                    var animation = ViewHelper.CreateDoubleAnimation(element.ActualHeight, 0, FillBehavior.Stop,
+                        () => element.DispatcherInvoke(sp =>
+                        {
+                            sp.Height = double.NaN;
+                            sp.Visibility = Visibility.Collapsed;
+                            AnimationCompleted?.Invoke(this, EventArgs.Empty);
+                        }));
+                    element.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
+                    break;
+                }
+            }
+        }
+
+    }
+
+    public sealed class GroupViewModel : AnimatingViewModel
     {
 
         [NotNull] public readonly IGroupDescriptor Group;
@@ -151,8 +191,6 @@ namespace SharpBCI.Extensions.Windows
         [NotNull] public readonly StackPanel GroupPanel, ItemsPanel;
 
         public readonly int Depth;
-
-        private bool _collapsed = false, _visible = true;
 
         public GroupViewModel(IGroupDescriptor group, StackPanel groupPanel, StackPanel itemsPanel, int depth)
         {
@@ -162,59 +200,27 @@ namespace SharpBCI.Extensions.Windows
             Depth = depth;
         }
 
-        [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        [SuppressMessage("ReSharper", "SwitchStatementMissingSomeCases")]
-        private static void ChangeVisibility(StackPanel stackPanel, Visibility visibility)
+        public bool IsVisible { get; private set; } = true;
+
+        public bool IsCollapsed { get; private set; } = false;
+
+        public void SetVisible(bool value, bool animate = true)
         {
-            switch (visibility)
-            {
-                case Visibility.Visible:
-                {
-                    var contentHeight = stackPanel.Children.OfType<UIElement>()
-                        .Sum(a => ((FrameworkElement)a).ActualHeight);
-                    stackPanel.Height = 0;
-                    var animation = ViewHelper.CreateDoubleAnimation(0, contentHeight, FillBehavior.Stop, 
-                        () => stackPanel.DispatcherInvoke(sp => sp.Height = double.NaN));
-                    stackPanel.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
-                    break;
-                }
-                case Visibility.Collapsed:
-                {
-                    var animation = ViewHelper.CreateDoubleAnimation(stackPanel.ActualHeight, 0, FillBehavior.Stop, 
-                        () => stackPanel.DispatcherInvoke(sp => sp.Height = 0));
-                    stackPanel.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
-                    break;
-                }
-                default:
-                    throw new NotSupportedException(visibility.ToString());
-            }
+            if (IsVisible == value) return;
+            IsVisible = value;
+            UpdateVisibility(GroupPanel, IsVisible, animate);
         }
 
-        public bool IsVisible
+        public void SetCollapsed(bool value, bool animate = true)
         {
-            get => _visible;
-            set
-            {
-                if (_visible == value) return;
-                _visible = value;
-                ChangeVisibility(GroupPanel, _visible ? Visibility.Visible : Visibility.Collapsed);
-            }
-        }
-
-        public bool IsCollapsed
-        {
-            get => _collapsed;
-            set
-            {
-                if (_collapsed == value) return;
-                _collapsed = value;
-                ChangeVisibility(ItemsPanel, _collapsed ? Visibility.Collapsed : Visibility.Visible);
-            }
+            if (IsCollapsed == value) return;
+            IsCollapsed = value;
+            UpdateVisibility(ItemsPanel, !IsCollapsed, animate);
         }
 
     }
 
-    public sealed class ParamViewModel
+    public sealed class ParamViewModel : AnimatingViewModel
     {
 
         [CanBeNull] public readonly GroupViewModel Group;
@@ -224,8 +230,6 @@ namespace SharpBCI.Extensions.Windows
         [CanBeNull] public readonly TextBlock NameTextBlock;
 
         [NotNull] public readonly PresentedParameter PresentedParameter;
-
-        private bool _visible = true;
 
         public ParamViewModel([CanBeNull] GroupViewModel group, [NotNull] KeyValueRow container, 
             [CanBeNull] TextBlock nameTextBlock, [NotNull] PresentedParameter presentedParameter)
@@ -238,15 +242,13 @@ namespace SharpBCI.Extensions.Windows
 
         public IParameterDescriptor ParameterDescriptor => PresentedParameter.ParameterDescriptor;
 
-        public bool IsVisible
+        public bool IsVisible { get; private set; } = true;
+
+        public void SetVisible(bool value, bool animate = true)
         {
-            get => _visible;
-            set
-            {
-                if (_visible == value) return;
-                _visible = value;
-                UpdateVisibility();
-            }
+            if (IsVisible == value) return;
+            IsVisible = value;
+            UpdateVisibility(Container, IsVisible, animate);
         }
 
         public bool CheckValid()
@@ -262,45 +264,10 @@ namespace SharpBCI.Extensions.Windows
             }
         }
 
-        private void UpdateVisibility()
-        {
-            switch (_visible)
-            {
-                case true:
-                {
-                    var contentHeight = (double)Container.Tag;
-                    Container.Height = 0;
-                    Container.Visibility = Visibility.Visible;
-                        var animation = ViewHelper.CreateDoubleAnimation(0, contentHeight, FillBehavior.Stop,
-                        () => Container.DispatcherInvoke(sp =>
-                        {
-                            sp.Height = double.NaN;
-
-                        }));
-                    Container.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
-                    break;
-                }
-                case false:
-                {
-                    Container.Tag = Container.ActualHeight;
-                    var animation = ViewHelper.CreateDoubleAnimation(Container.ActualHeight, 0, FillBehavior.Stop,
-                        () =>
-                        {
-                            Container.DispatcherInvoke(sp =>
-                            {
-                                sp.Height = double.NaN;
-                                sp.Visibility = Visibility.Collapsed;
-                            });
-                        });
-                    Container.BeginAnimation(FrameworkElement.HeightProperty, animation, HandoffBehavior.SnapshotAndReplace);
-                    break;
-                }
-            }
-        }
 
     }
 
-    public sealed class SummaryViewModel
+    public sealed class SummaryViewModel : AnimatingViewModel
     {
 
         [NotNull] public readonly ISummary Summary;
@@ -316,10 +283,13 @@ namespace SharpBCI.Extensions.Windows
             ValueTextBlock = valueTextBlock ?? throw new ArgumentNullException(nameof(valueTextBlock));
         }
 
-        public bool IsVisible
+        public bool IsVisible { get; private set; } = true;
+
+        public void SetVisible(bool value, bool animate = true)
         {
-            get => Container.Visibility == Visibility.Visible;
-            set => Container.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
+            if (IsVisible == value) return;
+            IsVisible = value;
+            UpdateVisibility(Container, IsVisible, animate);
         }
 
     }

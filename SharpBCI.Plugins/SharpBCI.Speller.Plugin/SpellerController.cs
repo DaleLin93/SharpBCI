@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SharpBCI.Experiments.Speller
+namespace SharpBCI.Paradigms.Speller
 {
 
     internal class SpellerController

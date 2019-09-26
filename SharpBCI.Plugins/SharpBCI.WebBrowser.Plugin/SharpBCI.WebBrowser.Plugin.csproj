@@ -7,7 +7,7 @@
     <ProjectGuid>{AA233B45-2A08-4253-8FCB-F115215516FB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SharpBCI.Experiments.WebBrowser</RootNamespace>
+    <RootNamespace>SharpBCI.Paradigms.WebBrowser</RootNamespace>
     <AssemblyName>SharpBCI.WebBrowser.Plugin</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -90,7 +90,7 @@
     <Compile Include="Messages.cs" />
     <Compile Include="SsvepDetector.cs" />
     <Compile Include="WebBrowserAssistantEngine.cs" />
-    <Compile Include="WebBrowserAssistantExperiment.cs" />
+    <Compile Include="WebBrowserAssistantParadigm.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WebBrowserAssistantServer.cs" />
   </ItemGroup>

@@ -1,6 +1,6 @@
 ﻿using SharpBCI.Extensions;
 
-namespace SharpBCI.Experiments.Speller
+namespace SharpBCI.Paradigms.Speller
 {
 
     public static class SpellerMarkerDefinitions

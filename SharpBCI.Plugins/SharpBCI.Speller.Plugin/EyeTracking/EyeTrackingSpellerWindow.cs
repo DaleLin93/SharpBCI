@@ -1,30 +1,30 @@
-﻿using SharpBCI.Core.Experiment;
-using SharpBCI.Core.Staging;
+﻿using SharpBCI.Core.Staging;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Media;
 using System.Windows.Forms;
 using MarukoLib.Lang;
+using SharpBCI.Core.Experiment;
 using D2D1 = SharpDX.Direct2D1;
 using SharpDX;
 using SharpBCI.Extensions;
 using Point = System.Drawing.Point;
 using SharpBCI.Core.IO;
 
-namespace SharpBCI.Experiments.Speller.EyeTracking
+namespace SharpBCI.Paradigms.Speller.EyeTracking
 {
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
-    internal class EyeTrackingSpellerWindow : SpellerBaseWindow
+    internal class EyeTrackingSpellerWindow : SpellerExperimentBaseWindow
     {
 
         private readonly EyeTrackingDetector _detector;
 
-        /* Experiment variables */
+        /* Paradigm variables */
 
         private volatile UIButton _activedButton;
 
-        private SpellerExperiment.Result.Trial _trial;
+        private SpellerParadigm.Result.Trial _trial;
 
         public EyeTrackingSpellerWindow(Session session, SpellerController spellerController) : base(session, spellerController)
         {
@@ -74,21 +74,21 @@ namespace SharpBCI.Experiments.Speller.EyeTracking
                 /* Handle events */
                 switch (stage.Marker)
                 {
-                    case MarkerDefinitions.ExperimentStartMarker:
-                        Result.ExperimentStartTime = sessionTime;
-                        ExperimentStarted = true;
+                    case MarkerDefinitions.ParadigmStartMarker:
+                        Result.ParadigmStartTime = sessionTime;
+                        ParadigmStarted = true;
                         SpellerController.Start();
                         HintButton();
                         break;
-                    case MarkerDefinitions.ExperimentEndMarker:
-                        Result.ExperimentEndTime = sessionTime;
+                    case MarkerDefinitions.ParadigmEndMarker:
+                        Result.ParadigmEndTime = sessionTime;
                         break;
                     case MarkerDefinitions.TrialStartMarker:
                     {
-                        var trial = new SpellerExperiment.Result.Trial();
+                        var trial = new SpellerParadigm.Result.Trial();
                         var activedButton = _activedButton = HintedButton ?? UpdateCursor(GazePointHandler.CurrentPosition);
                         if (activedButton != null)
-                            trial.ActivedButtons = new SpellerExperiment.Result.Button(activedButton.Key).SingletonArray();
+                            trial.ActivedButtons = new SpellerParadigm.Result.Button(activedButton.Key).SingletonArray();
                         trial.StartTime = CurrentTime;
                         _trial = trial;
                         SelectedButton = null;
@@ -114,8 +114,8 @@ namespace SharpBCI.Experiments.Speller.EyeTracking
                             trial.Correct = correct;
                             if (button != null)
                             {
-                                trial.SelectedButton = new SpellerExperiment.Result.Button(button.Key);
-                            } else if (!Experiment.Config.Test.AlwaysCorrectFeedback)
+                                trial.SelectedButton = new SpellerParadigm.Result.Button(button.Key);
+                            } else if (!Paradigm.Config.Test.AlwaysCorrectFeedback)
                                 SystemSounds.Exclamation.Play();
                         }
                         CheckStop();
@@ -131,7 +131,7 @@ namespace SharpBCI.Experiments.Speller.EyeTracking
         {
             RenderTarget.Clear(BackgroundColor);
 
-            if (ExperimentStarted)
+            if (ParadigmStarted)
             {
                 DrawHintAndInput();
 
@@ -154,7 +154,7 @@ namespace SharpBCI.Experiments.Speller.EyeTracking
                     if (actived)
                     {
                         var highlightColor = ButtonFlashingColor;
-                        var alpha = (now - trial.StartTime) / (float)Experiment.Config.Test.Trial.Duration;
+                        var alpha = (now - trial.StartTime) / (float)Paradigm.Config.Test.Trial.Duration;
                         SharedBrush.Color = Color.SmoothStep(highlightColor, ButtonNormalColor, Math.Max(0, Math.Min(alpha, 1)));
                         RenderTarget.FillRectangle(button.FlickerRect, SharedBrush);
                     }

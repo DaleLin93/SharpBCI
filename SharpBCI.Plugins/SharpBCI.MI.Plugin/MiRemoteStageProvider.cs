@@ -2,7 +2,7 @@
 using SharpBCI.Core.Staging;
 using SharpBCI.Extensions.StageProviders;
 
-namespace SharpBCI.Experiments.MI
+namespace SharpBCI.Paradigms.MI
 {
 
     internal class MiRemoteStageProvider : PipelinedStageProvider

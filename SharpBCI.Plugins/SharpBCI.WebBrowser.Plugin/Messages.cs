@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace SharpBCI.Experiments.WebBrowser
+namespace SharpBCI.Paradigms.WebBrowser
 {
 
 #pragma warning disable 169

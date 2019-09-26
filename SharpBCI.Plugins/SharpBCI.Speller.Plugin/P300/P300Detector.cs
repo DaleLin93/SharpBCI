@@ -6,7 +6,7 @@ using MarukoLib.Lang;
 using MarukoLib.Logging;
 using SharpBCI.Extensions.Devices;
 
-namespace SharpBCI.Experiments.Speller.P300
+namespace SharpBCI.Paradigms.Speller.P300
 {
 
     internal sealed class P300Detector : StreamConsumer<Timestamped<ISample>>

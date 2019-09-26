@@ -1,12 +1,11 @@
-﻿using SharpBCI.Core.Experiment;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using MarukoLib.UI;
+using SharpBCI.Core.Experiment;
 
 namespace SharpBCI.Windows
 {

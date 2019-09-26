@@ -5,7 +5,7 @@ using System.Linq;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.StageProviders;
 
-namespace SharpBCI.Experiments.CPT
+namespace SharpBCI.Paradigms.CPT
 {
 
     internal class CptStage : Stage
@@ -22,7 +22,7 @@ namespace SharpBCI.Experiments.CPT
 
         private readonly Random _r = new Random();
 
-        private readonly CptExperiment.Configuration.TestConfig _testConfig;
+        private readonly CptParadigm.Configuration.TestConfig _testConfig;
 
         private readonly IRandomBoolSequence _randomBoolSequence;
 
@@ -30,12 +30,12 @@ namespace SharpBCI.Experiments.CPT
 
         private bool _completed;
 
-        public CptStageProvider(CptExperiment.Configuration.TestConfig testConfig) : base(true)
+        public CptStageProvider(CptParadigm.Configuration.TestConfig testConfig) : base(true)
         {
             _testConfig = testConfig;
             _randomBoolSequence = testConfig.PseudoRandom
                 ? (IRandomBoolSequence) new PseudoRandom(testConfig.TargetRate) : new RandomBools(testConfig.TargetRate);
-            _remaining = testConfig.ExperimentDuration;
+            _remaining = testConfig.TotalDuration;
         }
 
         protected override IEnumerable<Stage> Following()
@@ -52,9 +52,9 @@ namespace SharpBCI.Experiments.CPT
             }
 
             var stages = new Stage[2];
-            var marker = target ? CptExperiment.TargetDisplayMarker : CptExperiment.NonTargetDisplayMarker;
+            var marker = target ? CptParadigm.TargetDisplayMarker : CptParadigm.NonTargetDisplayMarker;
             stages[0] = new CptStage {Cue = cue, IsTarget = target, Duration = _testConfig.LetterDuration, Marker = marker};
-            stages[1] = new Stage {Cue = "", Duration = _testConfig.InterStimulusInterval, Marker = CptExperiment.IntervalMarker};
+            stages[1] = new Stage {Cue = "", Duration = _testConfig.InterStimulusInterval, Marker = CptParadigm.IntervalMarker};
             if (_remaining < _testConfig.LetterDuration + _testConfig.InterStimulusInterval)
                 _completed = true;
             else

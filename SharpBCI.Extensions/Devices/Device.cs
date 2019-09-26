@@ -83,6 +83,8 @@ namespace SharpBCI.Extensions.Devices
 
         public override int GetHashCode() => Name.GetHashCode();
 
+        public override string ToString() => Name;
+
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]

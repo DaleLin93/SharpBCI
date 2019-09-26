@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Windows;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Windows.Data;
 using JetBrains.Annotations;
 using MarukoLib.IO;
 using MarukoLib.Lang;
@@ -19,20 +16,6 @@ using SharpBCI.Core.Experiment;
 namespace SharpBCI.Windows
 {
 
-    public class SessionNameConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => (value as SessionConfig.Experiment?)?.GetFormattedSessionDescriptor();
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
-    }
-
-    public class ExperimentIdConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => (value as SessionConfig.Experiment?)?.Params.Id;
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
-    }
-
     /// <inheritdoc cref="Window" />
     /// <summary>
     /// Interaction logic for MultiSessionConfigWindow.xaml
@@ -41,6 +24,8 @@ namespace SharpBCI.Windows
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     partial class MultiSessionConfigWindow : Bootstrap.ISessionListener
     {
+
+        public const string DeviceFileSuffix = ".dcfg";
 
         public class FileItem<T>
         {
@@ -57,59 +42,69 @@ namespace SharpBCI.Windows
 
         }
 
-        public class ExperimentItem : FileItem<SessionConfig.Experiment>
+        public class ParadigmItem : FileItem<ParameterizedEntity>
         {
 
-            public ExperimentItem(string filePath, SessionConfig.Experiment value) : base(filePath, value) { }
+            public ParadigmItem(string filePath, ParameterizedEntity value) : base(filePath, value) { }
 
-            public string SessionName => Value.GetFormattedSessionDescriptor();
-
-            public string ExperimentId => Value.Params.Id;
+            public string ParadigmId => Value.Id;
 
         }
 
-        public class DeviceItem : FileItem<IDictionary<string, DeviceParams>>
+        public class DeviceItem : FileItem<DeviceParams[]>
         {
 
-            public DeviceItem(string filePath, IDictionary<string, DeviceParams> value) : base(filePath, value) { }
+            public DeviceItem(string filePath, DeviceParams[] value) : base(filePath, value) { }
 
         }
 
-        private readonly ObservableCollection<ExperimentItem> _experiments = new ObservableCollection<ExperimentItem>();
+        public class SessionListViewItem
+        {
 
-        private DeviceItem _device = null;
+            public SessionListViewItem(string sessionDescriptor, ParadigmItem paradigm)
+            {
+                SessionDescriptor = sessionDescriptor;
+                Paradigm = paradigm;
+            }
+
+            public string SessionDescriptor { get; }
+
+            public ParadigmItem Paradigm { get; }
+
+        }
+
+        private readonly ObservableCollection<SessionListViewItem> _sessionListViewItems = new ObservableCollection<SessionListViewItem>();
         
-        private string _multiSessionConfigFile;
+        private string _msCfgFile;
 
-        public MultiSessionConfigWindow([CanBeNull] string multiSessionConfigFile = null)
+        public MultiSessionConfigWindow([CanBeNull] string msCfgFile = null)
         {
             InitializeComponent();
 
-            ExperimentListView.ItemsSource = _experiments;
-            _experiments.CollectionChanged += ExperimentsCollectionOnChanged;
+            SessionListView.ItemsSource = _sessionListViewItems;
+            _sessionListViewItems.CollectionChanged += SessionListViewItemsCollectionOnChanged;
 
-            _multiSessionConfigFile = multiSessionConfigFile;
+            _msCfgFile = msCfgFile;
         }
 
         public bool IsKillOnFinish { get; set; } = false;
 
-        private static ExperimentItem ReadExperimentConfig(string path, string alternativeDirectory)
+        private static SessionListViewItem ReadSessionConfig(MultiSessionConfig.SessionItem sessionItem, string alternativeDirectory) => 
+            new SessionListViewItem(sessionItem.SessionDescriptor, ReadSessionConfig(sessionItem.ParadigmConfigPath, alternativeDirectory).Paradigm);
+
+        private static SessionListViewItem ReadSessionConfig(string path, string alternativeDirectory)
         {
-            if (!App.FindFile(alternativeDirectory, path, out var experimentFilePath))
-                throw new UserException($"Experiment config file not found: {experimentFilePath}");
+            if (!App.FindFile(alternativeDirectory, path, out var paradigmFilePath))
+                throw new UserException($"Paradigm config file not found: {paradigmFilePath}");
             if (path.EndsWith(SessionConfig.FileSuffix, StringComparison.OrdinalIgnoreCase))
             {
-                if (!JsonUtils.TryDeserializeFromFile<SessionConfig>(experimentFilePath, out var config))
+                if (!JsonUtils.TryDeserializeFromFile<SessionConfig>(paradigmFilePath, out var config))
                     throw new UserException($"Malformed session config file: {path}");
-                return new ExperimentItem(path, config.ExperimentPart);
+                if (config.SessionDescriptor == null || config.Paradigm.Id == null)
+                    throw new UserException($"Malformed session config file: {path}");
+                return new SessionListViewItem(config.SessionDescriptor, new ParadigmItem(path, config.Paradigm));
             }
-            if (path.EndsWith(SessionConfig.Experiment.FileSuffix, StringComparison.OrdinalIgnoreCase))
-            {
-                if (!JsonUtils.TryDeserializeFromFile<SessionConfig.Experiment>(experimentFilePath, out var config))
-                    throw new UserException($"Malformed experiment config file: {path}");
-                return new ExperimentItem(path, config);
-            }
-            throw new UserException($"Unsupported experiment config file type: {path}");
+            throw new UserException($"Unsupported paradigm config file type: {path}");
         }
 
         private static DeviceItem ReadDeviceConfig(string path, string alternativeDirectory)
@@ -120,37 +115,34 @@ namespace SharpBCI.Windows
             {
                 if (!JsonUtils.TryDeserializeFromFile<SessionConfig>(deviceFilePath, out var config))
                     throw new UserException($"Malformed session config file: {path}");
-                return new DeviceItem(alternativeDirectory, config.DevicePart);
+                return new DeviceItem(alternativeDirectory, config.Devices);
             }
-            if (path.EndsWith(SessionConfig.DeviceFileSuffix, StringComparison.OrdinalIgnoreCase))
+            if (path.EndsWith(DeviceFileSuffix, StringComparison.OrdinalIgnoreCase))
             {
-                if (!JsonUtils.TryDeserializeFromFile<IDictionary<string, DeviceParams>>(deviceFilePath, out var config))
+                if (!JsonUtils.TryDeserializeFromFile<DeviceParams[]>(deviceFilePath, out var config))
                     throw new UserException($"Malformed device config file: {path}");
                 return new DeviceItem(alternativeDirectory, config);
             }
             throw new UserException($"Unsupported device config file type: {path}");
         }
 
-        private static DeviceItem WriteDeviceConfig(IDictionary<string, DeviceParams> deviceConfig, string path)
-        {
-            deviceConfig.JsonSerializeToFile(path, JsonUtils.PrettyFormat, JsonUtils.DefaultEncoding);
-            return new DeviceItem(path, deviceConfig);
-        }
-
         public void Start()
         {
-            if (_experiments.IsEmpty())
+            if (_sessionListViewItems.IsEmpty())
             {
                 MessageBox.Show("Cannot start with no sessions.");
                 return;
             }
             Close();
-            Bootstrap.StartSession(_experiments.Select(item => item.Value).ToArray(), DeviceConfigPanel.DeviceConfig, false, this);
+            Bootstrap.StartSession(SubjectTextBox.Text,
+                _sessionListViewItems.Select(session => session.SessionDescriptor).ToArray(),
+                _sessionListViewItems.Select(session => session.Paradigm.Value).ToArray(), 
+                DeviceConfigPanel.DeviceConfig, false, this);
         }
 
-        private void UpdateTitle() => Title = string.IsNullOrWhiteSpace(_multiSessionConfigFile) 
+        private void UpdateTitle() => Title = string.IsNullOrWhiteSpace(_msCfgFile) 
             ? "Multi-Session Configuration" 
-            : $"Multi-Session Configuration: {_multiSessionConfigFile}";
+            : $"Multi-Session Configuration: {_msCfgFile}";
 
         private void LoadMultiSessionConfig(string path)
         {
@@ -164,17 +156,16 @@ namespace SharpBCI.Windows
 
             if (!JsonUtils.TryDeserializeFromFile<MultiSessionConfig>(path, out var msCfg))
                 throw new UserException($"Malformed multi-session config file: {path}");
-            _experiments.Clear();
+            _sessionListViewItems.Clear();
 
             SubjectTextBox.Text = msCfg.Subject ?? "";
 
-            foreach (var expPath in msCfg.ExperimentConfigs ?? EmptyArray<string>.Instance) 
-                _experiments.Add(ReadExperimentConfig(expPath, dir));
+            foreach (var session in msCfg.Sessions ?? EmptyArray<MultiSessionConfig.SessionItem>.Instance) 
+                _sessionListViewItems.Add(ReadSessionConfig(session, dir));
 
-            _device = string.IsNullOrWhiteSpace(msCfg.DeviceConfig) ? null : ReadDeviceConfig(msCfg.DeviceConfig, dir);
-            DeviceConfigPanel.DeviceConfig = _device?.Value ?? new Dictionary<string, DeviceParams>();
+            DeviceConfigPanel.DeviceConfig = msCfg.Devices;
 
-            _multiSessionConfigFile = path;
+            _msCfgFile = path;
             UpdateTitle();
         }
 
@@ -183,32 +174,37 @@ namespace SharpBCI.Windows
             new MultiSessionConfig
             {
                 Subject = SubjectTextBox.Text,
-                ExperimentConfigs = _experiments.Select(item => item.FilePath).ToArray(),
-                DeviceConfig = _device.FilePath
+                Sessions = _sessionListViewItems.Select(item => new MultiSessionConfig.SessionItem
+                {
+                    SessionDescriptor =  item.SessionDescriptor,
+                    ParadigmConfigPath = item.Paradigm.FilePath
+                }).ToArray(),
+                Devices = DeviceConfigPanel.DeviceConfig
             }.JsonSerializeToFile(path, JsonUtils.PrettyFormat, JsonUtils.DefaultEncoding);
-            _multiSessionConfigFile = path;
+            _msCfgFile = path;
             UpdateTitle();
         }
+
+        private void SaveDeviceConfig(string path) => DeviceConfigPanel.DeviceConfig.JsonSerializeToFile(path, JsonUtils.PrettyFormat, JsonUtils.DefaultEncoding); 
 
         private void Clear()
         {
             SubjectTextBox.Text = "";
-            _experiments.Clear();
-            _device = null;
-            DeviceConfigPanel.DeviceConfig = new Dictionary<string, DeviceParams>();
+            _sessionListViewItems.Clear();
+            DeviceConfigPanel.DeviceConfig = EmptyArray<DeviceParams>.Instance;
         }
 
-        private void RunExperiments_OnClick(object sender, RoutedEventArgs e) => Start();
+        private void RunSessions_OnClick(object sender, RoutedEventArgs e) => Start();
 
         private void Window_OnLoaded(object sender, RoutedEventArgs e)
         {
             DeviceConfigPanel.UpdateDevices();
-            LoadMultiSessionConfig(_multiSessionConfigFile);
+            LoadMultiSessionConfig(_msCfgFile);
         }
 
-        private void ExperimentsCollectionOnChanged(object sender, NotifyCollectionChangedEventArgs e) => RunExperimentsBtn.IsEnabled = _experiments.Any();
+        private void SessionListViewItemsCollectionOnChanged(object sender, NotifyCollectionChangedEventArgs e) => RunSessionsBtn.IsEnabled = _sessionListViewItems.Any();
 
-        private void ExperimentListView_OnDrop(object sender, DragEventArgs e)
+        private void SessionListView_OnDrop(object sender, DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
             // Note that you can have more than one file.
@@ -216,11 +212,11 @@ namespace SharpBCI.Windows
             foreach (var file in files)
             {
                 if (!file.EndsWith(SessionConfig.FileSuffix)) continue;
-                _experiments.Add(ReadExperimentConfig(file, null));
+                _sessionListViewItems.Add(ReadSessionConfig(file, null));
             }
         }
 
-        private void ExperimentListView_OnDragOver(object sender, DragEventArgs e)
+        private void SessionListView_OnDragOver(object sender, DragEventArgs e)
         {
             e.Effects = DragDropEffects.Move;
             e.Handled = true;
@@ -238,22 +234,22 @@ namespace SharpBCI.Windows
                 DefaultExt = MultiSessionConfig.FileSuffix,
                 Filter = FileUtils.GetFileFilter("Multi-Session Config File", MultiSessionConfig.FileSuffix),
             };
-            if (!string.IsNullOrWhiteSpace(_multiSessionConfigFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_multiSessionConfigFile)) ?? "";
+            if (!string.IsNullOrWhiteSpace(_msCfgFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_msCfgFile)) ?? "";
             if (!dialog.ShowDialog(this).Value) return;
             LoadMultiSessionConfig(dialog.FileName);
         }
 
         private void SaveMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_multiSessionConfigFile))
+            if (string.IsNullOrWhiteSpace(_msCfgFile))
                 SaveMultiSessionConfigAsMenuItem_OnClick(sender, e);
             else
-                SaveMultiSessionConfig(_multiSessionConfigFile);
+                SaveMultiSessionConfig(_msCfgFile);
         }
 
         private void SaveMultiSessionConfigAsMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            var defaultFileName = string.IsNullOrWhiteSpace(_multiSessionConfigFile) ? "" : Path.GetFileName(_multiSessionConfigFile);
+            var defaultFileName = string.IsNullOrWhiteSpace(_msCfgFile) ? "" : Path.GetFileName(_msCfgFile);
             var dialog = new SaveFileDialog
             {
                 Title = "Save Multi-Session Config",
@@ -263,25 +259,25 @@ namespace SharpBCI.Windows
                 DefaultExt = MultiSessionConfig.FileSuffix,
                 Filter = FileUtils.GetFileFilter("Multi-Session Config File", MultiSessionConfig.FileSuffix),
             };
-            if (!string.IsNullOrWhiteSpace(_multiSessionConfigFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_multiSessionConfigFile)) ?? "";
+            if (!string.IsNullOrWhiteSpace(_msCfgFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_msCfgFile)) ?? "";
             if (!dialog.ShowDialog(this).Value) return;
             SaveMultiSessionConfig(dialog.FileName);
         }
 
-        private void AddExperimentConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void AddParadigmConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
-                Title = "Open Experiment Config",
+                Title = "Open Paradigm Config",
                 Multiselect = true,
                 CheckFileExists = true,
-                DefaultExt = SessionConfig.Experiment.FileSuffix,
-                Filter = FileUtils.GetFileFilter("Experiment Config File", SessionConfig.Experiment.FileSuffix),
+                DefaultExt = SessionConfig.FileSuffix,
+                Filter = FileUtils.GetFileFilter("Paradigm Config File", SessionConfig.FileSuffix),
             };
-            if (!string.IsNullOrWhiteSpace(_multiSessionConfigFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_multiSessionConfigFile)) ?? "";
+            if (!string.IsNullOrWhiteSpace(_msCfgFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_msCfgFile)) ?? "";
             if (!dialog.ShowDialog(this).Value || dialog.FileNames.IsEmpty()) return;
             foreach (var fileName in dialog.FileNames)
-                _experiments.Add(ReadExperimentConfig(fileName, null));
+                _sessionListViewItems.Add(ReadSessionConfig(fileName, null));
         }
 
         private void LoadDeviceConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -291,58 +287,53 @@ namespace SharpBCI.Windows
                 Title = "Open Device Config",
                 Multiselect = false,
                 CheckFileExists = true,
-                DefaultExt = SessionConfig.DeviceFileSuffix,
-                Filter = FileUtils.GetFileFilter("Device Config File", SessionConfig.DeviceFileSuffix),
+                DefaultExt = DeviceFileSuffix,
+                Filter = FileUtils.GetFileFilter("Device Config File", DeviceFileSuffix),
             };
-            if (!string.IsNullOrWhiteSpace(_device?.FilePath)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_device.FilePath)) ?? "";
-            else if (!string.IsNullOrWhiteSpace(_multiSessionConfigFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_multiSessionConfigFile)) ?? "";
+            if (!string.IsNullOrWhiteSpace(_msCfgFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_msCfgFile)) ?? "";
+            else if (!string.IsNullOrWhiteSpace(_msCfgFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_msCfgFile)) ?? "";
             if (!dialog.ShowDialog(this).Value) return;
-            _device = ReadDeviceConfig(dialog.FileName, null);
-        }
-
-        private void SaveDeviceConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(_device?.FilePath))
-                SaveDeviceConfigAsMenuItem_OnClick(sender, e);
-            else
-                _device = WriteDeviceConfig(DeviceConfigPanel.DeviceConfig, _device.FilePath);
+            DeviceConfigPanel.DeviceConfig = ReadDeviceConfig(dialog.FileName, null).Value;
         }
 
         private void SaveDeviceConfigAsMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            var defaultFileName = string.IsNullOrWhiteSpace(_device?.FilePath) ? $"device{SessionConfig.DeviceFileSuffix}" : Path.GetFileName(_device.FilePath);
+            var defaultFileName = string.IsNullOrWhiteSpace(_msCfgFile) 
+                ? $"device{DeviceFileSuffix}" 
+                : Path.GetFileNameWithoutExtension(_msCfgFile) + DeviceFileSuffix;
             var dialog = new SaveFileDialog
             {
                 Title = "Save Device Config",
                 OverwritePrompt = true,
                 AddExtension = true,
                 FileName = defaultFileName,
-                DefaultExt = SessionConfig.DeviceFileSuffix,
-                Filter = FileUtils.GetFileFilter("Device Config File", SessionConfig.DeviceFileSuffix),
+                DefaultExt = DeviceFileSuffix,
+                Filter = FileUtils.GetFileFilter("Device Config File", DeviceFileSuffix),
             };
-            if (!string.IsNullOrWhiteSpace(_device?.FilePath)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_device.FilePath)) ?? "";
+            if (!string.IsNullOrWhiteSpace(_msCfgFile))
+                dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_msCfgFile)) ?? "";
             if (!dialog.ShowDialog(this).Value) return;
-            _device = WriteDeviceConfig(DeviceConfigPanel.DeviceConfig, dialog.FileName);
+            SaveDeviceConfig(dialog.FileName);
         }
 
         private void SystemVariablesMenuItem_OnClick(object sender, RoutedEventArgs e) => App.ConfigSystemVariables();
 
-        private void RemoveExperimentMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void RemoveSessionMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            if (ExperimentListView.SelectedItem is SessionConfig.Experiment)
-                _experiments.RemoveAt(ExperimentListView.SelectedIndex);
+            if (SessionListView.SelectedItem is SessionListViewItem)
+                _sessionListViewItems.RemoveAt(SessionListView.SelectedIndex);
         }
 
-        private void MoveExperimentUpMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void MoveSessionUpMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            if (ExperimentListView.SelectedIndex > 0 && ExperimentListView.SelectedIndex < _experiments.Count)
-                _experiments.Move(ExperimentListView.SelectedIndex, ExperimentListView.SelectedIndex - 1);
+            if (SessionListView.SelectedIndex > 0 && SessionListView.SelectedIndex < _sessionListViewItems.Count)
+                _sessionListViewItems.Move(SessionListView.SelectedIndex, SessionListView.SelectedIndex - 1);
         }
 
-        private void MoveExperimentDownMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void MoveSessionDownMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            if (ExperimentListView.SelectedIndex >= 0 && ExperimentListView.SelectedIndex < _experiments.Count - 1)
-                _experiments.Move(ExperimentListView.SelectedIndex, ExperimentListView.SelectedIndex + 1);
+            if (SessionListView.SelectedIndex >= 0 && SessionListView.SelectedIndex < _sessionListViewItems.Count - 1)
+                _sessionListViewItems.Move(SessionListView.SelectedIndex, SessionListView.SelectedIndex + 1);
         }
 
         void Bootstrap.ISessionListener.BeforeStart(int index, Session session) { }

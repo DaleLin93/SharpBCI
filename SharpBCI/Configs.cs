@@ -1,7 +1,6 @@
 ﻿using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
 using System.Text;
@@ -40,49 +39,55 @@ namespace SharpBCI
     public struct DeviceParams
     {
 
+        public string DeviceType;
+
         public ParameterizedEntity Device;
 
         public ParameterizedEntity[] Consumers;
+
+        public DeviceParams(string deviceType, ParameterizedEntity device, ParameterizedEntity[] consumers)
+        {
+            DeviceType = deviceType;
+            Device = device;
+            Consumers = consumers;
+        }
 
     }
 
     public struct MultiSessionConfig
     {
 
+        public struct SessionItem
+        {
+
+            public string SessionDescriptor;
+
+            public string ParadigmConfigPath;
+
+        }
+
         public const string FileSuffix = ".mscfg";
 
         public string Subject;
 
-        public string[] ExperimentConfigs;
+        public SessionItem[] Sessions;
 
-        public string DeviceConfig;
+        public DeviceParams[] Devices;
 
     }
 
     public struct SessionConfig
     {
 
-        public struct Experiment
-        {
-
-            [SuppressMessage("ReSharper", "MemberHidesStaticFromOuterClass")]
-            public const string FileSuffix = ".sexp";
-
-            public string Subject;
-
-            public string SessionDescriptor;
-
-            public ParameterizedEntity Params;
-
-        }
-
         public const string FileSuffix = ".scfg";
 
-        public const string DeviceFileSuffix = ".scfg";
+        public string Subject;
 
-        public Experiment ExperimentPart;
+        public string SessionDescriptor;
 
-        public IDictionary<string, DeviceParams> DevicePart;
+        public ParameterizedEntity Paradigm;
+
+        public DeviceParams[] Devices;
 
         public bool Monitor;
 
@@ -156,54 +161,64 @@ namespace SharpBCI
 
         }
 
-        public static string GetFullSessionName(this SessionConfig.Experiment experimentPart, long? time = null) => 
-            Session.GetFullSessionName(time, experimentPart.Subject, GetFormattedSessionDescriptor(experimentPart));
+        public static string GetFullSessionName(this SessionConfig sessionConfig, long? time = null) => 
+            GetFullSessionName(sessionConfig.Subject, sessionConfig.SessionDescriptor, sessionConfig.Paradigm, time);
 
-        public static string GetFormattedSessionDescriptor(this SessionConfig.Experiment experimentPart)
+        public static string GetFullSessionName(string subject, string sessionDescriptor, ParameterizedEntity paradigmEntity, long? time = null)
         {
-            var sessionName = experimentPart.SessionDescriptor;
+            IReadonlyContext context = null;
+            if (paradigmEntity.Params != null && App.Instance.Registries.Registry<PluginParadigm>().LookUp(paradigmEntity.Id, out var paradigm))
+                context = paradigm.DeserializeParams(paradigmEntity.Params);
+            return GetFullSessionName(subject, sessionDescriptor, context, time);
+        }
+
+        public static string GetFullSessionName(string subject, string sessionDescriptor, IReadonlyContext context, long? time = null)
+        {
+            if (context != null) sessionDescriptor = GetInterpolatedString(sessionDescriptor, context);
+            return Session.GetFullSessionName(time, subject, sessionDescriptor);
+        }
+
+        public static string GetInterpolatedString(string template, IReadonlyContext context)
+        {
             dynamic expandoContext = new ExpandoObject();
-            if (experimentPart.Params.Params != null && App.Instance.Registries.Registry<PluginExperiment>().LookUp(experimentPart.Params.Id, out var exp))
-            {
-                var context = exp.DeserializeParams(experimentPart.Params.Params);
-                foreach (var group in exp.Factory.GetParameterGroups(exp.ExperimentClass))
-                foreach (var parameter in group.GetParameters())
+            foreach (var property in context.Properties)
+                if (property is IParameterDescriptor parameter)
                     ((IDictionary<string, object>)expandoContext)[parameter.Key] = context.TryGet(parameter, out var val) ? val : parameter.DefaultValue;
-            }
+
             var stringBuilder = new StringBuilder();
             var offset = 0;
             void OffsetTo(int newOffset, bool write)
             {
                 if (newOffset <= offset) return;
                 if (write)
-                    stringBuilder.Append(sessionName.Substring(offset, newOffset - offset));
+                    stringBuilder.Append(template.Substring(offset, newOffset - offset));
                 offset = newOffset;
             }
            
             while (true)
             {
-                var open = sessionName.IndexOf("{{", offset, StringComparison.Ordinal);
+                var open = template.IndexOf("{{", offset, StringComparison.Ordinal);
                 if (open == -1) break;
                 OffsetTo(open, true);
-                var close = sessionName.IndexOf("}}", open + 2, StringComparison.Ordinal);
+                var close = template.IndexOf("}}", open + 2, StringComparison.Ordinal);
                 if (close == -1)
                 {
                     OffsetTo(open + 2, true);
                     continue;
                 }
                 OffsetTo(close + 2, false);
-                var script = sessionName.Substring(open + 2, close - open - 2);
+                var script = template.Substring(open + 2, close - open - 2);
                 try
                 {
                     stringBuilder.Append(DslExpressionFactory.Create(script).Evaluate((IDictionary<string, object>)expandoContext));
                 }
                 catch (Exception e)
                 {
-                    Logger.Warn("GetFormattedSessionDescriptor", e, "sessionName", sessionName, "script", script);
-                    throw new UserException($"Failed to evaluate script: '{script}', session name: '{sessionName}'", e);
+                    Logger.Warn("GetInterpolatedString", e, "template", template, "script", script);
+                    throw new UserException($"Failed to evaluate script: '{script}', template: '{template}'", e);
                 }
             }
-            OffsetTo(sessionName.Length, true);
+            OffsetTo(template.Length, true);
             return stringBuilder.ToString();
         }
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using MarukoLib.Lang;
 using SharpBCI.Core.Staging;
 
-namespace SharpBCI.Experiments.MI
+namespace SharpBCI.Paradigms.MI
 {
 
     internal class MiStage : Stage

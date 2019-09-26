@@ -4,7 +4,7 @@ using SharpBCI.Core.Staging;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.StageProviders;
 
-namespace SharpBCI.Experiments.Speller
+namespace SharpBCI.Paradigms.Speller
 {
 
     internal abstract class SpellerStageProvider<T> : CompositeStageProvider where T : IStageProvider
@@ -14,13 +14,13 @@ namespace SharpBCI.Experiments.Speller
 
         private readonly EventWaitHandle _eventWaitHandle;
 
-        protected SpellerStageProvider(SpellerExperiment.Configuration.TestConfig testConfig, bool initialization, T provider)
+        protected SpellerStageProvider(SpellerParadigm.Configuration.TestConfig testConfig, bool initialization, T provider)
             : base(
                 SpellerStageProviderUtils.CreateCalibrationStages(testConfig, initialization, out var handle),
-                new MarkedStageProvider(MarkerDefinitions.ExperimentStartMarker),
+                new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
                 new DelayStageProvider(testConfig.Trial.Interval),
                 provider,
-                new MarkedStageProvider(MarkerDefinitions.ExperimentEndMarker),
+                new MarkedStageProvider(MarkerDefinitions.ParadigmEndMarker),
                 new DelayStageProvider(testConfig.Trial.Interval))
         {
             Provider = provider;
@@ -34,7 +34,7 @@ namespace SharpBCI.Experiments.Speller
     internal static class SpellerStageProviderUtils
     {
 
-        public static IStageProvider CreateCalibrationStages(SpellerExperiment.Configuration.TestConfig testConfig, bool initialization, out EventWaitHandle waitHandle)
+        public static IStageProvider CreateCalibrationStages(SpellerParadigm.Configuration.TestConfig testConfig, bool initialization, out EventWaitHandle waitHandle)
         {
             if (!initialization || testConfig.Baseline.Duration == 0)
             {

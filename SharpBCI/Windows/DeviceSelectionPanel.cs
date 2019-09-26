@@ -172,6 +172,7 @@ namespace SharpBCI.Windows
 
         public DeviceSelectionPanel()
         {
+            if (App.Instance == null) return;
             DeviceTypes = App.Instance.Registries.Registry<PluginDeviceType>().Registered.Select(el => el.DeviceType).ToArray();
             foreach (var deviceType in DeviceTypes)
             {
@@ -180,11 +181,9 @@ namespace SharpBCI.Windows
                 controlGroup.ConfigButton.Click += DeviceConfigBtn_Click;
                 controlGroup.PreviewButton.Click += DevicePreviewBtn_Click;
             }
-
             Children.Add(ViewHelper.CreateGroupHeader(DisplayHeader ? "Devices" : null, "Device Configuration"));
             foreach (var deviceType in DeviceTypes) this.AddRow(deviceType.DisplayName, _deviceControlGroups[deviceType].Container);
-
-            Loaded += (sender, args) => UpdateDevices();
+            UpdateDevices();
         }
 
         internal static Button CreateConfigButton(object tag) => CreateIconButton("Config", ViewConstants.ConfigImageUri, 2, tag);
@@ -215,7 +214,7 @@ namespace SharpBCI.Windows
                 var currentDevice = controlGroup.CurrentDevice;
                 var device = PluginDevice.CreateParameterizedEntity(currentDevice.Target, currentDevice.Params);
                 var consumers = controlGroup.CurrentConsumers.Select(c => PluginStreamConsumer.CreateParameterizedEntity(c.Target, c.Params));
-                return new DeviceParams {Device = device, Consumers = consumers.ToArray()};
+                return new DeviceParams(deviceType.Name, device, consumers.ToArray());
             }
             set
             {
@@ -262,18 +261,27 @@ namespace SharpBCI.Windows
             }
         }
 
-        public IDictionary<string, DeviceParams> DeviceConfig
+        public DeviceParams[] DeviceConfig
         {
             get
             {
                 var dict = new Dictionary<string, DeviceParams>();
-                foreach (var deviceType in DeviceTypes) dict[deviceType.Name] = this[deviceType];
-                return dict;
+                foreach (var deviceType in DeviceTypes)
+                {
+                    var deviceParams = this[deviceType];
+                    if (deviceParams.DeviceType != null)
+                        dict[deviceType.Name] = this[deviceType];
+                }
+                return dict.Values.ToArray();
             }
             set
             {
+                var dict = new Dictionary<string, DeviceParams>();
+                foreach (var deviceParams in value)
+                    if (!dict.ContainsKey(deviceParams.DeviceType))
+                        dict[deviceParams.DeviceType] = deviceParams;
                 foreach (var deviceType in DeviceTypes)
-                    if (value.TryGetValue(deviceType.Name, out var deviceParams))
+                    if (dict.TryGetValue(deviceType.Name, out var deviceParams))
                         this[deviceType] = deviceParams;
             }
         }
@@ -291,6 +299,7 @@ namespace SharpBCI.Windows
                     list.AddLast(device);
                 if (!deviceType.IsRequired) list.AddFirst(NoneIdentifier);
                 _deviceControlGroups[deviceType].DeviceComboBox.ItemsSource = list;
+                _deviceControlGroups[deviceType].DeviceComboBox.SelectedIndex = 0;
             }
         }
         

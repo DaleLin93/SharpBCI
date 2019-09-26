@@ -7,7 +7,7 @@
     <ProjectGuid>{5EA1ED10-3868-4F70-A354-7953A687CCF0}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SharpBCI.Experiments.VEP</RootNamespace>
+    <RootNamespace>SharpBCI.Paradigms.VEP</RootNamespace>
     <AssemblyName>SharpBCI.VEP.Plugin</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -83,14 +83,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="MAVEP\MavepExperiment.cs" />
+    <Compile Include="MAVEP\MavepParadigm.cs" />
     <Compile Include="MAVEP\MavepStageProvider.cs" />
-    <Compile Include="MAVEP\MavepTestWindow.cs">
+    <Compile Include="MAVEP\MavepExperimentWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SSVEP\SsvepExperiment.cs" />
+    <Compile Include="SSVEP\SsvepParadigm.cs" />
     <Compile Include="SSVEP\SsvepStageProvider.cs" />
-    <Compile Include="SSVEP\SsvepTestWindow.cs">
+    <Compile Include="SSVEP\SsvepExperimentWindow.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

@@ -1,5 +1,4 @@
 ﻿using System;
-using SharpBCI.Core.Experiment;
 using SharpBCI.Core.Staging;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -8,19 +7,20 @@ using System.Media;
 using System.Windows.Forms;
 using D2D1 = SharpDX.Direct2D1;
 using MarukoLib.Lang;
+using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Streamers;
 using SharpBCI.Core.IO;
 
-namespace SharpBCI.Experiments.Speller.P300
+namespace SharpBCI.Paradigms.Speller.P300
 {
 
     [SuppressMessage("ReSharper", "CollectionNeverQueried.Local")]
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
-    internal class P300SpellerWindow : SpellerBaseWindow
+    internal class P300SpellerWindow : SpellerExperimentBaseWindow
     {
 
-        private class P300Trial : SpellerExperiment.Result.Trial
+        private class P300Trial : SpellerParadigm.Result.Trial
         {
 
             public class SubTrial
@@ -38,7 +38,7 @@ namespace SharpBCI.Experiments.Speller.P300
 
         private readonly P300Detector _p300Detector;
 
-        /* Experiment variables */
+        /* Paradigm variables */
 
         private volatile UIButton[] _activedButtons;
 
@@ -69,8 +69,8 @@ namespace SharpBCI.Experiments.Speller.P300
 
             if (session.StreamerCollection.TryFindFirst<BiosignalStreamer>(out var biosignalStreamer))
                 biosignalStreamer.Attach(_p300Detector = new P300Detector(
-                    Experiment.Config.Test.Channels.Enumerate(1, biosignalStreamer.BiosignalSampler.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
-                    biosignalStreamer.BiosignalSampler.Frequency, (uint)biosignalStreamer.BiosignalSampler.Frequency, 0.5F));
+                    Paradigm.Config.Test.Channels.Enumerate(1, biosignalStreamer.BiosignalSource.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
+                    biosignalStreamer.BiosignalSource.Frequency, (uint)biosignalStreamer.BiosignalSource.Frequency, 0.5F));
         }
 
         protected override void PostInitDirectXResources() { }
@@ -100,26 +100,26 @@ namespace SharpBCI.Experiments.Speller.P300
                 /* Handle events */
                 switch (stage.Marker)
                 {
-                    case MarkerDefinitions.ExperimentStartMarker:
-                        Result.ExperimentStartTime = sessionTime;
-                        ExperimentStarted = true;
+                    case MarkerDefinitions.ParadigmStartMarker:
+                        Result.ParadigmStartTime = sessionTime;
+                        ParadigmStarted = true;
                         SpellerController.Start();
                         HintButton();
                         break;
-                    case MarkerDefinitions.ExperimentEndMarker:
-                        Result.ExperimentEndTime = sessionTime;
+                    case MarkerDefinitions.ParadigmEndMarker:
+                        Result.ParadigmEndTime = sessionTime;
                         break;
                     case MarkerDefinitions.TrialStartMarker:
                     {
-                        var trial = new P300Trial { SubTrials = new List<P300Trial.SubTrial>((int)(Experiment.Config.Test.SubTrialCount + 1)) };
+                        var trial = new P300Trial { SubTrials = new List<P300Trial.SubTrial>((int)(Paradigm.Config.Test.SubTrialCount + 1)) };
                         UpdateCursor(GazePointHandler.CurrentPosition);
                         var activedButtons = _activedButtons;
                         if (activedButtons != null)
                         {
-                            var buttons = new LinkedList<SpellerExperiment.Result.Button>();
+                            var buttons = new LinkedList<SpellerParadigm.Result.Button>();
                             foreach (var activedButton in activedButtons)
                                 if (activedButton != null)
-                                    buttons.AddLast(new SpellerExperiment.Result.Button(activedButton.Key));
+                                    buttons.AddLast(new SpellerParadigm.Result.Button(activedButton.Key));
                             trial.ActivedButtons = buttons;
                         }
                         trial.StartTime = CurrentTime;
@@ -148,7 +148,7 @@ namespace SharpBCI.Experiments.Speller.P300
                             if (button == null)
                                 SystemSounds.Exclamation.Play();
                             else
-                                trial.SelectedButton = new SpellerExperiment.Result.Button(button.Key);
+                                trial.SelectedButton = new SpellerParadigm.Result.Button(button.Key);
                         }
                         CheckStop();
                         Result.Trials.Add(trial);
@@ -179,7 +179,7 @@ namespace SharpBCI.Experiments.Speller.P300
         {
             RenderTarget.Clear(BackgroundColor);
 
-            if (ExperimentStarted) 
+            if (ParadigmStarted) 
             {
                 DrawHintAndInput();
 
@@ -237,7 +237,7 @@ namespace SharpBCI.Experiments.Speller.P300
                     button.State = 0;
 
             _randomBoolSequences = ArrayUtils.Initialize(activedButtonSlots.Length, index =>
-                 Experiment.Config.Test.TargetRate.CreateRandomBoolSequence((int)(DateTimeUtils.CurrentTimeTicks << 1 + index)));
+                 Paradigm.Config.Test.TargetRate.CreateRandomBoolSequence((int)(DateTimeUtils.CurrentTimeTicks << 1 + index)));
             _activedButtons = activedButtonSlots;
         }
 

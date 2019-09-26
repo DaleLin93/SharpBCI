@@ -13,7 +13,7 @@ using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Patterns;
 using SharpBCI.Extensions.Streamers;
 
-namespace SharpBCI.Experiments.WebBrowser
+namespace SharpBCI.Paradigms.WebBrowser
 {
 
     internal class GazePointProvider : StreamConsumer<Timestamped<IGazePoint>>
@@ -54,7 +54,7 @@ namespace SharpBCI.Experiments.WebBrowser
         private bool _inTrial;
 
         public DwellTrialController(IClock clock, GazePointProvider gazePointProvider, 
-            WebBrowserAssistantExperiment.Configuration.UserConfig userConfig)
+            WebBrowserAssistantParadigm.Configuration.UserConfig userConfig)
         {
             _clock = clock;
             _gazePointProvider = gazePointProvider;
@@ -133,7 +133,7 @@ namespace SharpBCI.Experiments.WebBrowser
 
         private readonly ManualResetEvent _trialCancelled = new ManualResetEvent(false);
 
-        private readonly WebBrowserAssistantExperiment _experiment;
+        private readonly WebBrowserAssistantParadigm _paradigm;
 
         private readonly WebBrowserAssistantServer _server;
 
@@ -151,14 +151,14 @@ namespace SharpBCI.Experiments.WebBrowser
 
         public WebBrowserAssistantEngine(Session session)
         {
-            var experiment = _experiment = (WebBrowserAssistantExperiment) session.Experiment;
+            var paradigm = _paradigm = (WebBrowserAssistantParadigm) session.Paradigm;
 
             _server = new WebBrowserAssistantServer(session);
             _server.AddMessageHandler(this);
             if (!session.StreamerCollection.TryFindFirst(out _gazePointStreamer)) throw new UserException("Gaze-point streamer not found");
             if (!session.StreamerCollection.TryFindFirst(out _biosignalStreamer)) throw new UserException("Biosignal streamer not found");
             _gazePointProvider = new GazePointProvider();
-            _dwellTrialController = new DwellTrialController(session.Clock, _gazePointProvider, experiment.Config.User);
+            _dwellTrialController = new DwellTrialController(session.Clock, _gazePointProvider, paradigm.Config.User);
             _dwellTrialController.Triggered += (sender, e) => _trialStartEvent.Set();
             _dwellTrialController.Cancelled += (sender, e) => _trialCancelled.Set();
 
@@ -168,8 +168,8 @@ namespace SharpBCI.Experiments.WebBrowser
                     new SsvepDetector.BandpassFilter(12, 90),
                     new SsvepDetector.BandpassFilter(24, 90)
                 }, new SsvepDetector.FbccaSubBandMixingParams(1.25, 0.25), 2, 0,
-                experiment.Config.System.Channels.Enumerate(1, _biosignalStreamer.BiosignalSampler.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
-                _biosignalStreamer.BiosignalSampler.Frequency, experiment.Config.User.TrialDuration, 0);
+                paradigm.Config.System.Channels.Enumerate(1, _biosignalStreamer.BiosignalSource.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
+                _biosignalStreamer.BiosignalSource.Frequency, paradigm.Config.User.TrialDuration, 0);
         }
 
         public void Start()
@@ -219,7 +219,7 @@ namespace SharpBCI.Experiments.WebBrowser
                 _server.SendMessageToAllClients(new OutgoingMessage { Type = "StartTrial", GazePoint = gazePoint});
 
                 /* Waiting for the ending of trial or cancelled by system. */
-                var cancelled = _trialCancelled.WaitOne(TimeSpan.FromMilliseconds((int)(_experiment.Config.User.TrialDuration + 200)));
+                var cancelled = _trialCancelled.WaitOne(TimeSpan.FromMilliseconds((int)(_paradigm.Config.User.TrialDuration + 200)));
 
                 if (!cancelled) _server.SendMessageToAllClients(new OutgoingMessage { Type = "EndTrial" });
 
@@ -247,15 +247,15 @@ namespace SharpBCI.Experiments.WebBrowser
                     }
                     _server.SendMessageToClient(client, new OutgoingMessage
                     {
-                        Type = "Handshake", Debug = _experiment.Config.System.DebugInformation, 
-                        HomePage = _experiment.Config.User.HomePage?.ToString(),
+                        Type = "Handshake", Debug = _paradigm.Config.System.DebugInformation, 
+                        HomePage = _paradigm.Config.User.HomePage?.ToString(),
                         VisualSchemes = schemes,
-                        MaxActiveDistance = _experiment.Config.User.CursorMovementTolerance,
-                        ConfirmationDelay = _experiment.Config.User.ConfirmationDelay,
+                        MaxActiveDistance = _paradigm.Config.User.CursorMovementTolerance,
+                        ConfirmationDelay = _paradigm.Config.User.ConfirmationDelay,
                         StimulationSize = new OutgoingMessage.Point
                         {
-                            X = _experiment.Config.User.StimulationSize.Width,
-                            Y = _experiment.Config.User.StimulationSize.Height
+                            X = _paradigm.Config.User.StimulationSize.Width,
+                            Y = _paradigm.Config.User.StimulationSize.Height
                         }
                     });
                     break;

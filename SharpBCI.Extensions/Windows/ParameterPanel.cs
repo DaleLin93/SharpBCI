@@ -148,13 +148,16 @@ namespace SharpBCI.Extensions.Windows
                                 OnParamChanged(paramItem);
                             };
                         var rowGrid = groupMeta.Container.AddRow(nameTextBlock, presentedParameter.Element);
-                        _paramViewModels[paramItem] = new ParamViewModel(groupMeta.Group, rowGrid, nameTextBlock, presentedParameter);
+                        var paramViewModel = new ParamViewModel(groupMeta.Group, rowGrid, nameTextBlock, presentedParameter);
+                        paramViewModel.AnimationCompleted += (sender, e) => LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
+                        _paramViewModels[paramItem] = paramViewModel;
                         break;
                     case IGroupDescriptor groupItem:
-                        if (_groupViewModels.ContainsKey(groupItem)) throw new UserException($"Invalid experiment, parameter group duplicated: {groupItem.Name}");
+                        if (_groupViewModels.ContainsKey(groupItem)) throw new UserException($"Invalid paradigm, parameter group duplicated: {groupItem.Name}");
                         var depth = stack.Count - 1;
                         var canCollapse = Adapter?.CanCollapse(groupItem, depth) ?? false;
                         var groupViewModel = ViewHelper.CreateGroupViewModel(groupItem, depth, canCollapse, () => AllowCollapse);
+                        groupViewModel.AnimationCompleted += (sender, e) => LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
                         groupMeta.Container.Children.Add(groupViewModel.GroupPanel);
                         stack.Push(new GroupMeta(groupViewModel, groupViewModel.ItemsPanel, groupViewModel.Group.Items.GetEnumerator()));
                         _groupViewModels[groupItem] = groupViewModel;
@@ -164,7 +167,7 @@ namespace SharpBCI.Extensions.Windows
                 }
             } while (stack.Any());
 
-            UpdateLayout();
+            OnParamsUpdated(true);
             LayoutChanged?.Invoke(this, LayoutChangedEventArgs.Initialization);
         }
 
@@ -176,36 +179,35 @@ namespace SharpBCI.Extensions.Windows
             OnParamsUpdated();
         }
 
-        private void OnParamsUpdated()
+        private void OnParamsUpdated(bool initializing = false) 
         {
             if (_updateLock.IsReferred) return;
             if (GetInvalidParams().Any()) return;
-            if (UpdateParamVisibility(_context))
-                LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
+            UpdateParamVisibility(_context, initializing);
             UpdateParamAvailability(_context);
             ContextChanged?.Invoke(this, new ContextChangedEventArgs(_context));
         }
 
-        private bool UpdateParamVisibility(IReadonlyContext context)
+        private bool UpdateParamVisibility(IReadonlyContext context, bool initializing)
         {
             var adapter = Adapter;
             if (adapter == null) return false;
             var visibilityChanged = false;
-            foreach (var gViewModel in _groupViewModels.Values)
-            {
-                var visible = adapter.IsVisible(context, gViewModel.Group);
-                if (visible != gViewModel.IsVisible)
-                {
-                    gViewModel.IsVisible = visible;
-                    visibilityChanged = true;
-                }
-            }
             foreach (var pViewModel in _paramViewModels.Values)
             {
                 var visible = adapter.IsVisible(context, pViewModel.ParameterDescriptor);
                 if (visible != pViewModel.IsVisible)
                 {
-                    pViewModel.IsVisible = visible;
+                    pViewModel.SetVisible(visible, (pViewModel.Group?.IsVisible ?? true) && !initializing);
+                    visibilityChanged = true;
+                }
+            }
+            foreach (var gViewModel in _groupViewModels.Values)
+            {
+                var visible = adapter.IsVisible(context, gViewModel.Group);
+                if (visible != gViewModel.IsVisible)
+                {
+                    gViewModel.SetVisible(visible, !initializing);
                     visibilityChanged = true;
                 }
             }

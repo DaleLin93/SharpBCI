@@ -11,7 +11,7 @@ using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Experiments;
+using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions.Streamers;
 
 namespace SharpBCI.Plugins
@@ -38,7 +38,7 @@ namespace SharpBCI.Plugins
 
         public ICollection<PluginAppEntry> AppEntries { get; private set; }
 
-        public ICollection<PluginExperiment> Experiments { get; private set; }
+        public ICollection<PluginParadigm> Paradigms { get; private set; }
 
         public IReadOnlyList<PluginDevice> Devices { get; private set; }
 
@@ -51,22 +51,22 @@ namespace SharpBCI.Plugins
             Identifier = Assembly.FullName;
         }
 
-        public static PluginExperiment InitPluginExperiment(Plugin plugin, Type type)
+        public static PluginParadigm InitPluginParadigm(Plugin plugin, Type type)
         {
-            var experimentAttribute = type.GetCustomAttribute<ExperimentAttribute>();
-            return new PluginExperiment(plugin, type, experimentAttribute, (IExperimentFactory)Activator.CreateInstance(experimentAttribute.FactoryType));
+            var attr = type.GetCustomAttribute<ParadigmAttribute>();
+            return new PluginParadigm(plugin, type, attr, (IParadigmFactory)Activator.CreateInstance(attr.FactoryType));
         }
 
         public static PluginDevice InitPluginDevice(Plugin plugin, Type type)
         {
-            var deviceAttribute = type.GetCustomAttribute<DeviceAttribute>();
-            return new PluginDevice(plugin, type, deviceAttribute, (IDeviceFactory)Activator.CreateInstance(deviceAttribute.FactoryType));
+            var attr = type.GetCustomAttribute<DeviceAttribute>();
+            return new PluginDevice(plugin, type, attr, (IDeviceFactory)Activator.CreateInstance(attr.FactoryType));
         }
 
         public static PluginStreamConsumer InitPluginStreamConsumer(Plugin plugin, Type type)
         {
-            var consumerAttribute = type.GetCustomAttribute<StreamConsumerAttribute>();
-            return new PluginStreamConsumer(plugin, type, consumerAttribute, (IStreamConsumerFactory)Activator.CreateInstance(consumerAttribute.FactoryType));
+            var attr = type.GetCustomAttribute<StreamConsumerAttribute>();
+            return new PluginStreamConsumer(plugin, type, attr, (IStreamConsumerFactory)Activator.CreateInstance(attr.FactoryType));
         }
 
         public static IReadOnlyCollection<Plugin> ScanPlugins(Registries registries, Action<string, Exception> exceptionHandler)
@@ -83,7 +83,7 @@ namespace SharpBCI.Plugins
                     plugin.LoadMarkers();
                     plugin.LoadDeviceTypes();
                     plugin.LoadAppEntries();
-                    plugin.LoadExperiments();
+                    plugin.LoadParadigms();
                     plugin.LoadDevices();
                     plugin.LoadStreamConsumers();
 
@@ -92,8 +92,8 @@ namespace SharpBCI.Plugins
                         registries.Registry<PluginDeviceType>().Register(deviceType);
                     foreach (var appEntry in plugin.AppEntries)
                         registries.Registry<PluginAppEntry>().Register(appEntry);
-                    foreach (var experiment in plugin.Experiments)
-                        registries.Registry<PluginExperiment>().Register(experiment);
+                    foreach (var paradigm in plugin.Paradigms)
+                        registries.Registry<PluginParadigm>().Register(paradigm);
                     foreach (var device in plugin.Devices)
                         registries.Registry<PluginDevice>().Register(device);
                     foreach (var streamConsumer in plugin.StreamConsumers)
@@ -137,7 +137,7 @@ namespace SharpBCI.Plugins
                 if (typeof(IDevice).IsAssignableFrom(type) && DeviceType.TryGet(type, out var deviceType))
                 {
                     deviceTypes.AddLast(new PluginDeviceType(this, deviceType));
-                    Logger.Info("ScanPlugins - device type found", "type", type.FullName);
+                    Logger.Info("LoadDeviceTypes - device type found", "type", type.FullName);
                 }
             }
             DeviceTypes = new ReadOnlyCollection<PluginDeviceType>(deviceTypes.ToArray());
@@ -151,31 +151,31 @@ namespace SharpBCI.Plugins
                 if (type.IsClass && !type.IsAbstract && typeof(IAppEntry).IsAssignableFrom(type))
                 {
                     appEntries.AddLast(new PluginAppEntry(this, (IAppEntry) Activator.CreateInstance(type)));
-                    Logger.Info("ScanPlugins - app entry found", "type", type.FullName);
+                    Logger.Info("LoadAppEntries - app entry found", "type", type.FullName);
                 }
             }
             AppEntries = new ReadOnlyCollection<PluginAppEntry>(appEntries.ToArray());
         }
 
-        private void LoadExperiments()
+        private void LoadParadigms()
         {
-            var experiments = new LinkedList<PluginExperiment>();
+            var paradigms = new LinkedList<PluginParadigm>();
             foreach (var type in Assembly.GetExportedTypes())
             {
-                if (type.IsClass && !type.IsAbstract && typeof(IExperiment).IsAssignableFrom(type))
+                if (type.IsClass && !type.IsAbstract && typeof(IParadigm).IsAssignableFrom(type))
                 {
-                    var experimentAttribute = type.GetCustomAttribute<ExperimentAttribute>();
-                    if (experimentAttribute == null)
+                    var attr = type.GetCustomAttribute<ParadigmAttribute>();
+                    if (attr == null)
                     {
-                        Logger.Warn("LoadExperiments - experiment found without 'ExperimentAttribute'", "type", type);
+                        Logger.Warn("LoadParadigms - paradigm found without 'ParadigmAttribute'", "type", type);
                         continue;
                     }
-                    var factory = (IExperimentFactory) Activator.CreateInstance(experimentAttribute.FactoryType);
-                    experiments.AddLast(new PluginExperiment(this, type, experimentAttribute, factory));
-                    Logger.Info("ScanPlugins - experiment factory found", "type", type.FullName);
+                    var factory = (IParadigmFactory) Activator.CreateInstance(attr.FactoryType);
+                    paradigms.AddLast(new PluginParadigm(this, type, attr, factory));
+                    Logger.Info("LoadParadigms - paradigm factory found", "type", type.FullName);
                 }
             }
-            Experiments = new ReadOnlyCollection<PluginExperiment>(experiments.ToArray());
+            Paradigms = new ReadOnlyCollection<PluginParadigm>(paradigms.ToArray());
         }
 
         private void LoadDevices()
@@ -185,15 +185,15 @@ namespace SharpBCI.Plugins
             {
                 if (type.IsClass && !type.IsAbstract && typeof(IDevice).IsAssignableFrom(type))
                 {
-                    var deviceAttribute = type.GetCustomAttribute<DeviceAttribute>();
-                    if (deviceAttribute == null)
+                    var attr = type.GetCustomAttribute<DeviceAttribute>();
+                    if (attr == null)
                     {
                         Logger.Warn("LoadDevices - device found without 'DeviceAttribute'", "type", type);
                         continue;
                     }
-                    var factory = (IDeviceFactory)Activator.CreateInstance(deviceAttribute.FactoryType);
-                    devices.AddLast(new PluginDevice(this, type, deviceAttribute, factory));
-                    Logger.Info("ScanPlugins - device factory found", "type", type.FullName);
+                    var factory = (IDeviceFactory)Activator.CreateInstance(attr.FactoryType);
+                    devices.AddLast(new PluginDevice(this, type, attr, factory));
+                    Logger.Info("LoadDevices - device factory found", "type", type.FullName);
                 }
             }
             Devices = new ReadOnlyCollection<PluginDevice>(devices.ToArray());
@@ -206,15 +206,15 @@ namespace SharpBCI.Plugins
             {
                 if (type.IsClass && !type.IsAbstract && typeof(IStreamConsumer).IsAssignableFrom(type))
                 {
-                    var consumerAttribute = type.GetCustomAttribute<StreamConsumerAttribute>();
-                    if (consumerAttribute == null)
+                    var attr = type.GetCustomAttribute<StreamConsumerAttribute>();
+                    if (attr == null)
                     {
                         Logger.Warn("LoadStreamConsumers - stream consumer found without 'StreamConsumerAttribute'", "type", type);
                         continue;
                     }
-                    var factory = (IStreamConsumerFactory)Activator.CreateInstance(consumerAttribute.FactoryType);
-                    streamConsumers.AddLast(new PluginStreamConsumer(this, type, consumerAttribute, factory));
-                    Logger.Info("ScanPlugins - stream consumer factory found", "type", type.FullName);
+                    var factory = (IStreamConsumerFactory)Activator.CreateInstance(attr.FactoryType);
+                    streamConsumers.AddLast(new PluginStreamConsumer(this, type, attr, factory));
+                    Logger.Info("LoadStreamConsumers - stream consumer factory found", "type", type.FullName);
                 }
             }
             StreamConsumers = new ReadOnlyCollection<PluginStreamConsumer>(streamConsumers.ToArray());

@@ -19,11 +19,10 @@ namespace SharpBCI.Plugins
 
         [NotNull] public readonly IStreamConsumerFactory Factory;
 
-        internal PluginStreamConsumer(Plugin plugin, [NotNull] Type consumerClass, 
-            [NotNull] StreamConsumerAttribute consumerAttribute, [NotNull]  IStreamConsumerFactory factory) : base(plugin)
+        internal PluginStreamConsumer(Plugin plugin, [NotNull] Type clz, [NotNull] StreamConsumerAttribute attr, [NotNull]  IStreamConsumerFactory factory) : base(plugin)
         {
-            ConsumerClass = consumerClass ?? throw new ArgumentNullException(nameof(consumerClass));
-            ConsumerAttribute = consumerAttribute ?? throw new ArgumentNullException(nameof(consumerAttribute));
+            ConsumerClass = clz ?? throw new ArgumentNullException(nameof(clz));
+            ConsumerAttribute = attr ?? throw new ArgumentNullException(nameof(attr));
             Factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
 
@@ -32,7 +31,7 @@ namespace SharpBCI.Plugins
 
         public override string Identifier => ConsumerAttribute.Name;
 
-        public override IEnumerable<IParameterDescriptor> AllParameters => Factory.GetParameters(ConsumerClass);
+        protected override IEnumerable<IParameterDescriptor> AllParameters => Factory.GetParameters(ConsumerClass);
 
         public IStreamConsumer NewInstance(Session session, IReadonlyContext context, byte? index) => Factory.Create(ConsumerClass, session, context, index);
 

@@ -7,11 +7,7 @@
         xmlns:windows="clr-namespace:SharpBCI.Extensions.Windows;assembly=SharpBCI.Extensions"
         mc:Ignorable="d"
         Title="Multi-Session Configuration" MinWidth="500" Width="500" MinHeight="400" Height="400" Background="{StaticResource BackgroundBrush}" 
-        AllowDrop="True" Loaded="Window_OnLoaded" DragOver="ExperimentListView_OnDragOver" Drop="ExperimentListView_OnDrop" >
-    <Window.Resources>
-        <local:SessionNameConverter x:Key="SessionNameConverter" />
-        <local:ExperimentIdConverter x:Key="ExperimentIdConverter" />
-    </Window.Resources>
+        AllowDrop="True" Loaded="Window_OnLoaded" DragOver="SessionListView_OnDragOver" Drop="SessionListView_OnDrop" >
     <DockPanel Margin="5" >
 
         <StackPanel DockPanel.Dock="Top" >
@@ -22,42 +18,41 @@
                     <MenuItem Header="Save Multi-Session Config" Click="SaveMultiSessionConfigMenuItem_OnClick" />
                     <MenuItem Header="Save Multi-Session Config as..." Click="SaveMultiSessionConfigAsMenuItem_OnClick" />
                     <Separator/>
-                    <MenuItem Header="Add Experiment Config" Click="AddExperimentConfigMenuItem_OnClick" />
+                    <MenuItem Header="Add Paradigm Config" Click="AddParadigmConfigMenuItem_OnClick" />
                     <Separator/>
-                    <MenuItem Header="Load Device Config" Click="LoadDeviceConfigMenuItem_OnClick" />
-                    <MenuItem Header="Save Device Config" Click="SaveDeviceConfigMenuItem_OnClick" />
+                    <MenuItem Header="Load Device Config from..." Click="LoadDeviceConfigMenuItem_OnClick" />
                     <MenuItem Header="Save Device Config as..." Click="SaveDeviceConfigAsMenuItem_OnClick" />
                 </MenuItem>
                 <MenuItem Header="System" >
                     <MenuItem Header="Variables" Click="SystemVariablesMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
-            <Rectangle Style="{StaticResource ParamGroupSeparator}" Fill="#FFE2E2E2" />
-            <windows:GroupHeader SeparatorStyle="{StaticResource ParamGroupSeparator}" HeaderTextStyle="{StaticResource ParamGroupHeader}" Header="Subject"/>
+            <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
+            <windows:GroupHeader Header="Subject"/>
             <TextBox x:Name="SubjectTextBox" Margin="2 3 2 3" />
-            <windows:GroupHeader SeparatorStyle="{StaticResource ParamGroupSeparator}" HeaderTextStyle="{StaticResource ParamGroupHeader}" Header="Experiments"/>
+            <windows:GroupHeader Header="Paradigms"/>
         </StackPanel>
 
         <StackPanel DockPanel.Dock="Bottom" >
             <local:DeviceSelectionPanel x:Name="DeviceConfigPanel" IsShowPreviewButton="False" />
             <StackPanel Orientation="Vertical" Margin="0 6 0 0">
-                <Button x:Name="RunExperimentsBtn" Content="Run Experiments" Height="30" FontWeight="Black" IsEnabled="False" Click="RunExperiments_OnClick" />
+                <Button x:Name="RunSessionsBtn" Content="Run Sessions" Height="30" FontWeight="Black" IsEnabled="False" Click="RunSessions_OnClick" />
             </StackPanel>
         </StackPanel>
 
-        <ListView x:Name="ExperimentListView" Margin="2 3 2 3" >
+        <ListView x:Name="SessionListView" Margin="2 3 2 3" >
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Converter={StaticResource SessionNameConverter}}" />
-                    <GridViewColumn Header="Experiment Id" DisplayMemberBinding="{Binding Converter={StaticResource ExperimentIdConverter}}" />
+                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Path=SessionDescriptor}" />
+                    <GridViewColumn Header="Paradigm Id" DisplayMemberBinding="{Binding Path=Paradigm.ParadigmId}" />
                 </GridView>
             </ListView.View>
             <ListView.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Remove" Click="RemoveExperimentMenuItem_OnClick"/>
+                    <MenuItem Header="Remove" Click="RemoveSessionMenuItem_OnClick"/>
                     <Separator/>
-                    <MenuItem Header="Move Up" Click="MoveExperimentUpMenuItem_OnClick"/>
-                    <MenuItem Header="Move Down" Click="MoveExperimentDownMenuItem_OnClick"/>
+                    <MenuItem Header="Move Up" Click="MoveSessionUpMenuItem_OnClick"/>
+                    <MenuItem Header="Move Down" Click="MoveSessionDownMenuItem_OnClick"/>
                 </ContextMenu>
             </ListView.ContextMenu>
         </ListView>

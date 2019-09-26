@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.StageProviders;
 
-namespace SharpBCI.Experiments.VEP.SSVEP
+namespace SharpBCI.Paradigms.VEP.SSVEP
 {
 
     internal class SsvepStageProvider : SegmentedStageProvider
     {
 
-        private readonly SsvepExperiment.Configuration.TestConfig _testConfig;
+        private readonly SsvepParadigm.Configuration.TestConfig _testConfig;
 
         private ulong _remainingTrialCount;
 
-        public SsvepStageProvider(SsvepExperiment.Configuration.TestConfig testConfig) : base(true)
+        public SsvepStageProvider(SsvepParadigm.Configuration.TestConfig testConfig) : base(true)
         {
             _testConfig = testConfig;
 

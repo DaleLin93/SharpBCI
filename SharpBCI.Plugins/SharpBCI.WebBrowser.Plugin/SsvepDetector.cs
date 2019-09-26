@@ -19,7 +19,7 @@ using Normal = MathNet.Numerics.Distributions.Normal;
 using MarukoLib.Logging;
 using SharpBCI.Extensions.Devices;
 
-namespace SharpBCI.Experiments.WebBrowser
+namespace SharpBCI.Paradigms.WebBrowser
 {
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]

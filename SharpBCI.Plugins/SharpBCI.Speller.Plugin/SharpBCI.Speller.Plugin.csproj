@@ -7,7 +7,7 @@
     <ProjectGuid>{BF06E3B9-68B4-47E3-8561-F1C201D2FF26}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SharpBCI.Experiments.Speller</RootNamespace>
+    <RootNamespace>SharpBCI.Paradigms.Speller</RootNamespace>
     <AssemblyName>SharpBCI.Speller.Plugin</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -98,11 +98,11 @@
     <Compile Include="KeyboardLayout.cs" />
     <Compile Include="SpellerController.cs" />
     <Compile Include="SpellerMarkerDefinitions.cs" />
-    <Compile Include="SpellerParadigm.cs" />
+    <Compile Include="SpellerControlParadigm.cs" />
     <Compile Include="P300\P300Detector.cs" />
     <Compile Include="SpellerStageProvider.cs" />
     <Compile Include="SpellerUtils.cs" />
-    <Compile Include="MidasTouch\MidasTouchExperiment.cs" />
+    <Compile Include="MidasTouch\MidasTouchParadigm.cs" />
     <Compile Include="MidasTouch\MidasTouchStageProvider.cs" />
     <Compile Include="SSVEP\HybridSsvepClassifier.cs" />
     <Compile Include="SSVEP\SsvepClassifier.cs" />
@@ -114,9 +114,9 @@
     <Compile Include="SSVEP\SsvepSpellerWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SpellerBaseWindow.cs" />
+    <Compile Include="SpellerExperimentBaseWindow.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SpellerExperiment.cs" />
+    <Compile Include="SpellerParadigm.cs" />
     <Compile Include="SpellerUtilityWindow.xaml.cs">
       <DependentUpon>SpellerUtilityWindow.xaml</DependentUpon>
     </Compile>

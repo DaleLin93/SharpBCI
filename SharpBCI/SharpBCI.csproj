@@ -115,7 +115,7 @@
     <Compile Include="Plugins\ParameterizedRegistrable.cs" />
     <Compile Include="Plugins\PluginDeviceType.cs" />
     <Compile Include="Plugins\PluginStreamConsumer.cs" />
-    <Compile Include="Plugins\PluginExperiment.cs" />
+    <Compile Include="Plugins\PluginParadigm.cs" />
     <Compile Include="Configs.cs" />
     <Compile Include="Plugins\Plugin.cs" />
     <Compile Include="Plugins\PluginDevice.cs" />

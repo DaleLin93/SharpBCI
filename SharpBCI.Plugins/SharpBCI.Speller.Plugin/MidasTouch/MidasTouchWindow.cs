@@ -1,5 +1,4 @@
-﻿using SharpBCI.Core.Experiment;
-using SharpBCI.Core.Staging;
+﻿using SharpBCI.Core.Staging;
 using SharpDX.Windows;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -7,6 +6,7 @@ using System.Windows.Forms;
 using MarukoLib.DirectX;
 using MarukoLib.Lang;
 using MarukoLib.UI;
+using SharpBCI.Core.Experiment;
 using DW = SharpDX.DirectWrite;
 using DXGI = SharpDX.DXGI;
 using D2D1 = SharpDX.Direct2D1;
@@ -19,7 +19,7 @@ using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
 using RenderForm = SharpDX.Windows.RenderForm;
 
-namespace SharpBCI.Experiments.Speller.MidasTouch
+namespace SharpBCI.Paradigms.Speller.MidasTouch
 {
 
     internal class MidasTouchWindow : RenderForm, IDisposable
@@ -29,15 +29,15 @@ namespace SharpBCI.Experiments.Speller.MidasTouch
 
         private readonly Session _session;
 
-        private readonly MidasTouchExperiment _experiment;
+        private readonly MidasTouchParadigm _paradigm;
 
         private readonly IMarkable _markable;
 
         private readonly StageProgram _stageProgram;
 
-        /* Experiment variables */
+        /* Paradigm variables */
 
-        private bool _experimentStarted = false;
+        private bool _paradigmStarted = false;
 
         private bool _trialStarted = false;
 
@@ -93,17 +93,17 @@ namespace SharpBCI.Experiments.Speller.MidasTouch
             this.HideCursorInside(); 
 
             _session = session;
-            _experiment = (MidasTouchExperiment) session.Experiment;
+            _paradigm = (MidasTouchParadigm) session.Paradigm;
             _markable = session.StreamerCollection.FindFirstOrDefault<IMarkable>();
 
-            _stageProgram = _experiment.CreateStagedProgram(session);
+            _stageProgram = _paradigm.CreateStagedProgram(session);
             _stageProgram.StageChanged += StageProgram_StageChanged;
 
             /* Type conversion */
-            _backgroundColor = _experiment.Config.Gui.ColorScheme[ColorKeys.Background].ToSdColor().ToSdx();
-            _foregroundColor = _experiment.Config.Gui.ColorScheme[ColorKeys.Foreground].ToSdColor().ToSdx();
-            _blockBorderColor = _experiment.Config.Gui.ButtonBorder.Color.ToSdColor().ToSdx();
-            _blockNormalColor = _experiment.Config.Gui.ButtonNormalColor.ToSdColor().ToSdx();
+            _backgroundColor = _paradigm.Config.Gui.ColorScheme[ColorKeys.Background].ToSdColor().ToSdx();
+            _foregroundColor = _paradigm.Config.Gui.ColorScheme[ColorKeys.Foreground].ToSdColor().ToSdx();
+            _blockBorderColor = _paradigm.Config.Gui.ButtonBorder.Color.ToSdColor().ToSdx();
+            _blockNormalColor = _paradigm.Config.Gui.ButtonNormalColor.ToSdColor().ToSdx();
         }
 
         public new void Show()
@@ -187,14 +187,14 @@ namespace SharpBCI.Experiments.Speller.MidasTouch
                 _renderTarget.BeginDraw();
                 _renderTarget.Clear(_backgroundColor);
 
-                if (_experimentStarted && _trialStarted) // Draw blocks
+                if (_paradigmStarted && _trialStarted) // Draw blocks
                 {
-                    var borderRect = SharpDXUtils.CenteredRect(Width / 2f, Height / 2f, _experiment.Config.Gui.ButtonSize);
-                    var buttonRect = borderRect.Shrink(Math.Max((float)_experiment.Config.Gui.ButtonBorder.Width, 0));
-                    var paddings = _experiment.Config.Gui.ButtonPaddings;
+                    var borderRect = SharpDXUtils.CenteredRect(Width / 2f, Height / 2f, _paradigm.Config.Gui.ButtonSize);
+                    var buttonRect = borderRect.Shrink(Math.Max((float)_paradigm.Config.Gui.ButtonBorder.Width, 0));
+                    var paddings = _paradigm.Config.Gui.ButtonPaddings;
                     var contentRect = buttonRect.Shrink((float)paddings.Left, (float)paddings.Top, (float)paddings.Right, (float)paddings.Bottom);
 
-                    if (_experiment.Config.Gui.ButtonBorder.Width > 0)
+                    if (_paradigm.Config.Gui.ButtonBorder.Width > 0)
                     {
                         _solidColorBrush.Color = _blockBorderColor;
                         _renderTarget.FillRectangle(borderRect, _solidColorBrush);
@@ -267,11 +267,11 @@ namespace SharpBCI.Experiments.Speller.MidasTouch
 
                 switch (marker)
                 {
-                    case MarkerDefinitions.ExperimentStartMarker:
-                        _experimentStarted = true;
+                    case MarkerDefinitions.ParadigmStartMarker:
+                        _paradigmStarted = true;
                         break;
-                    case MarkerDefinitions.ExperimentEndMarker:
-                        _experimentStarted = false;
+                    case MarkerDefinitions.ParadigmEndMarker:
+                        _paradigmStarted = false;
                         break;
                     case MarkerDefinitions.TrialStartMarker:
                         _trialStarted = true;

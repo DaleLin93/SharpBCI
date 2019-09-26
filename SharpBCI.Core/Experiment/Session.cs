@@ -5,9 +5,9 @@ using JetBrains.Annotations;
 using MarukoLib.IO;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
+using MarukoLib.UI;
 using Newtonsoft.Json;
 using SharpBCI.Core.IO;
-using MarukoLib.UI;
 
 namespace SharpBCI.Core.Experiment
 {
@@ -42,13 +42,13 @@ namespace SharpBCI.Core.Experiment
         public event SessionEventHandler<EventArgs> Finished;
 
         public Session(Dispatcher dispatcher, string subject, string descriptor, IClock clock, 
-            IExperiment experiment, StreamerCollection streamerCollection, string dataFolder)
+            IParadigm paradigm, StreamerCollection streamerCollection, string dataFolder)
         {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Subject = subject.Trim2Null() ?? throw new ArgumentException("'subject' cannot be blank");
             Descriptor = descriptor.Trim2Null() ?? throw new ArgumentException("'descriptor' cannot be blank");
             Clock = new SessionClock(clock ?? throw new ArgumentNullException(nameof(clock)));
-            Experiment = experiment ?? throw new ArgumentNullException(nameof(experiment));
+            Paradigm = paradigm ?? throw new ArgumentNullException(nameof(paradigm));
             StreamerCollection = streamerCollection ?? throw new ArgumentNullException(nameof(streamerCollection));
 
             Screens = ScreenInfo.All;
@@ -142,14 +142,14 @@ namespace SharpBCI.Core.Experiment
         [NotNull] public ScreenInfo[] Screens { get; }
 
         /// <summary>
-        /// The experiment of current session.
+        /// The paradigm of current session.
         /// </summary>
-        [NotNull] public IExperiment Experiment { get; }
+        [NotNull] public IParadigm Paradigm { get; }
 
         [NotNull] public StreamerCollection StreamerCollection { get; }
 
         /// <summary>
-        /// The experiment result of current session, always null if the session is not finished.
+        /// The paradigm result of current session, always null if the session is not finished.
         /// </summary>
         [CanBeNull] public Result Result { get; private set; }
 
@@ -178,10 +178,10 @@ namespace SharpBCI.Core.Experiment
         [CanBeNull]
         public Result Run() 
         {
-            Experiment.Run(this);
+            Paradigm.Run(this);
             lock (this)
                 if (EndTime == -1)
-                    throw new StateException("experiment did not finish correctly");
+                    throw new StateException("Paradigm did not finish correctly");
             return Result;
         }
 
@@ -190,7 +190,7 @@ namespace SharpBCI.Core.Experiment
             StartSession(this);
             lock (this)
             {
-                if (StartTime != -1) throw new StateException("session is already started");
+                if (StartTime != -1) throw new StateException("Session is already started");
                 StartTime = Clock.GetMilliseconds();
                 Started?.Invoke(this, EventArgs.Empty);
             }
@@ -203,7 +203,7 @@ namespace SharpBCI.Core.Experiment
             CloseSession(this);
             lock (this)
             {
-                if (EndTime != -1) throw new StateException("session is already finished");
+                if (EndTime != -1) throw new StateException("Session is already finished");
                 EndTime = Clock.GetMilliseconds();
                 Result = result;
                 UserInterrupted = userInterrupted;

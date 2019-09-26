@@ -4,7 +4,7 @@ using SharpBCI.Core.Staging;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.StageProviders;
 
-namespace SharpBCI.Experiments.VEP.MAVEP
+namespace SharpBCI.Paradigms.VEP.MAVEP
 {
 
     internal class MavepStageProvider : SegmentedStageProvider
@@ -12,11 +12,11 @@ namespace SharpBCI.Experiments.VEP.MAVEP
 
         private readonly IBoolSequence _randomBools = new RandomBools();
 
-        private readonly MavepExperiment.Configuration.TestConfig _testConfig;
+        private readonly MavepParadigm.Configuration.TestConfig _testConfig;
 
         private ulong _remainingTrialCount;
 
-        public MavepStageProvider(MavepExperiment.Configuration.TestConfig testConfig) : base(true)
+        public MavepStageProvider(MavepParadigm.Configuration.TestConfig testConfig) : base(true)
         {
             _testConfig = testConfig;
 
@@ -28,11 +28,11 @@ namespace SharpBCI.Experiments.VEP.MAVEP
             if (_remainingTrialCount <= 0) return null;
             var value = _randomBools.Next(); // false - 0, left-right; true - 1, right-left; 
             var start = new Stage {Marker = MarkerDefinitions.TrialStartMarker};
-            var left = new Stage {Marker = MavepExperiment.LeftStimMarker, Duration = 25};
-            var right = new Stage {Marker = MavepExperiment.RightStimMarker, Duration = 25};
-            var blank = new Stage {Marker = MavepExperiment.StimClearMarker, Duration = 75};
+            var left = new Stage {Marker = MavepParadigm.LeftStimMarker, Duration = 25};
+            var right = new Stage {Marker = MavepParadigm.RightStimMarker, Duration = 25};
+            var blank = new Stage {Marker = MavepParadigm.StimClearMarker, Duration = 75};
             var end = new Stage {Marker = MarkerDefinitions.TrialEndMarker};
-            var interval = new Stage {Marker = MavepExperiment.StimClearMarker, Duration = _testConfig.InterStimulusInterval};
+            var interval = new Stage {Marker = MavepParadigm.StimClearMarker, Duration = _testConfig.InterStimulusInterval};
             var first = value ? right : left;
             var second = value ? left : right;
             var stages = new[] {start, first, blank, second, blank, end, interval};

@@ -63,9 +63,9 @@ namespace SharpBCI.Extensions
 
         public const int CustomMarkerBase = 100;
 
-        [MarkerDefinition(GlobalGroupName + ":experiment")] public const int ExperimentStartMarker = GlobalMarkerBase + 1;
+        [MarkerDefinition(GlobalGroupName + ":paradigm")] public const int ParadigmStartMarker = GlobalMarkerBase + 1;
 
-        [MarkerDefinition(GlobalGroupName + ":experiment")] public const int ExperimentEndMarker = GlobalMarkerBase + 2;
+        [MarkerDefinition(GlobalGroupName + ":paradigm")] public const int ParadigmEndMarker = GlobalMarkerBase + 2;
 
         [MarkerDefinition(GlobalGroupName + ":trial", 0xFF008800)] public const int TrialStartMarker = GlobalMarkerBase + 11;
 

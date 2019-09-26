@@ -12,12 +12,12 @@ namespace SharpBCI.Extensions.Devices
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]
-    public class DataFileReader : BiosignalSampler
+    public class DataFileReader : BiosignalSource
     {
 
         public const string DeviceName = "Data File Reader (*"+ BiosignalAsciiFileWriter.FileSuffix + ")";
 
-        public class Factory : DeviceFactory<DataFileReader, IBiosignalSampler>
+        public class Factory : DeviceFactory<DataFileReader, IBiosignalSource>
         {
 
             public static readonly Parameter<Path> DataFileParam = Parameter<Path>.CreateBuilder("Data File", new Path(""))
@@ -95,7 +95,7 @@ namespace SharpBCI.Extensions.Devices
                 {
                     if (_sampleOffset >= _samples.Length) return null;
                     var sampleValues = _samples[_sampleOffset++];
-                    var sample = new GenericSample(sampleValues.Value);
+                    var sample = new Sample(sampleValues.Value);
                     long waitUntil;
                     if (_startTimestamp == null)
                         waitUntil = _startTimeTicks + _sampleIntervalTicks * (long)LineReadCount;

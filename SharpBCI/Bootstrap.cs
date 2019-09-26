@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using JetBrains.Annotations;
 using MarukoLib.Lang;
+using MarukoLib.Lang.Exceptions;
 using MarukoLib.Persistence;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Experiments;
-using SharpBCI.Extensions.Streamers;
 using SharpBCI.Plugins;
 using SharpBCI.Windows;
 
@@ -46,31 +46,42 @@ namespace SharpBCI
         }
 
         public static void StartSession(SessionConfig config, bool monitor = false, ISessionListener sessionListener = null) =>
-            StartSession(new[] { config.ExperimentPart }, config.DevicePart, monitor, sessionListener);
+            StartSession(config.Subject, new[] {config.SessionDescriptor}, new[] {config.Paradigm}, config.Devices, monitor, sessionListener);
 
-        public static void StartSession(IReadOnlyList<SessionConfig.Experiment> experimentParts, IDictionary<string, DeviceParams> devicePart, bool monitor = false,
+        public static void StartSession(string subject, string[] sessionDescriptors, ParameterizedEntity[] paradigms, [NotNull] DeviceParams[] devices, bool monitor = false,
             ISessionListener sessionListener = null)
         {
-            /* Constructs experiment instances. */
-            var experiments = new IExperiment[experimentParts.Count];
-            var formattedSessionDescriptors = new string[experimentParts.Count];
-            for (var i = 0; i < experimentParts.Count; i++)
+            subject = subject?.Trim2Null() ?? throw new UserException("subject name cannot be empty");
+            if (sessionDescriptors.Length != paradigms.Length) throw new ProgrammingException("The count of session descriptors and the count of paradigms are not equal");
+            var sessionNum = sessionDescriptors.Length;
+
+            /* Constructs paradigm instances. */
+            var paradigmInstances = new IParadigm[sessionNum];
+            var formattedSessionDescriptors = new string[sessionNum];
+            for (var i = 0; i < sessionNum; i++)
             {
-                var expConf = experimentParts[i];
-                if (!App.Instance.Registries.Registry<PluginExperiment>().LookUp(expConf.Params.Id, out var pluginExperiment))
-                    throw new ArgumentException($"Cannot find specific experiment by id: {expConf.Params.Id}");
-                if (!TryInitiateExperiment(pluginExperiment, pluginExperiment.DeserializeParams(expConf.Params.Params), out var experiment)) return;
-                experiments[i] = experiment;
-                formattedSessionDescriptors[i] = expConf.GetFormattedSessionDescriptor();
+                var paradigm = paradigms[i];
+                if (!App.Instance.Registries.Registry<PluginParadigm>().LookUp(paradigm.Id, out var pluginParadigm))
+                    throw new ArgumentException($"Cannot find specific paradigm by id: {paradigm.Id}");
+                var paradigmContext = pluginParadigm.DeserializeParams(paradigm.Params);
+                if (!TryInitiateParadigm(pluginParadigm, paradigmContext, out var paradigmInstance)) return;
+                paradigmInstances[i] = paradigmInstance;
+                formattedSessionDescriptors[i] = SessionConfigExt.GetFullSessionName(subject, sessionDescriptors[i], paradigmContext);
             }
 
             var deviceTypes = App.Instance.Registries.Registry<PluginDeviceType>().Registered.Select(pdt => pdt.DeviceType).ToArray();
+
+            /* Constructs device map. */
+            var deviceMap = new Dictionary<string, DeviceParams>();
+            foreach (var device in devices)
+                if (!deviceMap.ContainsKey(device.DeviceType))
+                    deviceMap[device.DeviceType] = device;
 
             /* Parse consumer configurations. */
             var deviceConsumerLists = new Dictionary<DeviceType, IList<Tuple<PluginStreamConsumer, IReadonlyContext>>>();
             foreach (var deviceType in deviceTypes)
             {
-                if (!devicePart.TryGetValue(deviceType.Name, out var deviceParams) || deviceParams.Device.Id == null) continue;
+                if (!deviceMap.TryGetValue(deviceType.Name, out var deviceParams) || deviceParams.Device.Id == null) continue;
                 var list = new List<Tuple<PluginStreamConsumer, IReadonlyContext>>();
                 deviceConsumerLists[deviceType] = list;
                 foreach (var consumerConf in deviceParams.Consumers)
@@ -82,13 +93,13 @@ namespace SharpBCI
                 }
             }
 
-            /* IMPORTANT: ALL EXPERIMENT RELATED CONFIG SHOULD BE CHECKED BEFORE STEAMERS WERE INITIALIZED */
+            /* IMPORTANT: ALL PARADIGM RELATED CONFIG SHOULD BE CHECKED BEFORE STEAMERS WERE INITIALIZED */
 
-            var deviceInstances = InitiateDevices(deviceTypes, devicePart);
+            var deviceInstances = InitiateDevices(deviceTypes, deviceMap);
 
             var monitorWindow = monitor ? MonitorWindow.Show() : null;
 
-            var sessions = new Session[experimentParts.Count];
+            var sessions = new Session[sessionNum];
             var baseClock = Clock.SystemMillisClock;
             var streamers = CreateStreamerCollection(deviceTypes, deviceInstances, baseClock, out var deviceStreamers);
 
@@ -99,14 +110,12 @@ namespace SharpBCI
                     streamers.Start();
                     monitorWindow?.Bind(streamers);
 
-                    for (var i = 0; i < experimentParts.Count; i++)
+                    for (var i = 0; i < sessionNum; i++)
                     {
-                        var experimentPart = experimentParts[i];
-                        var experiment = experiments[i];
-                        var sessionName = formattedSessionDescriptors[i];
-                        var session = sessions[i] = new Session(App.Instance.Dispatcher, experimentPart.Subject, sessionName, baseClock, experiment, streamers, App.DataDir);
+                        var session = sessions[i] = new Session(App.Instance.Dispatcher, subject, formattedSessionDescriptors[i], 
+                            baseClock, paradigmInstances[i], streamers, App.DataDir);
 
-                        new SessionConfig { ExperimentPart = experimentPart, DevicePart = devicePart }
+                        new SessionConfig { Paradigm = paradigms[i], Devices = devices }
                             .JsonSerializeToFile(session.GetDataFileName(SessionConfig.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
 
                         foreach (var entry in deviceConsumerLists)
@@ -134,7 +143,7 @@ namespace SharpBCI
                         new SessionInfo(session).JsonSerializeToFile(session.GetDataFileName(SessionInfo.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
                         result?.Save(session);
 
-                        if (session.UserInterrupted && i < experimentParts.Count - 1
+                        if (session.UserInterrupted && i < sessionNum - 1
                             && MessageBox.Show("Continue following sessions?", "User Exit", MessageBoxButton.YesNo,
                                 MessageBoxImage.Question, MessageBoxResult.No, MessageBoxOptions.None) == MessageBoxResult.No)
                             break;
@@ -157,7 +166,7 @@ namespace SharpBCI
             {
                 if (!devices.TryGetValue(deviceType.Name, out var entity) || entity.Device.Id == null)
                 {
-                    if (deviceType.IsRequired) throw new ArgumentException($"Device type '{deviceType.Name}' is required.");
+                    if (deviceType.IsRequired) throw new ArgumentException($"Device type '{deviceType.DisplayName}' is required.");
                     continue;
                 }
                 if (!App.Instance.Registries.Registry<PluginDevice>().LookUp(entity.Device.Id, out var device))
@@ -199,14 +208,14 @@ namespace SharpBCI
         }
 
         /// <summary>
-        /// Try initiate experiment experiment under specific context.
+        /// Try initiate paradigm under specific context.
         /// </summary>
-        public static bool TryInitiateExperiment(PluginExperiment pluginExperiment, IReadonlyContext context, out IExperiment experiment, bool msgBox = true)
+        public static bool TryInitiateParadigm(PluginParadigm paradigm, IReadonlyContext context, out IParadigm instance, bool msgBox = true)
         {
-            experiment = null;
+            instance = null;
             try
             {
-                experiment = pluginExperiment.Factory.Create(null, context);
+                instance = paradigm.Factory.Create(null, context);
                 return true;
             }
             catch (Exception ex)

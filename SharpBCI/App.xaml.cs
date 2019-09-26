@@ -11,7 +11,7 @@ using System.Security.Principal;
 using System.Text;
 using MarukoLib.IO;
 using MarukoLib.Lang.Exceptions;
-using SharpBCI.Extensions.Experiments.Rest;
+using SharpBCI.Extensions.Paradigms.Rest;
 using SharpBCI.Extensions.Streamers;
 using SharpBCI.Plugins;
 using File = System.IO.File;
@@ -20,8 +20,8 @@ using MarukoLib.Persistence;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Apps;
 using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Experiments.TextDisplay;
-using SharpBCI.Extensions.Experiments.Countdown;
+using SharpBCI.Extensions.Paradigms.TextDisplay;
+using SharpBCI.Extensions.Paradigms.Countdown;
 using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI
@@ -205,17 +205,17 @@ namespace SharpBCI
 
             Registries.Registry<PluginDeviceType>().RegisterAll(
                 new PluginDeviceType(null, DeviceType.Of(typeof(IMarkSource))),
-                new PluginDeviceType(null, DeviceType.Of(typeof(IBiosignalSampler))),
+                new PluginDeviceType(null, DeviceType.Of(typeof(IBiosignalSource))),
                 new PluginDeviceType(null, DeviceType.Of(typeof(IEyeTracker))),
                 new PluginDeviceType(null, DeviceType.Of(typeof(IVideoSource))));
 
             Registries.Registry<PluginAppEntry>().RegisterAll(
                 new PluginAppEntry(null, new FileRenamingToolAppEntry()));
 
-            Registries.Registry<PluginExperiment>().RegisterAll(
-                Plugin.InitPluginExperiment(null, typeof(RestExperiment)),
-                Plugin.InitPluginExperiment(null, typeof(CountdownExperiment)),
-                Plugin.InitPluginExperiment(null, typeof(TextDisplayExperiment)));
+            Registries.Registry<PluginParadigm>().RegisterAll(
+                Plugin.InitPluginParadigm(null, typeof(RestParadigm)),
+                Plugin.InitPluginParadigm(null, typeof(CountdownParadigm)),
+                Plugin.InitPluginParadigm(null, typeof(TextDisplayParadigm)));
 
             Registries.Registry<PluginDevice>().RegisterAll(
                 Plugin.InitPluginDevice(null, typeof(BuiltInMarkSource)),

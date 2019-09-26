@@ -11,19 +11,20 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using JetBrains.Annotations;
 using MarukoLib.Interop;
 using MarukoLib.IO;
 using MarukoLib.Lang.Exceptions;
-using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Plugins;
 using SharpBCI.Extensions.Windows;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
 using MarukoLib.UI;
-using ValidationResult = SharpBCI.Extensions.Experiments.ValidationResult;
+using SharpBCI.Core.Experiment;
+using ValidationResult = SharpBCI.Extensions.ValidationResult;
 
 namespace SharpBCI.Windows
 {
@@ -39,7 +40,7 @@ namespace SharpBCI.Windows
 
             public const string CurrentVersion = "0.1";
 
-            public const int MaxRecentExperimentCount = 10;
+            public const int MaxRecentSessionCount = 10;
 
             public string Version = CurrentVersion;
 
@@ -47,31 +48,19 @@ namespace SharpBCI.Windows
 
             public string SessionName;
 
-            public string SelectedExperiment;
+            public string SelectedParadigm;
 
             public IDictionary<string, string> SelectedDevices = new Dictionary<string, string>();
 
             public IDictionary<string, string[]> SelectedConsumers = new Dictionary<string, string[]>();
 
-            public LinkedList<string> RecentExperiments = new LinkedList<string>();
+            public IList<ParameterizedEntity> Paradigms = new List<ParameterizedEntity>();
 
-            public IList<ParameterizedEntity> Experiments = new List<ParameterizedEntity>();
+            public IList<ParameterizedEntity> Devices = new List<ParameterizedEntity>();
 
-            public IList<ParameterizedEntity> DeviceParams = new List<ParameterizedEntity>();
+            public IList<ParameterizedEntity> Consumers = new List<ParameterizedEntity>();
 
-            public IList<ParameterizedEntity> ConsumerParams = new List<ParameterizedEntity>();
-
-            public ParameterizedEntity GetExperiment(string name) => Experiments.FirstOrDefault(entity => Equals(entity.Id, name));
-
-            public ParameterizedEntity GetDevice( string name) => DeviceParams.FirstOrDefault(entity => Equals(entity.Id, name));
-
-            public ParameterizedEntity GetConsumer(string name) => ConsumerParams.FirstOrDefault(entity => Equals(entity.Id, name));
-
-            public void SetExperiment(ParameterizedEntity entity) => Set(Experiments, entity);
-
-            public void SetDevice(ParameterizedEntity entity) => Set(DeviceParams, entity);
-
-            public void SetConsumer(ParameterizedEntity entity) => Set(ConsumerParams, entity);
+            public LinkedList<string> RecentSessions = new LinkedList<string>();
 
             private static void Set(IList<ParameterizedEntity> list, ParameterizedEntity value)
             {
@@ -82,6 +71,25 @@ namespace SharpBCI.Windows
                         return;
                     }
                 list.Add(value);
+            }
+
+            public ParameterizedEntity GetParadigm(string name) => Paradigms.FirstOrDefault(entity => Equals(entity.Id, name));
+
+            public ParameterizedEntity GetDevice( string name) => Devices.FirstOrDefault(entity => Equals(entity.Id, name));
+
+            public ParameterizedEntity GetConsumer(string name) => Consumers.FirstOrDefault(entity => Equals(entity.Id, name));
+
+            public void SetParadigm(ParameterizedEntity entity) => Set(Paradigms, entity);
+
+            public void SetDevice(ParameterizedEntity entity) => Set(Devices, entity);
+
+            public void SetConsumer(ParameterizedEntity entity) => Set(Consumers, entity);
+
+            public void AddRecentSession(string prefix)
+            {
+                if (RecentSessions == null) RecentSessions = new LinkedList<string>();
+                RecentSessions.AddFirst(prefix);
+                while (RecentSessions.Count > MaxRecentSessionCount) RecentSessions.RemoveLast();
             }
 
         }
@@ -113,11 +121,11 @@ namespace SharpBCI.Windows
 
         private TextBox _subjectTextBox, _sessionDescriptorTextBox;
 
-        private Grid _experimentDescriptionRow;
+        private Grid _paradigmDescriptionRow;
 
-        private TextBlock _sessionFullNameTextBlock, _experimentDescriptionTextBlock;
+        private TextBlock _sessionFullNameTextBlock, _paradigmDescriptionTextBlock;
 
-        private ComboBox _experimentComboBox;
+        private ComboBox _paradigmComboBox;
 
         private DeviceSelectionPanel _deviceConfigPanel;
 
@@ -129,7 +137,7 @@ namespace SharpBCI.Windows
 
         /* Temporary variables */
 
-        private PluginExperiment _currentExperiment;
+        private PluginParadigm _currentParadigm;
 
         static LauncherWindow() => Directory.CreateDirectory(ConfigDir);
 
@@ -151,7 +159,7 @@ namespace SharpBCI.Windows
             }
         }
 
-        public void StartExperiment()
+        public void StartSession()
         {
             if (_subjectTextBox.Text.IsBlank())
             {
@@ -167,7 +175,7 @@ namespace SharpBCI.Windows
             {
                 lock (StartBtn)
                 {
-                    if (!ValidateExperimentParams()) return;
+                    if (!ValidateParadigmParams()) return;
                     if (!StartBtn.IsEnabled) return;
                     StartBtn.IsEnabled = false;
                     Visibility = Visibility.Hidden;
@@ -176,7 +184,7 @@ namespace SharpBCI.Windows
             }
             catch (Exception ex)
             {
-                Logger.Error("StartExperiment", ex);
+                Logger.Error("StartSession", ex);
                 App.ShowErrorMessage(ex);
             }
             finally
@@ -189,38 +197,27 @@ namespace SharpBCI.Windows
             }
         }
 
-        public SessionConfig.Experiment GetSessionExperimentPart(PluginExperiment experiment, IReadonlyContext @params) =>
-            new SessionConfig.Experiment
+        public SessionConfig GetSessionConfig()
+        {
+            var paradigm = (PluginParadigm)_paradigmComboBox.SelectedItem ?? throw new UserException("No paradigm was selected");
+            var paradigmEntity = new ParameterizedEntity(paradigm.Identifier, paradigm.ParadigmAttribute.Version?.ToString(), paradigm.SerializeParams(ParadigmParamPanel.Context));
+            return new SessionConfig
             {
                 Subject = _subjectTextBox.Text,
                 SessionDescriptor = _sessionDescriptorTextBox.Text,
-                Params = new ParameterizedEntity(experiment.Identifier, 
-                    experiment.ExperimentAttribute.Version?.ToString(), experiment.SerializeParams(@params))
-            };
-
-        public SessionConfig GetSessionConfig()
-        {
-            var experiment = (PluginExperiment)_experimentComboBox.SelectedItem ?? throw new UserException("No experiment was selected");
-            return new SessionConfig
-            {
-                ExperimentPart = GetSessionExperimentPart(experiment, ExperimentParamPanel.Context),
-                DevicePart = _deviceConfigPanel.DeviceConfig,
+                Paradigm = paradigmEntity,
+                Devices = _deviceConfigPanel.DeviceConfig,
                 Monitor = MonitorWindow.IsShown
             };
         }
 
         public void SetSessionConfig(SessionConfig config)
         {
-            SetSessionGeneralPart(config.ExperimentPart);
-            _deviceConfigPanel.DeviceConfig = config.DevicePart;
-        }
-
-        public void SetSessionGeneralPart(SessionConfig.Experiment part)
-        {
-            _subjectTextBox.Text = part.Subject ?? _subjectTextBox.Text;
-            _sessionDescriptorTextBox.Text = part.SessionDescriptor ?? _sessionDescriptorTextBox.Text;
-            if (_experimentComboBox.FindAndSelect(part.Params.Id, null))
-                ExperimentParamPanel.Context = _currentExperiment.DeserializeParams(part.Params.Params);
+            _subjectTextBox.Text = config.Subject ?? _subjectTextBox.Text;
+            _sessionDescriptorTextBox.Text = config.SessionDescriptor ?? _sessionDescriptorTextBox.Text;
+            if (_paradigmComboBox.FindAndSelect(config.Paradigm.Id, null))
+                ParadigmParamPanel.Context = _currentParadigm.DeserializeParams(config.Paradigm.Params);
+            _deviceConfigPanel.DeviceConfig = config.Devices;
         }
 
         public void LoadConfig()
@@ -229,9 +226,9 @@ namespace SharpBCI.Windows
 
             _subjectTextBox.Text = _config.Subject ?? _subjectTextBox.Text;
             _sessionDescriptorTextBox.Text = _config.SessionName ?? _sessionDescriptorTextBox.Text;
-            _experimentComboBox.FindAndSelect(_config.SelectedExperiment, 0);
+            _paradigmComboBox.FindAndSelect(_config.SelectedParadigm, 0);
 
-            DeserializeExperimentConfig();
+            DeserializeParadigmConfig();
             DeserializeDevicesConfig();
         }
 
@@ -239,22 +236,22 @@ namespace SharpBCI.Windows
         {
             _config.Subject = _subjectTextBox.Text;
             _config.SessionName = _sessionDescriptorTextBox.Text;
-            _config.SelectedExperiment = (_experimentComboBox.SelectedItem as PluginExperiment)?.Identifier;
+            _config.SelectedParadigm = (_paradigmComboBox.SelectedItem as PluginParadigm)?.Identifier;
 
-            SerializeExperimentConfig();
+            SerializeParadigmConfig();
             SerializeDevicesConfig();
 
             _config.JsonSerializeToFile(ConfigFile, JsonUtils.PrettyFormat);
         }
 
-        private void UpdateFullSessionName(PluginExperiment experiment, IReadonlyContext @params)
+        private void UpdateFullSessionName(PluginParadigm paradigm, IReadonlyContext @params)
         {
-            if (experiment != null)
+            if (paradigm != null)
             {
                 try
                 {
                     _sessionFullNameTextBlock.Foreground = Brushes.DarkGray;
-                    _sessionFullNameTextBlock.Text = GetSessionExperimentPart(experiment, @params).GetFullSessionName();
+                    _sessionFullNameTextBlock.Text = SessionConfigExt.GetFullSessionName(_subjectTextBox.Text, _sessionDescriptorTextBox.Text, @params);
                     return;
                 }
                 catch (Exception e)
@@ -266,16 +263,16 @@ namespace SharpBCI.Windows
             _sessionFullNameTextBlock.Foreground = Brushes.DarkRed;
         }
 
-        private void OnExperimentParamsUpdated()
+        private void OnParadigmParamsUpdated()
         {
-            var pluginExperiment = _currentExperiment;
-            if (pluginExperiment == null) return;
-            if (!ValidateExperimentParams(false)) return;
+            var pluginParadigm = _currentParadigm;
+            if (pluginParadigm == null) return;
+            if (!ValidateParadigmParams(false)) return;
 
-            var context = ExperimentParamPanel.Context;
-            UpdateFullSessionName(pluginExperiment, context);
-            Bootstrap.TryInitiateExperiment(pluginExperiment, context, out var experiment, false);
-            ExperimentSummaryPanel.Update(context, experiment);
+            var context = ParadigmParamPanel.Context;
+            UpdateFullSessionName(pluginParadigm, context);
+            Bootstrap.TryInitiateParadigm(pluginParadigm, context, out var paradigm, false);
+            ParadigmSummaryPanel.Update(context, paradigm);
         }
 
         private void InitializeHeaderPanel()
@@ -284,22 +281,22 @@ namespace SharpBCI.Windows
             sessionPanel.AddRow("Subject", _subjectTextBox = new TextBox { Text = "Anonymous", MaxLength = 32});
             sessionPanel.AddRow("Session Descriptor", _sessionDescriptorTextBox = new TextBox { Text = "Unnamed", MaxLength = 64 });
             sessionPanel.AddRow("", _sessionFullNameTextBlock = new TextBlock {FontSize = 10, Foreground = Brushes.DarkGray, Margin = new Thickness {Top = 3}});
-            void OnSessionInfoChanged(object sender, TextChangedEventArgs e) => UpdateFullSessionName(_currentExperiment, ExperimentParamPanel.Context);
+            void OnSessionInfoChanged(object sender, TextChangedEventArgs e) => UpdateFullSessionName(_currentParadigm, ParadigmParamPanel.Context);
             _subjectTextBox.TextChanged += OnSessionInfoChanged;
             _sessionDescriptorTextBox.TextChanged += OnSessionInfoChanged;
-            var experimentPanel = HeaderPanel.AddGroupPanel("Exp.", "Experiment Selection");
-            var experimentComboBoxContainer = new Grid();
-            _experimentComboBox = new ComboBox {Margin = new Thickness {Right = ViewConstants.DefaultRowHeight + ViewConstants.MinorSpacing}};
-            _experimentComboBox.SelectionChanged += ExperimentComboBox_OnSelectionChanged;
-            experimentComboBoxContainer.Children.Add(_experimentComboBox);
+            var paradigmPanel = HeaderPanel.AddGroupPanel("Paradigm", "Paradigm Selection");
+            var paradigmComboBoxContainer = new Grid();
+            _paradigmComboBox = new ComboBox {Margin = new Thickness {Right = ViewConstants.DefaultRowHeight + ViewConstants.MinorSpacing}};
+            _paradigmComboBox.SelectionChanged += ParadigmComboBox_OnSelectionChanged;
+            paradigmComboBoxContainer.Children.Add(_paradigmComboBox);
             var loadDefaultCfgBtnImageSource = new BitmapImage(new Uri(ViewConstants.ResetImageUri, UriKind.Absolute));
             var loadDefaultCfgImage = new Image {Margin = new Thickness(2), Source = loadDefaultCfgBtnImageSource};
             var loadDefaultCfgBtn = new Button {ToolTip = "Load Default Config", HorizontalAlignment = HorizontalAlignment.Right, Width = ViewConstants.DefaultRowHeight, Content = loadDefaultCfgImage};
-            loadDefaultCfgBtn.Click += ExperimentResetBtn_OnClick;
-            experimentComboBoxContainer.Children.Add(loadDefaultCfgBtn);
-            experimentPanel.AddRow("Experiment", experimentComboBoxContainer);
-            _experimentDescriptionRow = experimentPanel.AddRow("", _experimentDescriptionTextBlock = new TextBlock { FontSize = 10, Foreground = Brushes.DarkGray });
-            _experimentDescriptionRow.Visibility = Visibility.Collapsed;
+            loadDefaultCfgBtn.Click += ParadigmResetBtn_OnClick;
+            paradigmComboBoxContainer.Children.Add(loadDefaultCfgBtn);
+            paradigmPanel.AddRow("Paradigm", paradigmComboBoxContainer);
+            _paradigmDescriptionRow = paradigmPanel.AddRow("", _paradigmDescriptionTextBlock = new TextBlock {FontSize = 10, Foreground = Brushes.DarkGray});
+            _paradigmDescriptionRow.Visibility = Visibility.Collapsed;
         }
 
         private void InitializeFooterPanel()
@@ -318,38 +315,38 @@ namespace SharpBCI.Windows
             FooterPanel.Children.Add(_deviceConfigPanel);
         }
 
-        private void InitializeExperimentConfigurationPanel(PluginExperiment experiment)
+        private void InitializeParadigmConfigurationPanel(PluginParadigm paradigm)
         {
-            _experimentDescriptionTextBlock.Text = experiment.ExperimentAttribute.Description;
-            _experimentDescriptionRow.Visibility = string.IsNullOrWhiteSpace(_experimentDescriptionTextBlock.Text) 
+            _paradigmDescriptionTextBlock.Text = paradigm.ParadigmAttribute.Description;
+            _paradigmDescriptionRow.Visibility = string.IsNullOrWhiteSpace(_paradigmDescriptionTextBlock.Text) 
                 ? Visibility.Collapsed : Visibility.Visible;
 
-            ExperimentParamPanel.SetDescriptors(experiment.Factory as IParameterPresentAdapter, experiment.Factory.GetParameterGroups(experiment.ExperimentClass));
-            ExperimentSummaryPanel.SetSummaries(experiment.Factory as ISummaryPresentAdapter, experiment.Factory.GetSummaries(experiment.ExperimentClass));
+            ParadigmParamPanel.SetDescriptors(paradigm.Factory as IParameterPresentAdapter, paradigm.Factory.GetParameterGroups(paradigm.ParadigmClass));
+            ParadigmSummaryPanel.SetSummaries(paradigm.Factory as ISummaryPresentAdapter, paradigm.Factory.GetSummaries(paradigm.ParadigmClass));
 
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();
 
-            _currentExperiment = experiment;
-            OnExperimentParamsUpdated();
+            _currentParadigm = paradigm;
+            OnParadigmParamsUpdated();
             _needResizeWindow = true;
         }
         
-        private void SerializeExperimentConfig()
+        private void SerializeParadigmConfig()
         {
-            var experiment = _currentExperiment;
-            if (experiment == null) return;
-            _config.SetExperiment(new ParameterizedEntity(experiment.Identifier, 
-                experiment.ExperimentAttribute.Version?.ToString(), 
-                experiment.SerializeParams(ExperimentParamPanel.Context)));
+            var paradigm = _currentParadigm;
+            if (paradigm == null) return;
+            _config.SetParadigm(new ParameterizedEntity(paradigm.Identifier, 
+                paradigm.ParadigmAttribute.Version?.ToString(), 
+                paradigm.SerializeParams(ParadigmParamPanel.Context)));
         }
 
-        private void DeserializeExperimentConfig()
+        private void DeserializeParadigmConfig()
         {
-            var experiment = _currentExperiment;
-            if (experiment == null) return;
-            var entity = _config.GetExperiment(experiment.Identifier);
-            ExperimentParamPanel.Context = (IReadonlyContext) experiment.DeserializeParams(entity.Params) ?? EmptyContext.Instance;
+            var paradigm = _currentParadigm;
+            if (paradigm == null) return;
+            var entity = _config.GetParadigm(paradigm.Identifier);
+            ParadigmParamPanel.Context = (IReadonlyContext) paradigm.DeserializeParams(entity.Params) ?? EmptyContext.Instance;
         }
 
         private void SerializeDevicesConfig()
@@ -378,6 +375,7 @@ namespace SharpBCI.Windows
             foreach (var deviceType in _deviceConfigPanel.DeviceTypes)
                 _deviceConfigPanel[deviceType] = new DeviceParams
                 {
+                    DeviceType = deviceType.Name,
                     Device = _config.SelectedDevices.TryGetValue(deviceType.Name, out var did) ? _config.GetDevice(did) : default,
                     Consumers = _config.SelectedConsumers.TryGetValue(deviceType.Name, out var consumerIds) && consumerIds != null 
                         ? consumerIds.Select(cid => _config.GetConsumer(cid)).ToArray() : EmptyArray<ParameterizedEntity>.Instance
@@ -399,27 +397,27 @@ namespace SharpBCI.Windows
         private IReadonlyContext DeserializeConsumerConfig(PluginStreamConsumer consumer) =>
             consumer == null ? EmptyContext.Instance : (IReadonlyContext)consumer.DeserializeParams(_config.GetConsumer(consumer.Identifier).Params) ?? EmptyContext.Instance;
 
-        private bool ValidateExperimentParams(bool msgBox = true)
+        private bool ValidateParadigmParams(bool msgBox = true)
         {
-            var experiment = _currentExperiment;
-            var factory = experiment?.Factory;
+            var paradigm = _currentParadigm;
+            var factory = paradigm?.Factory;
             if (factory == null) return false;
             var adapter = factory as IParameterPresentAdapter;
-            var invalidParamValidationResults = ExperimentParamPanel.GetInvalidParams()
+            var invalidParamValidationResults = ParadigmParamPanel.GetInvalidParams()
                 .Select(p => new ParamValidationResult(p, ValidationResult.Failed(null)))
                 .ToList();
             if (invalidParamValidationResults.Count <= 0)
             {
-                var context = ExperimentParamPanel.Context;
+                var context = ParadigmParamPanel.Context;
                 invalidParamValidationResults = context.Properties
                     .Where(cp => cp is IParameterDescriptor pd && (adapter?.IsVisible(context, pd) ?? true))
                     .Select(cp => (IParameterDescriptor)cp)
                     .Select(pd =>
                     {
                         var valid = ValidationResult.Failed();
-                        try { valid = factory.CheckValid(experiment.ExperimentClass, context, pd); }
-                        catch (Exception e) { Logger.Warn("ValidateExperimentParams", e, "parameter", pd.Key); }
-                        var row = ExperimentParamPanel[pd]?.Container;
+                        try { valid = factory.CheckValid(paradigm.ParadigmClass, context, pd); }
+                        catch (Exception e) { Logger.Warn("ValidateParadigmParams", e, "parameter", pd.Key); }
+                        var row = ParadigmParamPanel[pd]?.Container;
                         if (row != null && (row.IsError = valid.IsFailed)) row.ErrorMessage = valid.Message.Trim();
                         return new ParamValidationResult(pd, valid);
                     })
@@ -431,7 +429,7 @@ namespace SharpBCI.Windows
                     return true;
                 }
             }
-            var stringBuilder = new StringBuilder("The following parameters of experiment are invalid");
+            var stringBuilder = new StringBuilder("The following parameters of paradigm are invalid");
             foreach (var paramValidationResult in invalidParamValidationResults)
             {
                 stringBuilder.Append("\n - ").Append(paramValidationResult.Param.Name);
@@ -442,16 +440,6 @@ namespace SharpBCI.Windows
             SetErrorMessage(errorMessage);
             if (msgBox) MessageBox.Show(errorMessage); 
             return false;
-        }
-
-        private void AddRecentExperimentItems(string prefix)
-        {
-            if (_config.RecentExperiments == null)
-                _config.RecentExperiments = new LinkedList<string>();
-            _config.RecentExperiments.AddFirst(prefix);
-            if (_config.RecentExperiments.Count > WindowConfig.MaxRecentExperimentCount)
-                _config.RecentExperiments.RemoveLast();
-            RefreshRecentExperimentMenuItems();
         }
 
         public void LoadPlatformCaps()
@@ -467,20 +455,20 @@ namespace SharpBCI.Windows
             PlatformCapsMenuItem.ItemsSource = capMenuItems.ToArray();
         }
 
-        private void RefreshRecentExperimentMenuItems()
+        private void RefreshRecentSessionMenuItems()
         {
             var style = (Style) FindResource("MenuItem");
             var menuItems = new LinkedList<MenuItem>();
-            if (_config.RecentExperiments?.IsEmpty() ?? true)
+            if (_config.RecentSessions?.IsEmpty() ?? true)
                 menuItems.AddLast(new MenuItem {Style = style, Header = "None", IsEnabled = false});
             else
-                foreach (var experiment in _config.RecentExperiments)
+                foreach (var recentSession in _config.RecentSessions)
                 {
-                    var menuItem = new MenuItem {Style = style, Header = experiment};
-                    menuItem.Click += (sender, e) => SetSessionConfig(JsonUtils.DeserializeFromFile<SessionConfig>(experiment + SessionConfig.FileSuffix));
+                    var menuItem = new MenuItem {Style = style, Header = recentSession};
+                    menuItem.Click += (sender, e) => SetSessionConfig(JsonUtils.DeserializeFromFile<SessionConfig>(recentSession + SessionConfig.FileSuffix));
                     menuItems.AddLast(menuItem);
                 }
-            LoadFromRecentExperimentsMenuItem.ItemsSource = menuItems.ToArray();
+            LoadFromRecentSessionMenuItem.ItemsSource = menuItems.ToArray();
         }
 
         private void RefreshAppMenuItems()
@@ -541,16 +529,16 @@ namespace SharpBCI.Windows
                         }
                     children.AddLast(new Separator());
 
-                    if (!plugin.Experiments.Any())
-                        children.AddLast(new MenuItem { Style = style, Header = "No Experiment Implementations", IsEnabled = false });
+                    if (!plugin.Paradigms.Any())
+                        children.AddLast(new MenuItem { Style = style, Header = "No Paradigm Implementations", IsEnabled = false });
                     else
-                        foreach (var experiment in plugin.Experiments)
+                        foreach (var paradigm in plugin.Paradigms)
                         {
-                            var experimentAttribute = experiment.ExperimentAttribute;
-                            var menuItemHeader = $"{experimentAttribute.Name} ({experimentAttribute.FullVersionName}) - {experiment.ExperimentClass.FullName}";
-                            var experimentMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
-                            experimentMenuItem.Click += (sender, e) => _experimentComboBox.FindAndSelect(experimentAttribute.Name, null);
-                            children.AddLast(experimentMenuItem);
+                            var paradigmAttribute = paradigm.ParadigmAttribute;
+                            var menuItemHeader = $"{paradigmAttribute.Name} ({paradigmAttribute.FullVersionName}) - {paradigm.ParadigmClass.FullName}";
+                            var paradigmMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
+                            paradigmMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelect(paradigmAttribute.Name, null);
+                            children.AddLast(paradigmMenuItem);
                         }
                     children.AddLast(new Separator());
 
@@ -561,13 +549,13 @@ namespace SharpBCI.Windows
                         {
                             var consumerAttribute = streamConsumer.ConsumerAttribute;
                             var menuItemHeader = $"{consumerAttribute.Name} ({consumerAttribute.FullVersionName}) - {streamConsumer.ConsumerClass.FullName}";
-                            var experimentMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
-                            experimentMenuItem.Click += (sender, e) => _experimentComboBox.FindAndSelect(consumerAttribute.Name, null);
-                            children.AddLast(experimentMenuItem);
+                            var consumerMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
+                            consumerMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelect(consumerAttribute.Name, null);
+                            children.AddLast(consumerMenuItem);
                         }
                     children.AddLast(new Separator());
 
-                    if (!plugin.Experiments.Any() && !plugin.CustomMarkers.Any())
+                    if (!plugin.Paradigms.Any() && !plugin.CustomMarkers.Any())
                         children.AddLast(new MenuItem { Style = style, Header = "No Custom Marker Definitions", IsEnabled = false });
                     else 
                         foreach (var keyValuePair in plugin.CustomMarkers.OrderBy(pair => pair.Key))
@@ -582,57 +570,57 @@ namespace SharpBCI.Windows
         {
             LoadPlatformCaps();
 
-            _experimentComboBox.ItemsSource = App.Instance.Registries.Registry<PluginExperiment>().Registered.OrderBy(exp => exp.Identifier);
+            _paradigmComboBox.ItemsSource = App.Instance.Registries.Registry<PluginParadigm>().Registered.OrderBy(p => p.Identifier);
             _deviceConfigPanel.UpdateDevices();
 
             LoadConfig();
 
-            RefreshRecentExperimentMenuItems();
+            RefreshRecentSessionMenuItems();
             RefreshAppMenuItems();
             RefreshPluginMenuItems();
         }
 
         private void Window_OnKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyStates == Keyboard.GetKeyStates(Key.Return) && Keyboard.Modifiers == ModifierKeys.Alt) StartExperiment();
+            if (e.KeyStates == Keyboard.GetKeyStates(Key.Return) && Keyboard.Modifiers == ModifierKeys.Alt) StartSession();
         }
 
         private void Window_OnClosed(object sender, EventArgs e) => App.Kill();
 
         private void Window_OnLayoutUpdated(object sender, EventArgs e)
         {
-            if (!_needResizeWindow || !IsLoaded) return;
+            if (!IsVisible || !_needResizeWindow || !IsLoaded) return;
             var point = PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
             var screen = System.Windows.Forms.Screen.FromPoint(point.RoundToSdPoint());
             var scaleFactor = GraphicsUtils.Scale;
             var maxHeight = screen.WorkingArea.Height / scaleFactor;
             var contentHeight = MainPanel.Children.OfType<FrameworkElement>().Sum(el => el.ActualHeight);
             var newHeight = Math.Min(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight), maxHeight);
-            if (Math.Abs(newHeight - Height) > 1.0) BeginAnimation(HeightProperty, ViewHelper.CreateDoubleAnimation(Height, newHeight));
+            if (Math.Abs(newHeight - Height) > 1.0) BeginAnimation(HeightProperty, ViewHelper.CreateDoubleAnimation(Height, newHeight), HandoffBehavior.SnapshotAndReplace);
             var offset = screen.WorkingArea.Bottom / scaleFactor - (Top + newHeight + (ActualHeight - Height));
-            if (offset < 0) BeginAnimation(TopProperty, ViewHelper.CreateDoubleAnimation(Top, Math.Max(0, Top + offset)));
+            if (offset < 0) BeginAnimation(TopProperty, ViewHelper.CreateDoubleAnimation(Top, Math.Max(0, Top + offset)), HandoffBehavior.SnapshotAndReplace);
             _needResizeWindow = false;
         }
 
-        private void ExperimentComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ParadigmComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            SerializeExperimentConfig();
-            var experiment = (PluginExperiment) _experimentComboBox.SelectedItem;
-            InitializeExperimentConfigurationPanel(experiment);
-            DeserializeExperimentConfig();
+            SerializeParadigmConfig();
+            var paradigm = (PluginParadigm) _paradigmComboBox.SelectedItem;
+            InitializeParadigmConfigurationPanel(paradigm);
+            DeserializeParadigmConfig();
         }
 
-        private void ExperimentResetBtn_OnClick(object sender, RoutedEventArgs e)
+        private void ParadigmResetBtn_OnClick(object sender, RoutedEventArgs e)
         {
-            var experiment = _currentExperiment;
-            if (experiment == null) return;
-            ExperimentParamPanel.ResetToDefault();
-            OnExperimentParamsUpdated();
+            var paradigm = _currentParadigm;
+            if (paradigm == null) return;
+            ParadigmParamPanel.ResetToDefault();
+            OnParadigmParamsUpdated();
         }
 
         private void SaveMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
-            if (!ValidateExperimentParams()) return;
+            if (!ValidateParadigmParams()) return;
             SaveConfig();
         }
 
@@ -658,8 +646,7 @@ namespace SharpBCI.Windows
         private void SaveAsMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
             var sessionConfig = GetSessionConfig();
-            var defaultFileName = $"{sessionConfig.ExperimentPart.Subject}-{sessionConfig.ExperimentPart.GetFormattedSessionDescriptor()}{SessionConfig.FileSuffix}"
-                .RemoveInvalidCharacterForFileName();
+            var defaultFileName = sessionConfig.GetFullSessionName().RemoveInvalidCharacterForFileName() + SessionConfig.FileSuffix;
             var dialog = new SaveFileDialog
             {
                 Title = "Save Config File",
@@ -713,19 +700,20 @@ namespace SharpBCI.Windows
                 new AnalysisWindow(fileName.TrimEnd(Path.GetExtension(fileName))).Show();
         }
 
-        private void ExperimentParamPanel_OnLayoutChanged(object sender, LayoutChangedEventArgs e) => _needResizeWindow = true;
+        private void ParadigmParamPanel_OnLayoutChanged(object sender, LayoutChangedEventArgs e) => _needResizeWindow = true;
 
-        private void ExperimentParamPanel_OnContextChanged(object sender, ContextChangedEventArgs e)
+        private void ParadigmParamPanel_OnContextChanged(object sender, ContextChangedEventArgs e)
         {
-            if (!ValidateExperimentParams(false)) return;
-            OnExperimentParamsUpdated();
+            if (!ValidateParadigmParams(false)) return;
+            OnParadigmParamsUpdated();
         }
 
-        private void StartBtn_OnClick(object sender, RoutedEventArgs e) => StartExperiment();
+        private void StartBtn_OnClick(object sender, RoutedEventArgs e) => StartSession();
 
         void Bootstrap.ISessionListener.BeforeStart(int index, Session session)
         {
-            AddRecentExperimentItems(session.DataFilePrefix);
+            _config.AddRecentSession(session.DataFilePrefix);
+            RefreshRecentSessionMenuItems();
             SaveConfig();
         }
 

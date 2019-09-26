@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace SharpBCI.Experiments.Speller
+namespace SharpBCI.Paradigms.Speller
 {
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]

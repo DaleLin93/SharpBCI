@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SharpBCI.Experiments.WebBrowser
+namespace SharpBCI.Paradigms.WebBrowser
 {
     public class MavepCssGenerator
     {

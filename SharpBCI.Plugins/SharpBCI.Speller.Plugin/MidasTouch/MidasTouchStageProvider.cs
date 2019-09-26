@@ -4,19 +4,19 @@ using MarukoLib.Lang;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.StageProviders;
 
-namespace SharpBCI.Experiments.Speller.MidasTouch
+namespace SharpBCI.Paradigms.Speller.MidasTouch
 {
 
     internal class MidasTouchStageProvider : SegmentedStageProvider
     {
 
-        private readonly MidasTouchExperiment.Configuration.TestConfig _testConfig;
+        private readonly MidasTouchParadigm.Configuration.TestConfig _testConfig;
 
         private readonly IRandomBoolSequence _randomBoolSequence;
 
         private ulong _remainingTrialCount;
 
-        public MidasTouchStageProvider(MidasTouchExperiment.Configuration.TestConfig testConfig) : base(true)
+        public MidasTouchStageProvider(MidasTouchParadigm.Configuration.TestConfig testConfig) : base(true)
         {
             _testConfig = testConfig;
             _randomBoolSequence = testConfig.TargetRate.CreateRandomBoolSequence();

@@ -7,7 +7,7 @@
     <ProjectGuid>{63BA7B5C-DAA2-4C5F-A649-8158E5B0B4F5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SharpBCI.Experiments.MRCP</RootNamespace>
+    <RootNamespace>SharpBCI.Paradigms.MRCP</RootNamespace>
     <AssemblyName>SharpBCI.MRCP.Plugin</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -81,14 +81,14 @@
   <ItemGroup>
     <Compile Include="MrcpStageProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="MrcpExperiment.cs" />
+    <Compile Include="MrcpParadigm.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="TestWindow.xaml.cs">
-      <DependentUpon>TestWindow.xaml</DependentUpon>
+    <Compile Include="MrcpExperimentWindow.xaml.cs">
+      <DependentUpon>MrcpExperimentWindow.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -114,7 +114,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="TestWindow.xaml">
+    <Page Include="MrcpExperimentWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

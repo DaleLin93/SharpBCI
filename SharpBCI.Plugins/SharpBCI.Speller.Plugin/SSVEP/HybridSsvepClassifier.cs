@@ -19,7 +19,7 @@ using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Patterns;
 using Normal = MathNet.Numerics.Distributions.Normal;
 
-namespace SharpBCI.Experiments.Speller.SSVEP
+namespace SharpBCI.Paradigms.Speller.SSVEP
 {
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
@@ -233,7 +233,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
 
         private readonly ParallelPool _parallelPool;
 
-        private readonly SpellerExperiment.Configuration.TestConfig.BandpassFilter[] _filterBank;
+        private readonly SpellerParadigm.Configuration.TestConfig.BandpassFilter[] _filterBank;
 
         private readonly SubBandMixingParams _subBandMixingParams;
 
@@ -244,7 +244,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
         private IPredictor _predictor;
 
         public HybridSsvepClassifier([NotNull] IClock clock, uint parallel, [NotNull] CompositeTemporalPattern<SinusoidalPattern>[] patterns,
-            SpellerExperiment.Configuration.TestConfig.BandpassFilter[] filterBank, 
+            SpellerParadigm.Configuration.TestConfig.BandpassFilter[] filterBank, 
             SubBandMixingParams subBandMixingParams,
             uint harmonicsCount, double ccaThreshold, [NotNull] uint[] channelIndices, double samplingRate, uint trialDurationMs, uint ssvepDelayMs)
             : base(clock, channelIndices, samplingRate, trialDurationMs, ssvepDelayMs)
@@ -258,7 +258,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
             if (trialDurationMs <= 0)
                 throw new ArgumentException("trial duration must be positive");
             _parallelPool = new ParallelPool(parallel);
-            _filterBank = (SpellerExperiment.Configuration.TestConfig.BandpassFilter[])filterBank?.Empty2Null()?.Clone();
+            _filterBank = (SpellerParadigm.Configuration.TestConfig.BandpassFilter[])filterBank?.Empty2Null()?.Clone();
             _subBandMixingParams = subBandMixingParams;
             _harmonicsCount = harmonicsCount;
             _harmonicGroups = GenerateHarmonicGroups(samplingRate, WindowSize, patterns, harmonicsCount);

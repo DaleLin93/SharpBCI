@@ -15,7 +15,7 @@ namespace SharpBCI.Plugins
 
         public abstract string Identifier { get; }
 
-        public abstract IEnumerable<IParameterDescriptor> AllParameters { get; } 
+        protected abstract IEnumerable<IParameterDescriptor> AllParameters { get; } 
 
         public IDictionary<string, string> SerializeParams(IReadonlyContext context) => AllParameters.SerializeParams(context);
 

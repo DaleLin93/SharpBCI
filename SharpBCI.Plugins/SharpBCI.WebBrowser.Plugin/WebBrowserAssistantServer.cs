@@ -1,5 +1,4 @@
 ﻿using MarukoLib.Logging;
-using SharpBCI.Core.Experiment;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,8 +13,9 @@ using MarukoLib.IO;
 using MarukoLib.Lang;
 using MarukoLib.Persistence;
 using MarukoLib.Threading;
+using SharpBCI.Core.Experiment;
 
-namespace SharpBCI.Experiments.WebBrowser
+namespace SharpBCI.Paradigms.WebBrowser
 {
 
     internal class WebBrowserAssistantServer
@@ -62,11 +62,11 @@ namespace SharpBCI.Experiments.WebBrowser
 
         private readonly LinkedList<Client> _clients = new LinkedList<Client>();
 
-        private readonly WebBrowserAssistantExperiment _experiment;
+        private readonly WebBrowserAssistantParadigm _paradigm;
 
         private Thread _listeningThread;
 
-        public WebBrowserAssistantServer(Session session) => _experiment = (WebBrowserAssistantExperiment) session.Experiment;
+        public WebBrowserAssistantServer(Session session) => _paradigm = (WebBrowserAssistantParadigm) session.Paradigm;
 
         private static int GetPriorityFromRequest(HttpListenerRequest request)
         { 
@@ -197,7 +197,7 @@ namespace SharpBCI.Experiments.WebBrowser
             else if (uri.LocalPath.TryTrim("/static/", null, out var filePath, StringComparison.Ordinal))
             {
                 filePath = filePath.Replace('/', '\\');
-                filePath = Path.Combine(_experiment.Config.User.WebRootDir, filePath);
+                filePath = Path.Combine(_paradigm.Config.User.WebRootDir, filePath);
                 if (!File.Exists(filePath))
                 {
                     response.StatusCode = (int)HttpStatusCode.NotFound;
@@ -232,7 +232,7 @@ namespace SharpBCI.Experiments.WebBrowser
 
         private void ConnectionListeningTask()
         {
-            var listeningUriPrefix = $"http://127.0.0.1:{_experiment.Config.System.ListeningPort}/";
+            var listeningUriPrefix = $"http://127.0.0.1:{_paradigm.Config.System.ListeningPort}/";
             var listener = new HttpListener { AuthenticationSchemes = AuthenticationSchemes.Anonymous };
             listener.Prefixes.Add(listeningUriPrefix);
             listener.Start();

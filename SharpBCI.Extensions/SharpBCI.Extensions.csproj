@@ -89,7 +89,6 @@
     <Compile Include="Apps\FileRenamingToolWindow.xaml.cs">
       <DependentUpon>FileRenamingToolWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="AutoParameter.cs" />
     <Compile Include="Data\AutoParameterizedObject.cs" />
     <Compile Include="Data\ComplexObject.cs" />
     <Compile Include="Data\Dimensions.cs" />
@@ -120,16 +119,15 @@
     <Compile Include="Devices\GazeFileReader.cs" />
     <Compile Include="Devices\Device.cs" />
     <Compile Include="Devices\CursorTracker.cs" />
-    <Compile Include="Experiments\AutoExperimentFactory.cs" />
-    <Compile Include="Experiments\TextDisplay\TextDisplayExperiment.cs" />
-    <Compile Include="Experiments\TextDisplay\TestWindow.xaml.cs">
-      <DependentUpon>TestWindow.xaml</DependentUpon>
+    <Compile Include="Paradigms\TextDisplay\TextDisplayParadigm.cs" />
+    <Compile Include="Paradigms\TextDisplay\TextDisplayExperimentWindow.xaml.cs">
+      <DependentUpon>TextDisplayExperimentWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Experiments\Countdown\CountdownExperiment.cs" />
-    <Compile Include="Experiments\Countdown\TestWindow.xaml.cs">
-      <DependentUpon>TestWindow.xaml</DependentUpon>
+    <Compile Include="Paradigms\Countdown\CountdownParadigm.cs" />
+    <Compile Include="Paradigms\Countdown\CountdownExperimentWindow.xaml.cs">
+      <DependentUpon>CountdownExperimentWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Experiments\ExperimentFactory.cs" />
+    <Compile Include="ParadigmFactory.cs" />
     <Compile Include="MarkerDefinitions.cs" />
     <Compile Include="Presenters\DateTimePresenter.cs" />
     <Compile Include="Presenters\RangePresenter.cs" />
@@ -145,11 +143,11 @@
     <Compile Include="StageProviders\SegmentedStageProvider.cs" />
     <Compile Include="Streamers\StreamConsumerFactory.cs" />
     <Compile Include="Streamers\VideoFrameStreamer.cs" />
+    <Compile Include="Summary.cs" />
     <Compile Include="SystemVariables.cs" />
-    <Compile Include="Experiments\ExperimentProperties.cs" />
-    <Compile Include="Experiments\Rest\RestExperiment.cs" />
-    <Compile Include="Experiments\Rest\TestWindow.xaml.cs">
-      <DependentUpon>TestWindow.xaml</DependentUpon>
+    <Compile Include="Paradigms\Rest\RestParadigm.cs" />
+    <Compile Include="Paradigms\Rest\RestExperimentWindow.xaml.cs">
+      <DependentUpon>RestExperimentWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Devices\EyeTracker.cs" />
     <Compile Include="PersistenceHelper.cs" />
@@ -180,7 +178,7 @@
     </Compile>
     <Compile Include="Devices\DataFileReader.cs" />
     <Compile Include="Devices\GenericOscillator.cs" />
-    <Compile Include="Devices\BiosignalSampler.cs" />
+    <Compile Include="Devices\BiosignalSource.cs" />
     <Compile Include="Streamers\GazePointStreamer.cs" />
     <Compile Include="Streamers\MarkStreamer.cs" />
     <Compile Include="Streamers\BiosignalStreamer.cs" />
@@ -258,15 +256,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Experiments\TextDisplay\TestWindow.xaml">
+    <Page Include="Paradigms\TextDisplay\TextDisplayExperimentWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Experiments\Countdown\TestWindow.xaml">
+    <Page Include="Paradigms\Countdown\CountdownExperimentWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Experiments\Rest\TestWindow.xaml">
+    <Page Include="Paradigms\Rest\RestExperimentWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -305,5 +303,6 @@
   <ItemGroup>
     <Resource Include="Resources\Reset.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

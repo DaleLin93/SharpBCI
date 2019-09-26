@@ -6,7 +6,7 @@ using System.Threading;
 using DirectShowLib;
 using MarukoLib.Interop;
 
-namespace SharpBCI.Experiments.MI
+namespace SharpBCI.Paradigms.MI
 {
 
     internal static class Tools

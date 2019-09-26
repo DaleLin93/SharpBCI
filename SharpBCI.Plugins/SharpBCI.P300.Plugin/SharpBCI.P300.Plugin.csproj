@@ -7,7 +7,7 @@
     <ProjectGuid>{59E11F86-0D1D-4183-9A56-7780BC605393}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SharpBCI.Experiments.P300</RootNamespace>
+    <RootNamespace>SharpBCI.Paradigms.P300</RootNamespace>
     <AssemblyName>SharpBCI.P300.Plugin</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -90,7 +90,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="P300Experiment.cs" />
+    <Compile Include="P300Paradigm.cs" />
     <Compile Include="P300StageProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
@@ -98,7 +98,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="TestWindow.cs">
+    <Compile Include="P300ExperimentWindow.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

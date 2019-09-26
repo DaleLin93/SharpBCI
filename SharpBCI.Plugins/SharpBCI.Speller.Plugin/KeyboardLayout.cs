@@ -8,7 +8,7 @@ using JetBrains.Annotations;
 using MarukoLib.Lang;
 using Newtonsoft.Json;
 
-namespace SharpBCI.Experiments.Speller
+namespace SharpBCI.Paradigms.Speller
 {
 
     public sealed class KeyDescriptor

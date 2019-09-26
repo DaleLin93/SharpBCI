@@ -1,5 +1,5 @@
 ﻿
-namespace SharpBCI.Experiments.Speller
+namespace SharpBCI.Paradigms.Speller
 {
 
     public enum SpellerActivationMode

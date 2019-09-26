@@ -7,7 +7,7 @@ using MarukoLib.Lang;
 using SharpDX.Mathematics.Interop;
 using MarukoLib.Logging;
 
-namespace SharpBCI.Experiments.Speller.EyeTracking
+namespace SharpBCI.Paradigms.Speller.EyeTracking
 {
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
@@ -38,7 +38,7 @@ namespace SharpBCI.Experiments.Speller.EyeTracking
             }
         }
 
-        public int GetResult(SpellerBaseWindow.UIButton[] buttons)
+        public int GetResult(SpellerExperimentBaseWindow.UIButton[] buttons)
         {
             lock (_lock)
             {

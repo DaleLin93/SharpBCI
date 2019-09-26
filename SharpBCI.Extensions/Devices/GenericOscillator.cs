@@ -5,12 +5,12 @@ namespace SharpBCI.Extensions.Devices
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]
-    public class GenericOscillator : BiosignalSampler
+    public class GenericOscillator : BiosignalSource
     {
 
         public const string DeviceName = "Generic Oscillator";
 
-        public class Factory : DeviceFactory<GenericOscillator, IBiosignalSampler>
+        public class Factory : DeviceFactory<GenericOscillator, IBiosignalSource>
         {
 
             public static readonly Parameter<ushort> ChannelNumParam = new Parameter<ushort>("Channel Num", 8);
@@ -61,7 +61,7 @@ namespace SharpBCI.Extensions.Devices
                 var angle = (_channelAngles[i] += stepCount * _step);
                 samples[i] = Math.Sin(angle / 180 * Math.PI);
             }
-            return new GenericSample(samples);
+            return new Sample(samples);
         }
 
         public override void Shutdown() { }

@@ -4,7 +4,7 @@ using System.Text;
 using System.Windows;
 using SharpBCI.Extensions;
 
-namespace SharpBCI.Experiments.Speller
+namespace SharpBCI.Paradigms.Speller
 {
 
     [AppEntry("Speller Utility")]
@@ -17,7 +17,7 @@ namespace SharpBCI.Experiments.Speller
 
     /// <inheritdoc cref="Window" />
     /// <summary>
-    /// Interaction logic for TestWindow.xaml
+    /// Interaction logic for SpellerUtilityWindow.xaml
     /// </summary>
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     internal partial class SpellerUtilityWindow

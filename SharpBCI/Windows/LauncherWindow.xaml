@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:windows="clr-namespace:SharpBCI.Extensions.Windows;assembly=SharpBCI.Extensions"
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
-        Title="SharpBCI Experiment Launcher" Background="{StaticResource BackgroundBrush}"
+        Title="SharpBCI Session Launcher" Background="{StaticResource BackgroundBrush}"
         Height="350" Width="600" MinHeight="350" MinWidth="550" ResizeMode="CanResize"
         Loaded="Window_OnLoaded" KeyDown="Window_OnKeyDown" Closed="Window_OnClosed" LayoutUpdated="Window_OnLayoutUpdated" >
     <Grid>
@@ -29,7 +30,7 @@
                     <MenuItem Header="New Multi-Session Config" Click="NewMultiSessionConfigMenuItem_OnClick" />
                     <MenuItem Header="Open Multi-Session Config" Click="OpenMultiSessionConfigMenuItem_OnClick" />
                     <Separator/>
-                    <MenuItem x:Name="LoadFromRecentExperimentsMenuItem" Header="Load From Recent Experiments" />
+                    <MenuItem x:Name="LoadFromRecentSessionMenuItem" Header="Load From Recent Session" />
                     <Separator/>
                     <MenuItem Header="Exit" Click="ExitMenuItem_OnClick" />
                 </MenuItem>
@@ -49,13 +50,17 @@
             <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
         </StackPanel>
 
-        <!-- Main Panel: Session configuration, Experiment configuration, Recorder configuration -->
+        <!-- Main Panel: Session configuration, Paradigm configuration, Devices & Consumers configuration -->
         <ScrollViewer x:Name="ScrollView" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer.Resources>
+                <!-- ReSharper disable once Xaml.RedundantResource -->
+                <system:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</system:Double>
+            </ScrollViewer.Resources>
             <StackPanel x:Name="MainPanel" Margin="0 10 0 15">
                 <StackPanel x:Name="HeaderPanel" />
-                <windows:ParameterPanel x:Name="ExperimentParamPanel" LayoutChanged="ExperimentParamPanel_OnLayoutChanged"
-                                         ContextChanged="ExperimentParamPanel_OnContextChanged" />
-                <windows:SummaryPanel x:Name="ExperimentSummaryPanel" LayoutChanged="ExperimentParamPanel_OnLayoutChanged" />
+                <windows:ParameterPanel x:Name="ParadigmParamPanel" LayoutChanged="ParadigmParamPanel_OnLayoutChanged"
+                                         ContextChanged="ParadigmParamPanel_OnContextChanged" />
+                <windows:SummaryPanel x:Name="ParadigmSummaryPanel" LayoutChanged="ParadigmParamPanel_OnLayoutChanged" />
                 <StackPanel x:Name="FooterPanel" />
             </StackPanel>
         </ScrollViewer>

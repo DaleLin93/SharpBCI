@@ -1,5 +1,4 @@
-﻿using SharpBCI.Core.Experiment;
-using SharpBCI.Core.Staging;
+﻿using SharpBCI.Core.Staging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -9,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using MarukoLib.Lang;
 using MarukoLib.Persistence;
+using SharpBCI.Core.Experiment;
 using DW = SharpDX.DirectWrite;
 using D2D1 = SharpDX.Direct2D1;
 using SharpDX;
@@ -17,14 +17,14 @@ using SharpBCI.Extensions.Patterns;
 using SharpBCI.Extensions.Streamers;
 using SharpBCI.Core.IO;
 
-namespace SharpBCI.Experiments.Speller.SSVEP
+namespace SharpBCI.Paradigms.Speller.SSVEP
 {
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
-    internal class SsvepSpellerWindow : SpellerBaseWindow
+    internal class SsvepSpellerWindow : SpellerExperimentBaseWindow
     {
 
-        private class SsvepResult : SpellerExperiment.Result
+        private class SsvepResult : SpellerParadigm.Result
         {
 
             public const string FrequenciesFile = ".frequencies";
@@ -34,14 +34,14 @@ namespace SharpBCI.Experiments.Speller.SSVEP
             public override void Save(Session session)
             {
                 base.Save(session);
-                ((SpellerExperiment) session.Experiment).Config.Test.StimulationPatterns?
+                ((SpellerParadigm) session.Paradigm).Config.Test.StimulationPatterns?
                     .JsonSerializeToFile(session.GetDataFileName(FrequenciesFile), JsonUtils.PrettyFormat, Encoding.UTF8);
                 Trials?.JsonSerializeToFile(session.GetDataFileName(TrialsFile), JsonUtils.PrettyFormat, Encoding.UTF8);
             }
 
         }
 
-        public class SsvepButton : SpellerExperiment.Result.Button
+        public class SsvepButton : SpellerParadigm.Result.Button
         {
 
             public int FrequencyIndex;
@@ -51,7 +51,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
 
         }
 
-        private class SsvepTrial : SpellerExperiment.Result.Trial
+        private class SsvepTrial : SpellerParadigm.Result.Trial
         {
 
             public int? TargetFrequencyIndex;
@@ -66,7 +66,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
 
         private readonly CompositeTemporalPattern<SinusoidalPattern>[] _stimulationPatterns;
 
-        /* Experiment variables */
+        /* Paradigm variables */
 
         private volatile UIButton[] _activedButtons;
 
@@ -99,28 +99,28 @@ namespace SharpBCI.Experiments.Speller.SSVEP
                 }
             };
 
-            _stimulationPatterns = Experiment.Config.Test.StimulationPatterns;
+            _stimulationPatterns = Paradigm.Config.Test.StimulationPatterns;
 
             if (session.StreamerCollection.TryFindFirst(out _biosignalStreamer))
             {
-                _hybridSsvepClassifier = new HybridSsvepClassifier(session.Clock, Experiment.Config.Test.ComputeParallelLevel, 
-                    _stimulationPatterns, Experiment.Config.Test.FilterBank, Experiment.Config.Test.SubBandMixingParams,
-                    Experiment.Config.Test.HarmonicsCount, Experiment.Config.Test.CcaThreshold,
-                    Experiment.Config.Test.Channels.Enumerate(1, _biosignalStreamer.BiosignalSampler.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
-                    _biosignalStreamer.BiosignalSampler.Frequency, Experiment.Config.Test.Trial.Duration,
-                    Experiment.Config.Test.SsvepDelay);
+                _hybridSsvepClassifier = new HybridSsvepClassifier(session.Clock, Paradigm.Config.Test.ComputeParallelLevel, 
+                    _stimulationPatterns, Paradigm.Config.Test.FilterBank, Paradigm.Config.Test.SubBandMixingParams,
+                    Paradigm.Config.Test.HarmonicsCount, Paradigm.Config.Test.CcaThreshold,
+                    Paradigm.Config.Test.Channels.Enumerate(1, _biosignalStreamer.BiosignalSource.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
+                    _biosignalStreamer.BiosignalSource.Frequency, Paradigm.Config.Test.Trial.Duration,
+                    Paradigm.Config.Test.SsvepDelay);
                 _biosignalStreamer.Attach(_hybridSsvepClassifier);
             }
         }
 
         private static double ConvertCosineValueToGrayScale(double cosVal) => (-cosVal + 1) / 2;
 
-        protected override SpellerExperiment.Result CreateResult(Session session) => new SsvepResult();
+        protected override SpellerParadigm.Result CreateResult(Session session) => new SsvepResult();
 
         protected override void PostInitDirectXResources()
         {
             _frequencyTextFormat = new DW.TextFormat(DwFactory, "Consolas", DW.FontWeight.Bold,
-                DW.FontStyle.Normal, DW.FontStretch.Normal, Experiment.Config.Gui.ButtonFontSize / 3.0F * 2.0F * ScaleFactor)
+                DW.FontStyle.Normal, DW.FontStretch.Normal, Paradigm.Config.Gui.ButtonFontSize / 3.0F * 2.0F * ScaleFactor)
             {
                 TextAlignment = DW.TextAlignment.Center,
                 ParagraphAlignment = DW.ParagraphAlignment.Far
@@ -180,14 +180,14 @@ namespace SharpBCI.Experiments.Speller.SSVEP
                         }
                         SpellerController.CalibrationComplete();
                         break;
-                    case MarkerDefinitions.ExperimentStartMarker:
-                        Result.ExperimentStartTime = sessionTime;
-                        ExperimentStarted = true;
+                    case MarkerDefinitions.ParadigmStartMarker:
+                        Result.ParadigmStartTime = sessionTime;
+                        ParadigmStarted = true;
                         SpellerController.Start();
                         HintButton();
                         break;
-                    case MarkerDefinitions.ExperimentEndMarker:
-                        Result.ExperimentEndTime = sessionTime;
+                    case MarkerDefinitions.ParadigmEndMarker:
+                        Result.ParadigmEndTime = sessionTime;
                         break;
                     case MarkerDefinitions.TrialStartMarker:
                     {
@@ -195,7 +195,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
                         var activedButtons = _activedButtons = UpdateCursor(GazePointHandler.CurrentPosition);
                         if (activedButtons != null)
                         {
-                            var buttons = new LinkedList<SpellerExperiment.Result.Button>();
+                            var buttons = new LinkedList<SpellerParadigm.Result.Button>();
                             foreach (var activedButton in activedButtons)
                                 if (activedButton != null)
                                     buttons.AddLast(new SsvepButton(activedButton.Key, activedButton.State));
@@ -213,7 +213,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
                     case MarkerDefinitions.TrialEndMarker:
                     {
                         var hintButton = HintedButton;
-                        if (Experiment.Config.Test.AlwaysCorrectFeedback)
+                        if (Paradigm.Config.Test.AlwaysCorrectFeedback)
                         {
                             SelectedButton = hintButton;
                             SelectionFeedbackCorrect = true;
@@ -233,7 +233,7 @@ namespace SharpBCI.Experiments.Speller.SSVEP
                             {
                                 trial.SelectedFrequencyIndex = button.State;
                                 trial.SelectedButton = new SsvepButton(button.Key, button.State);
-                            } else if (!Experiment.Config.Test.AlwaysCorrectFeedback)
+                            } else if (!Paradigm.Config.Test.AlwaysCorrectFeedback)
                                 SystemSounds.Exclamation.Play();
                         }
                         CheckStop();
@@ -249,11 +249,11 @@ namespace SharpBCI.Experiments.Speller.SSVEP
         {
             RenderTarget.Clear(BackgroundColor);
 
-            if (ExperimentStarted)
+            if (ParadigmStarted)
             {
                 DrawHintAndInput();
 
-                var debug = Experiment.Config.Test.Debug;
+                var debug = Paradigm.Config.Test.Debug;
                 var now = CurrentTime;
                 var trial = _trial;
                 var secsPassed = (now - trial?.StartTime) / 1000.0 ?? 0;

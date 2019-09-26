@@ -6,7 +6,7 @@ using MarukoLib.Lang;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions.Devices;
 
-namespace SharpBCI.Experiments.Speller.SSVEP
+namespace SharpBCI.Paradigms.Speller.SSVEP
 {
 
     public interface ISsvepClassifier : IStreamConsumer<Timestamped<ISample>>

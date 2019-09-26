@@ -24,31 +24,31 @@ namespace SharpBCI.Extensions.Streamers
 
             public Type ValueType => typeof(Timestamped<ISample>);
 
-            public IStreamer Create(IDevice device, IClock clock) => new BiosignalStreamer((IBiosignalSampler)device, clock);
+            public IStreamer Create(IDevice device, IClock clock) => new BiosignalStreamer((IBiosignalSource)device, clock);
 
         }
 
-        public readonly IBiosignalSampler BiosignalSampler;
+        public readonly IBiosignalSource BiosignalSource;
 
         private readonly uint[] _channelIndices;
 
-        public BiosignalStreamer(IBiosignalSampler biosignalSampler, IClock clock, ArrayQuery channelSelector = null) : base(nameof(BiosignalStreamer), clock) 
+        public BiosignalStreamer(IBiosignalSource biosignalSource, IClock clock, ArrayQuery channelSelector = null) : base(nameof(BiosignalStreamer), clock) 
         {
-            BiosignalSampler = biosignalSampler;
-            Started += (sender, e) => biosignalSampler.Open();
-            Stopped += (sender, e) => biosignalSampler.Shutdown();
-            _channelIndices = channelSelector?.Enumerate(1, biosignalSampler.ChannelNum).Select(val => (uint) (val - 1)).ToArray();
+            BiosignalSource = biosignalSource;
+            Started += (sender, e) => biosignalSource.Open();
+            Stopped += (sender, e) => biosignalSource.Shutdown();
+            _channelIndices = channelSelector?.Enumerate(1, biosignalSource.ChannelNum).Select(val => (uint) (val - 1)).ToArray();
         }
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        public BiosignalStreamer(IBiosignalSampler biosignalSampler, IClock clock, IStreamConsumer<Timestamped<ISample>> consumer, ArrayQuery channelSelector = null) 
-            : this(biosignalSampler, clock, channelSelector) => Attach(consumer);
+        public BiosignalStreamer(IBiosignalSource biosignalSource, IClock clock, IStreamConsumer<Timestamped<ISample>> consumer, ArrayQuery channelSelector = null) 
+            : this(biosignalSource, clock, channelSelector) => Attach(consumer);
 
         public uint[] SelectedChannelIndices => (uint[]) _channelIndices?.Clone();
 
         protected override Timestamped<ISample> Acquire()
         {
-            var sample = BiosignalSampler.Read() ?? throw new EndOfStreamException();
+            var sample = BiosignalSource.Read() ?? throw new EndOfStreamException();
             if (_channelIndices != null) sample = sample.Select(_channelIndices);
             return WithTimestamp(sample);
         } 

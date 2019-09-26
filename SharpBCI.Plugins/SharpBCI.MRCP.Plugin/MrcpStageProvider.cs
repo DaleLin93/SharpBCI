@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.StageProviders;
 
-namespace SharpBCI.Experiments.MRCP
+namespace SharpBCI.Paradigms.MRCP
 {
 
     internal class MrcpStage : Stage
@@ -35,11 +35,11 @@ namespace SharpBCI.Experiments.MRCP
 
         private readonly Random _r = new Random();
 
-        private readonly MrcpExperiment.Configuration.TestConfig _testConfig;
+        private readonly MrcpParadigm.Configuration.TestConfig _testConfig;
 
         private long _remaining;
 
-        public MrcpStageProvider(MrcpExperiment.Configuration.TestConfig testConfig) : base(true)
+        public MrcpStageProvider(MrcpParadigm.Configuration.TestConfig testConfig) : base(true)
         {
             _testConfig = testConfig;
             _remaining = _testConfig.TrialCount;
@@ -57,7 +57,7 @@ namespace SharpBCI.Experiments.MRCP
                 if (i == 0)
                     marker = MarkerDefinitions.TrialStartMarker;
                 else if (i == liftAt)
-                    marker = MrcpExperiment.LiftMarker;
+                    marker = MrcpParadigm.LiftMarker;
                 stages[i] = new MrcpStage
                 {
                     LiftAt = i == 0 ? (int?) liftAt : null,

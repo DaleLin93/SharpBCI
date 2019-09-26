@@ -82,22 +82,25 @@ namespace SharpBCI.Windows
 
             _device = device;
 
-            InitializeDeviceConfigurationPanel(device ?? throw new ArgumentNullException(nameof(device)));
-            DeviceConfigurationPanel.Context = deviceParams ?? EmptyContext.Instance;
-
-            if (consumers != null)
-                foreach (var consumer in consumers)
-                {
-                    if (string.IsNullOrWhiteSpace(consumer.Item1?.Identifier)) continue;
-                    var viewModel = AddConsumerConfig();
-                    viewModel.ComboBox.FindAndSelect(consumer.Item1.Identifier, 0);
-                    InitializeConsumerConfigurationPanel(viewModel, consumer.Item1);
-                    viewModel.ParamPanel.Context = consumer.Item2 ?? EmptyContext.Instance;
-                }
-
-            if (!_configViewModels.Any()) AddConsumerConfig();
-
             Title = $"{device.Identifier} Configuration";
+
+            Loaded += (sender, e) =>
+            {
+                InitializeDeviceConfigurationPanel(device ?? throw new ArgumentNullException(nameof(device)));
+                DeviceConfigurationPanel.Context = deviceParams ?? EmptyContext.Instance;
+
+                if (consumers != null)
+                    foreach (var consumer in consumers)
+                    {
+                        if (string.IsNullOrWhiteSpace(consumer.Item1?.Identifier)) continue;
+                        var viewModel = AddConsumerConfig();
+                        viewModel.ComboBox.FindAndSelect(consumer.Item1.Identifier, 0);
+                        InitializeConsumerConfigurationPanel(viewModel, consumer.Item1);
+                        viewModel.ParamPanel.Context = consumer.Item2 ?? EmptyContext.Instance;
+                    }
+
+                if (!_configViewModels.Any()) AddConsumerConfig();
+            };
         }
 
         private ConsumerConfigViewModel AddConsumerConfig()
@@ -148,7 +151,6 @@ namespace SharpBCI.Windows
             DeviceConfigurationPanel.SetDescriptors(device?.Factory as IParameterPresentAdapter, AsGroup("Device", device?.Factory.GetParameters(device.DeviceClass)));
 
             ScrollView.InvalidateScrollInfo();
-            ScrollView.ScrollToTop();
             _needResizeWindow = true;
         }
 
@@ -158,7 +160,6 @@ namespace SharpBCI.Windows
 
             consumerConfigViewModel.CurrentConsumer = consumer;
             ScrollView.InvalidateScrollInfo();
-            ScrollView.ScrollToTop();
             _needResizeWindow = true;
         }
 
@@ -186,15 +187,16 @@ namespace SharpBCI.Windows
 
         private void Window_LayoutUpdated(object sender, EventArgs e)
         {
-            if (!IsVisible || !_needResizeWindow) return;
+            if (!IsVisible || !_needResizeWindow || !IsLoaded) return;
             var point = PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
             var screen = System.Windows.Forms.Screen.FromPoint(point.RoundToSdPoint());
             var scaleFactor = GraphicsUtils.Scale;
             var maxHeight = screen.WorkingArea.Height / scaleFactor;
             var contentHeight = StackPanel.Children.OfType<FrameworkElement>().Sum(el => el.ActualHeight);
-            Height = Math.Min(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight), maxHeight);
-            var offset = screen.WorkingArea.Bottom / scaleFactor - (Top + ActualHeight);
-            if (offset < 0) Top += offset;
+            var newHeight = Math.Min(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight), maxHeight);
+            if (Math.Abs(newHeight - Height) > 1.0) BeginAnimation(HeightProperty, ViewHelper.CreateDoubleAnimation(Height, newHeight));
+            var offset = screen.WorkingArea.Bottom / scaleFactor - (Top + newHeight + (ActualHeight - Height));
+            if (offset < 0) BeginAnimation(TopProperty, ViewHelper.CreateDoubleAnimation(Top, Math.Max(0, Top + offset)));
             _needResizeWindow = false;
         }
 
@@ -205,11 +207,7 @@ namespace SharpBCI.Windows
 
         private void ConfigurationPanel_OnLayoutChanged(object sender, LayoutChangedEventArgs e)
         {
-            if (e.IsInitialization)
-            {
-                ScrollView.InvalidateScrollInfo();
-                ScrollView.ScrollToTop();
-            }
+            if (e.IsInitialization) ScrollView.InvalidateScrollInfo();
             _needResizeWindow = true;
         }
 

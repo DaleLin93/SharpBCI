@@ -42,9 +42,6 @@ namespace SharpBCI.Extensions.Windows
             if (click2Collapse) tooltipBuilder.AppendIfEmpty('\n').Append("(Click to Collapse/Expand)");
             return new GroupHeader
             {
-                Style = GetResource("ParamGroupHeader") as Style,
-                SeparatorStyle = GetResource("ParamGroupHeaderLine") as Style,
-                HeaderTextStyle = GetResource("ParamGroupHeaderText") as Style,
                 Header = header,
                 Description = description,
                 ToolTip = tooltipBuilder.ToString()
@@ -91,7 +88,7 @@ namespace SharpBCI.Extensions.Windows
             {
                 var collapse = !viewModel.IsCollapsed;
                 if (collapse && collapseControl != null && !collapseControl()) return;
-                viewModel.IsCollapsed = collapse;
+                viewModel.SetCollapsed(collapse);
             };
             return viewModel;
         }

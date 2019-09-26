@@ -7,7 +7,7 @@
     <ProjectGuid>{D9EE92A9-EA2C-493C-85A5-CEBE935161B1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SharpBCI.Experiments.MI</RootNamespace>
+    <RootNamespace>SharpBCI.Paradigms.MI</RootNamespace>
     <AssemblyName>SharpBCI.MI.Plugin</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -95,13 +95,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DirectShowVideoSource.cs" />
-    <Compile Include="MiExperiment.cs" />
+    <Compile Include="MiParadigm.cs" />
     <Compile Include="MiRemoteStageProvider.cs" />
     <Compile Include="MiStage.cs" />
     <Compile Include="MiStimClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestWindow.xaml.cs">
-      <DependentUpon>TestWindow.xaml</DependentUpon>
+    <Compile Include="MiExperimentWindow.xaml.cs">
+      <DependentUpon>MiExperimentWindow.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -125,7 +125,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="TestWindow.xaml">
+    <Page Include="MiExperimentWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
