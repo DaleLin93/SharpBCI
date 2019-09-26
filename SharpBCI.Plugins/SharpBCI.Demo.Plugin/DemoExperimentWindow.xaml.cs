@@ -35,7 +35,7 @@ namespace SharpBCI.Paradigms.Demo
             /* Set paradigm parameters to this window. */
             CueTextBlock.Text = paradigm.Text;
             CueTextBlock.FontSize = paradigm.FontSize;
-            CueTextBlock.Foreground = new SolidColorBrush(paradigm.BackgroundColor.ToSwmColor());
+            CueTextBlock.Foreground = new SolidColorBrush(paradigm.ForegroundColor.ToSwmColor());
             Background = new SolidColorBrush(paradigm.BackgroundColor.ToSwmColor());
         }
 
