@@ -17,7 +17,7 @@ using MathNet.Numerics.IntegralTransforms;
 using SharpBCI.Extensions.Patterns;
 using Normal = MathNet.Numerics.Distributions.Normal;
 using MarukoLib.Logging;
-using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.BiosignalSources;
 
 namespace SharpBCI.Paradigms.WebBrowser
 {

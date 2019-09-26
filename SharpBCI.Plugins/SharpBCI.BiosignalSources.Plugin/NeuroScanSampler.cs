@@ -11,6 +11,7 @@ using MarukoLib.IO;
 using MarukoLib.Lang;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.BiosignalSources;
 
 namespace SharpBCI.BiosignalSources
 {

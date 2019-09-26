@@ -5,19 +5,18 @@ using System.Windows.Input;
 using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Core.IO;
-using SharpBCI.Extensions.Devices.MarkerSources;
 using SharpBCI.Extensions.Streamers;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
-namespace SharpBCI.Extensions.Windows
+namespace SharpBCI.Extensions.Devices.MarkerSources
 {
 
 
     /// <inheritdoc cref="Window" />
     /// <summary>
-    /// Interaction logic for MarkDisplayWindow.xaml
+    /// Interaction logic for MarkerDisplayWindow.xaml
     /// </summary>
-    public partial class MarkerDisplayWindow : IStreamConsumer<Timestamped<IMarker>>
+    internal partial class MarkerDisplayWindow : IStreamConsumer<Timestamped<IMarker>>
     {
 
         private readonly ObservableCollection<Timestamped<IMarker>> _marks = new ObservableCollection<Timestamped<IMarker>>();

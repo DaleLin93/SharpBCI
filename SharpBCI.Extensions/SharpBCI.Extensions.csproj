@@ -110,15 +110,16 @@
     <Compile Include="Data\TrialPreference.cs" />
     <Compile Include="Data\Rectangle.cs" />
     <Compile Include="Data\Path.cs" />
-    <Compile Include="Devices\HeartbeatMarkSource.cs" />
-    <Compile Include="Devices\SerialPortMarkSource.cs" />
-    <Compile Include="Devices\BuiltInMarkSource.cs" />
-    <Compile Include="Devices\ScreenCapturer.cs" />
-    <Compile Include="Devices\MarkSource.cs" />
-    <Compile Include="Devices\VideoSource.cs" />
-    <Compile Include="Devices\GazeFileReader.cs" />
+    <Compile Include="Devices\DeviceFactory.cs" />
+    <Compile Include="Devices\MarkerSources\HeartbeatGenerator.cs" />
+    <Compile Include="Devices\MarkerSources\SerialPortMarkerSource.cs" />
+    <Compile Include="Devices\MarkerSources\EmptyMarkerSource.cs" />
+    <Compile Include="Devices\VideoSources\ScreenCapturer.cs" />
+    <Compile Include="Devices\MarkerSources\MarkerSource.cs" />
+    <Compile Include="Devices\VideoSources\VideoSource.cs" />
+    <Compile Include="Devices\EyeTrackers\GazeFileReader.cs" />
     <Compile Include="Devices\Device.cs" />
-    <Compile Include="Devices\CursorTracker.cs" />
+    <Compile Include="Devices\EyeTrackers\CursorTracker.cs" />
     <Compile Include="Paradigms\TextDisplay\TextDisplayParadigm.cs" />
     <Compile Include="Paradigms\TextDisplay\TextDisplayExperimentWindow.xaml.cs">
       <DependentUpon>TextDisplayExperimentWindow.xaml</DependentUpon>
@@ -149,7 +150,7 @@
     <Compile Include="Paradigms\Rest\RestExperimentWindow.xaml.cs">
       <DependentUpon>RestExperimentWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Devices\EyeTracker.cs" />
+    <Compile Include="Devices\EyeTrackers\EyeTracker.cs" />
     <Compile Include="PersistenceHelper.cs" />
     <Compile Include="Parameter.cs" />
     <Compile Include="Patterns\SquarePattern.cs" />
@@ -176,23 +177,23 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Devices\DataFileReader.cs" />
-    <Compile Include="Devices\GenericOscillator.cs" />
-    <Compile Include="Devices\BiosignalSource.cs" />
+    <Compile Include="Devices\BiosignalSources\DataFileReader.cs" />
+    <Compile Include="Devices\BiosignalSources\GenericOscillator.cs" />
+    <Compile Include="Devices\BiosignalSources\BiosignalSource.cs" />
     <Compile Include="Streamers\GazePointStreamer.cs" />
-    <Compile Include="Streamers\MarkStreamer.cs" />
+    <Compile Include="Streamers\MarkerStreamer.cs" />
     <Compile Include="Streamers\BiosignalStreamer.cs" />
     <Compile Include="TypeConverters.cs" />
-    <Compile Include="Windows\BiosignalVisualizationWindow.cs">
+    <Compile Include="Devices\BiosignalSources\BiosignalVisualizationWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Windows\GazePointVisualizationWindow.cs">
+    <Compile Include="Devices\EyeTrackers\GazePointVisualizationWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Windows\MarkDisplayWindow.xaml.cs">
-      <DependentUpon>MarkDisplayWindow.xaml</DependentUpon>
+    <Compile Include="Devices\MarkerSources\MarkerDisplayWindow.xaml.cs">
+      <DependentUpon>MarkerDisplayWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Windows\VideoFramePresentationWindow.cs">
+    <Compile Include="Devices\VideoSources\VideoFramePresentationWindow.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Windows\ViewConstants.cs" />
@@ -272,7 +273,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Windows\MarkDisplayWindow.xaml">
+    <Page Include="Devices\MarkerSources\MarkerDisplayWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

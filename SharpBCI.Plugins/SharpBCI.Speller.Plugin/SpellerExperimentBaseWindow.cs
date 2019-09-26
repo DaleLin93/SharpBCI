@@ -22,7 +22,7 @@ using KeyEventArgs = System.Windows.Forms.KeyEventArgs;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
-using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.EyeTrackers;
 using SharpBCI.Extensions.Streamers;
 using Point = System.Drawing.Point;
 using RenderForm = SharpDX.Windows.RenderForm;

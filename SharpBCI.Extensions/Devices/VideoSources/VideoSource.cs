@@ -8,7 +8,7 @@ using MarukoLib.Lang;
 using SharpBCI.Extensions.Streamers;
 using SharpBCI.Extensions.Windows;
 
-namespace SharpBCI.Extensions.Devices
+namespace SharpBCI.Extensions.Devices.VideoSources
 {
 
     public interface IVideoFrame

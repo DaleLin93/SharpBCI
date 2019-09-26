@@ -66,7 +66,7 @@ namespace SharpBCI
                 var paradigmContext = pluginParadigm.DeserializeParams(paradigm.Params);
                 if (!TryInitiateParadigm(pluginParadigm, paradigmContext, out var paradigmInstance)) return;
                 paradigmInstances[i] = paradigmInstance;
-                formattedSessionDescriptors[i] = SessionConfigExt.GetFullSessionName(subject, sessionDescriptors[i], paradigmContext);
+                formattedSessionDescriptors[i] = SessionConfigExt.StringInterpolation(sessionDescriptors[i], paradigmContext);
             }
 
             var deviceTypes = App.Instance.Registries.Registry<PluginDeviceType>().Registered.Select(pdt => pdt.DeviceType).ToArray();

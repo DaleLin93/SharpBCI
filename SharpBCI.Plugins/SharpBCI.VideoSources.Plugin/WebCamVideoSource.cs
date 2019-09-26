@@ -8,8 +8,9 @@ using AForge.Video.DirectShow;
 using MarukoLib.Lang;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.VideoSources;
 using SharpBCI.Extensions.Presenters;
-using IVideoSource = SharpBCI.Extensions.Devices.IVideoSource;
+using IVideoSource = SharpBCI.Extensions.Devices.VideoSources.IVideoSource;
 
 namespace SharpBCI.VideoSources
 {

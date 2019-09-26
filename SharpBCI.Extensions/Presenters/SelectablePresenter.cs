@@ -120,8 +120,9 @@ namespace SharpBCI.Extensions.Presenters
 
         public PresentedParameter PresentComboBox(IParameterDescriptor param, IEnumerable items, Func<object, string> toStringFunc, Action updateCallback)
         {
-            var comboBox = new ComboBox {ItemsSource = ToStringOverridenWrapper.Of(items, toStringFunc) };
+            var comboBox = new ComboBox();
             comboBox.SelectionChanged += (sender, args) => updateCallback();
+            comboBox.ItemsSource = ToStringOverridenWrapper.Of(items, toStringFunc);
             return new PresentedParameter(param, comboBox, new ComboBoxAccessor(param, toStringFunc, comboBox), comboBox);
         }
 

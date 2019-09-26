@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using MarukoLib.Image;
 using MarukoLib.Lang;
 
-namespace SharpBCI.Extensions.Devices
+namespace SharpBCI.Extensions.Devices.VideoSources
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]

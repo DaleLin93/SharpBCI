@@ -7,7 +7,6 @@ using SharpBCI.Core.Staging;
 using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
-using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.StageProviders;
 

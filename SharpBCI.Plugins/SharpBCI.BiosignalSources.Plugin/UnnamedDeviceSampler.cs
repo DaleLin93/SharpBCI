@@ -7,6 +7,7 @@ using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.BiosignalSources;
 
 namespace SharpBCI.BiosignalSources
 {
@@ -28,8 +29,9 @@ namespace SharpBCI.BiosignalSources
 
             public override UnnamedDeviceSampler Create(IReadonlyContext context)
             {
-                if (SerialPortParam.Get(context) == null) throw new UserException("Serial Port must set for SignalSource");
-                return new UnnamedDeviceSampler(SerialPortParam.Get(context));
+                var serialPort = SerialPortParam.Get(context);
+                if (serialPort == null) throw new UserException("Serial Port must set.");
+                return new UnnamedDeviceSampler(serialPort);
             }
 
         }

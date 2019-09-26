@@ -11,7 +11,6 @@ using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions.Streamers;
 
 namespace SharpBCI.Plugins
@@ -49,6 +48,13 @@ namespace SharpBCI.Plugins
             Assembly = assembly ?? throw new ArgumentNullException(nameof(assembly));
             Name = Path.GetFileName(Assembly.Location).Trim(PluginFileNamePrefix, PluginFileNameSuffix, StringComparison.OrdinalIgnoreCase);
             Identifier = Assembly.FullName;
+
+            LoadMarkers();
+            LoadDeviceTypes();
+            LoadAppEntries();
+            LoadParadigms();
+            LoadDevices();
+            LoadStreamConsumers();
         }
 
         public static PluginParadigm InitPluginParadigm(Plugin plugin, Type type)
@@ -69,7 +75,7 @@ namespace SharpBCI.Plugins
             return new PluginStreamConsumer(plugin, type, attr, (IStreamConsumerFactory)Activator.CreateInstance(attr.FactoryType));
         }
 
-        public static IReadOnlyCollection<Plugin> ScanPlugins(Registries registries, Action<string, Exception> exceptionHandler)
+        public static IReadOnlyCollection<Plugin> ScanPlugins(Action<string, Exception> exceptionHandler)
         {
             var plugins = new LinkedList<Plugin>();
             foreach (var file in Directory.GetFiles(Path.GetFullPath(FileUtils.ExecutableDirectory), PluginFileNamePattern))
@@ -77,27 +83,7 @@ namespace SharpBCI.Plugins
                 Logger.Info("ScanPlugins - loading plugin", "assemblyFile", file);
                 try
                 {
-                    var plugin = new Plugin(Assembly.LoadFile(file));
-
-                    plugins.AddLast(plugin);
-                    plugin.LoadMarkers();
-                    plugin.LoadDeviceTypes();
-                    plugin.LoadAppEntries();
-                    plugin.LoadParadigms();
-                    plugin.LoadDevices();
-                    plugin.LoadStreamConsumers();
-
-                    registries.Registry<Plugin>().Register(plugin);
-                    foreach (var deviceType in plugin.DeviceTypes)
-                        registries.Registry<PluginDeviceType>().Register(deviceType);
-                    foreach (var appEntry in plugin.AppEntries)
-                        registries.Registry<PluginAppEntry>().Register(appEntry);
-                    foreach (var paradigm in plugin.Paradigms)
-                        registries.Registry<PluginParadigm>().Register(paradigm);
-                    foreach (var device in plugin.Devices)
-                        registries.Registry<PluginDevice>().Register(device);
-                    foreach (var streamConsumer in plugin.StreamConsumers)
-                        registries.Registry<PluginStreamConsumer>().Register(streamConsumer);
+                    plugins.AddLast(new Plugin(Assembly.LoadFile(file)));
                 }
                 catch (Exception e)
                 {
@@ -113,6 +99,36 @@ namespace SharpBCI.Plugins
         public string Identifier { get; }
 
         public override string ToString() => Name;
+
+        public void Register(Registries registries)
+        {
+            registries.Registry<Plugin>().Register(this);
+            foreach (var deviceType in DeviceTypes)
+                registries.Registry<PluginDeviceType>().Register(deviceType);
+            foreach (var appEntry in AppEntries)
+                registries.Registry<PluginAppEntry>().Register(appEntry);
+            foreach (var paradigm in Paradigms)
+                registries.Registry<PluginParadigm>().Register(paradigm);
+            foreach (var device in Devices)
+                registries.Registry<PluginDevice>().Register(device);
+            foreach (var streamConsumer in StreamConsumers)
+                registries.Registry<PluginStreamConsumer>().Register(streamConsumer);
+        }
+
+        public void Unregister(Registries registries)
+        {
+            registries.Registry<Plugin>().Unregister(this);
+            foreach (var deviceType in DeviceTypes)
+                registries.Registry<PluginDeviceType>().Unregister(deviceType);
+            foreach (var appEntry in AppEntries)
+                registries.Registry<PluginAppEntry>().Unregister(appEntry);
+            foreach (var paradigm in Paradigms)
+                registries.Registry<PluginParadigm>().Unregister(paradigm);
+            foreach (var device in Devices)
+                registries.Registry<PluginDevice>().Unregister(device);
+            foreach (var streamConsumer in StreamConsumers)
+                registries.Registry<PluginStreamConsumer>().Unregister(streamConsumer);
+        }
 
         private void LoadMarkers()
         {

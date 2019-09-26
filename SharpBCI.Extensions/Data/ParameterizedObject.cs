@@ -57,8 +57,7 @@ namespace SharpBCI.Extensions.Data
                 if (!Factories.TryGetValue(factoryType, out factory))
                 {
                     if (!typeof(IParameterizedObjectFactory).IsAssignableFrom(factoryType)) throw new ArgumentException("'factoryType' must implements IParameterizedObjectFactory");
-                    var constructor = factoryType.GetNoArgConstructor() ?? throw new ArgumentException("No-arg constructor must implements for IParameterizedObjectFactory");
-                    Factories[factoryType] = factory = (IParameterizedObjectFactory)constructor.Invoke(EmptyArray<object>.Instance);
+                    Factories[factoryType] = factory = (IParameterizedObjectFactory) Activator.CreateInstance(factoryType);
                 }
             return factory;
         }

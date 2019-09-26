@@ -3,7 +3,8 @@ using System.Windows;
 using SharpBCI.Core.IO;
 using MarukoLib.Lang;
 using MarukoLib.UI;
-using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.BiosignalSources;
+using SharpBCI.Extensions.Devices.EyeTrackers;
 using SharpBCI.Extensions.Streamers;
 
 namespace SharpBCI.Windows

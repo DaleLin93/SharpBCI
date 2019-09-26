@@ -70,17 +70,15 @@ namespace SharpBCI.Extensions.Windows
             }
             set
             {
-                var context = new Context(value);
                 if (_paramViewModels.Any())
                     using (_updateLock.Ref())
                         foreach (var entry in _paramViewModels)
                         {
-                            if (!context.TryGet(entry.Key, out var val) || !entry.Key.IsValid(val))
+                            if (!value.TryGet(entry.Key, out var val) || !entry.Key.IsValid(val))
                                 val = entry.Value.ParameterDescriptor.DefaultValue;
                             entry.Value.PresentedParameter.SetValue(val);
                         }
-                _context = context;
-                OnParamsUpdated();
+                Refresh();
             }
         }
 
@@ -93,11 +91,10 @@ namespace SharpBCI.Extensions.Windows
 
         public void Refresh()
         {
-            if (_updateLock.IsReferred) return;
             var context = new Context();
             foreach (var entry in _paramViewModels)
                 try { context[entry.Key] = entry.Value.PresentedParameter.GetValue(); }
-                catch (Exception) { _paramViewModels[entry.Key].PresentedParameter.SetValid(false); }
+                catch (Exception) { /* ignored */ }
             _context = context;
             OnParamsUpdated();
         }

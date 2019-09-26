@@ -7,6 +7,7 @@ using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.VideoSources;
 
 namespace SharpBCI.Extensions.Streamers
 {

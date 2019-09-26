@@ -174,11 +174,11 @@ namespace SharpBCI
 
         public static string GetFullSessionName(string subject, string sessionDescriptor, IReadonlyContext context, long? time = null)
         {
-            if (context != null) sessionDescriptor = GetInterpolatedString(sessionDescriptor, context);
+            if (context != null) sessionDescriptor = StringInterpolation(sessionDescriptor, context);
             return Session.GetFullSessionName(time, subject, sessionDescriptor);
         }
 
-        public static string GetInterpolatedString(string template, IReadonlyContext context)
+        public static string StringInterpolation(string template, IReadonlyContext context)
         {
             dynamic expandoContext = new ExpandoObject();
             foreach (var property in context.Properties)

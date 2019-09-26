@@ -5,14 +5,13 @@ using System.Reflection;
 using System.Windows.Forms;
 using MarukoLib.DirectX;
 using MarukoLib.Lang;
-using D2D1 = SharpDX.Direct2D1;
 using SharpBCI.Core.IO;
-using SharpBCI.Extensions.Devices;
 using SharpBCI.Extensions.Streamers;
 using SharpDX.Mathematics.Interop;
+using D2D1 = SharpDX.Direct2D1;
 using Color = SharpDX.Color;
 
-namespace SharpBCI.Extensions.Windows
+namespace SharpBCI.Extensions.Devices.EyeTrackers
 {
 
     internal class GazePointVisualizationWindow : Direct2DForm, IStreamConsumer<Timestamped<IGazePoint>>

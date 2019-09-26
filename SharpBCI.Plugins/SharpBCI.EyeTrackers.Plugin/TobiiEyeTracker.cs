@@ -3,6 +3,7 @@ using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.EyeTrackers;
 using Tobii.Interaction;
 using Tobii.Interaction.Client;
 

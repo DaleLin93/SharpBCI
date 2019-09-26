@@ -2,7 +2,7 @@
 using SharpBCI.Extensions.Streamers;
 using SharpBCI.Extensions.Windows;
 
-namespace SharpBCI.Extensions.Devices
+namespace SharpBCI.Extensions.Devices.BiosignalSources
 {
 
     public interface ISample

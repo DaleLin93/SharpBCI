@@ -2,15 +2,16 @@
 using System.IO.Ports;
 using System.Threading;
 using MarukoLib.Lang;
+using MarukoLib.Lang.Exceptions;
 
-namespace SharpBCI.Extensions.Devices
+namespace SharpBCI.Extensions.Devices.MarkerSources
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]
-    public sealed class SerialPortMarkSource : MarkSource
+    public sealed class SerialPortMarkerSource : MarkerSource
     {
 
-        public const string DeviceName = "Serial Port Mark Source";
+        public const string DeviceName = "Serial Port Marker Source";
 
         public static readonly Parameter<string> SerialPortParam = Parameter<string>.CreateBuilder("Serial Port")
             .SetSelectableValues(SerialPort.GetPortNames)
@@ -24,25 +25,28 @@ namespace SharpBCI.Extensions.Devices
 
         public static readonly Parameter<Parity> ParityParam = Parameter<Parity>.OfEnum("Parity", 0);
 
-        public class Factory : DeviceFactory<SerialPortMarkSource, IMarkSource>
+        public class Factory : DeviceFactory<SerialPortMarkerSource, IMarkerSource>
         {
 
             public Factory() : base(SerialPortParam, BaudRateParam, DataBitsParam, StopBitsParam, ParityParam) { }
 
-            public override SerialPortMarkSource Create(IReadonlyContext context) => new SerialPortMarkSource(
-                SerialPortParam.Get(context), BaudRateParam.Get(context), DataBitsParam.Get(context), StopBitsParam.Get(context), ParityParam.Get(context));
-
+            public override SerialPortMarkerSource Create(IReadonlyContext context)
+            {
+                var serialPort = SerialPortParam.Get(context);
+                if (serialPort == null) throw new UserException("Serial Port must set.");
+                return new SerialPortMarkerSource(serialPort, BaudRateParam.Get(context), DataBitsParam.Get(context), StopBitsParam.Get(context), ParityParam.Get(context));
+            }
         }
 
         private readonly SerialPort _serialPort;
 
-        private readonly LinkedList<IMark> _marks = new LinkedList<IMark>();
+        private readonly LinkedList<IMarker> _marks = new LinkedList<IMarker>();
 
         private readonly Semaphore _semaphore = new Semaphore(0, int.MaxValue);
 
         private bool _started = false;
 
-        private SerialPortMarkSource(string serialPortName, int baudRate, byte dataBits, StopBits stopBits, Parity parity)
+        private SerialPortMarkerSource(string serialPortName, int baudRate, byte dataBits, StopBits stopBits, Parity parity)
         {
             _serialPort = new SerialPort(serialPortName) {BaudRate = baudRate, DataBits = dataBits, StopBits = stopBits, Parity = parity};
             _serialPort.Open();
@@ -54,7 +58,7 @@ namespace SharpBCI.Extensions.Devices
             _serialPort.DataReceived += SerialPortOnDataReceived;
         }
 
-        public override IMark Read()
+        public override IMarker Read()
         {
             while (!_semaphore.WaitOne(100))
                 if (!_started) return null;
@@ -95,7 +99,7 @@ namespace SharpBCI.Extensions.Devices
                 while (_serialPort.BytesToRead > 0)
                 {
                     var b = _serialPort.ReadByte();
-                    var mark = new Mark(new string((char) b, 1), b);
+                    var mark = new Marker(new string((char) b, 1), b);
                     lock (_marks) _marks.AddLast(mark);
                     _semaphore.Release();
                 }

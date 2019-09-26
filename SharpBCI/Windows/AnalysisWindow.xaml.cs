@@ -86,9 +86,9 @@ namespace SharpBCI.Windows
             _gazePointRecords = LoadGazePointRecords(dataFilePrefix);
             _markerRecords = LoadMarkerRecords(dataFilePrefix);
 
-            MarkerPluginComboBox.ItemsSource = App.Instance.Registries.Registry<Plugin>().Registered
-                .Select(p => p.CustomMarkers.Count > 0).ToArray();
-            if (MarkerPluginComboBox.ItemsSource.Count() > 0) MarkerPluginComboBox.SelectedIndex = 0;
+            ModulePluginComboBox.ItemsSource = App.Instance.Registries.Registry<Plugin>().Registered
+                .Where(p => p.CustomMarkers.Count > 0).ToArray();
+            if (ModulePluginComboBox.ItemsSource.Count() > 0) ModulePluginComboBox.SelectedIndex = 0;
         }
 
         private static IList<BiosignalRecord> LoadBiosignalRecords(string dataFilePrefix, double? frequency)
@@ -115,7 +115,7 @@ namespace SharpBCI.Windows
 
         private static IList<MarkerRecord> LoadMarkerRecords(string dataFilePrefix)
         {
-            var file = dataFilePrefix + MarkAsciiFileWriter.FileSuffix;
+            var file = dataFilePrefix + MarkerAsciiFileWriter.FileSuffix;
             if (!File.Exists(file)) return EmptyArray<MarkerRecord>.Instance;
             var markerRecords = new LinkedList<MarkerRecord>();
             foreach (var line in File.ReadLines(file, Encoding.UTF8))
@@ -245,7 +245,7 @@ namespace SharpBCI.Windows
 
             var t0 = _biosignalRecords[sampleOffset].Timestamp;
             var t1 = _biosignalRecords[sampleOffset + sampleCount - 1].Timestamp;
-            var markers = (MarkerPluginComboBox.SelectedItem as Plugin)?.Markers;
+            var markers = (ModulePluginComboBox.SelectedItem as Plugin)?.Markers;
             var markerBrushes = new Dictionary<int, Brush>();
             if (markers != null)
                 foreach (var markerId in markers.Keys)
@@ -265,7 +265,7 @@ namespace SharpBCI.Windows
         private void UpdateMarkers()
         {
             var markerRecordItems = new List<MarkerRecordItem>(_markerRecords.Count);
-            var markers = (MarkerPluginComboBox.SelectedItem as Plugin)?.Markers;
+            var markers = (ModulePluginComboBox.SelectedItem as Plugin)?.Markers;
             MarkerRecord previous = null;
             foreach (var record in _markerRecords)
             {
@@ -301,7 +301,7 @@ namespace SharpBCI.Windows
             return linkedList;
         } 
 
-        private void PluginComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateMarkers();
+        private void ModuleComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateMarkers();
 
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         private void GenerateEpochs_OnClick(object sender, RoutedEventArgs e)

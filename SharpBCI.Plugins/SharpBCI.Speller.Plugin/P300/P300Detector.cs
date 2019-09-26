@@ -4,7 +4,7 @@ using SharpBCI.Core.IO;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Logging;
-using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.BiosignalSources;
 
 namespace SharpBCI.Paradigms.Speller.P300
 {

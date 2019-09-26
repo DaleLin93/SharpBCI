@@ -79,11 +79,9 @@ namespace SharpBCI.Windows
             [CanBeNull] IReadOnlyCollection<Tuple<PluginStreamConsumer, IReadonlyContext>> consumers)
         {
             InitializeComponent();
-
-            _device = device;
-
             Title = $"{device.Identifier} Configuration";
 
+            _device = device;
             Loaded += (sender, e) =>
             {
                 InitializeDeviceConfigurationPanel(device ?? throw new ArgumentNullException(nameof(device)));

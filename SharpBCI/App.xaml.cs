@@ -20,6 +20,10 @@ using MarukoLib.Persistence;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Apps;
 using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.BiosignalSources;
+using SharpBCI.Extensions.Devices.EyeTrackers;
+using SharpBCI.Extensions.Devices.MarkerSources;
+using SharpBCI.Extensions.Devices.VideoSources;
 using SharpBCI.Extensions.Paradigms.TextDisplay;
 using SharpBCI.Extensions.Paradigms.Countdown;
 using SharpBCI.Extensions.Windows;
@@ -203,7 +207,7 @@ namespace SharpBCI
             MarukoLib.DirectX.Direct2D.CreateIndependentResource();
 
             Registries.Registry<PluginDeviceType>().RegisterAll(
-                new PluginDeviceType(null, DeviceType.Of(typeof(IMarkSource))),
+                new PluginDeviceType(null, DeviceType.Of(typeof(IMarkerSource))),
                 new PluginDeviceType(null, DeviceType.Of(typeof(IBiosignalSource))),
                 new PluginDeviceType(null, DeviceType.Of(typeof(IEyeTracker))),
                 new PluginDeviceType(null, DeviceType.Of(typeof(IVideoSource))));
@@ -217,9 +221,9 @@ namespace SharpBCI
                 Plugin.InitPluginParadigm(null, typeof(TextDisplayParadigm)));
 
             Registries.Registry<PluginDevice>().RegisterAll(
-                Plugin.InitPluginDevice(null, typeof(BuiltInMarkSource)),
-                Plugin.InitPluginDevice(null, typeof(HeartbeatMarkSource)),
-                Plugin.InitPluginDevice(null, typeof(SerialPortMarkSource)),
+                Plugin.InitPluginDevice(null, typeof(EmptyMarkerSource)),
+                Plugin.InitPluginDevice(null, typeof(HeartbeatGenerator)),
+                Plugin.InitPluginDevice(null, typeof(SerialPortMarkerSource)),
                 Plugin.InitPluginDevice(null, typeof(CursorTracker)),
                 Plugin.InitPluginDevice(null, typeof(GazeFileReader)),
                 Plugin.InitPluginDevice(null, typeof(GenericOscillator)),
@@ -227,14 +231,14 @@ namespace SharpBCI
                 Plugin.InitPluginDevice(null, typeof(ScreenCapturer)));
 
             Registries.Registry<PluginStreamConsumer>().RegisterAll(
-                Plugin.InitPluginStreamConsumer(null, typeof(MarkAsciiFileWriter)),
+                Plugin.InitPluginStreamConsumer(null, typeof(MarkerAsciiFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(BiosignalAsciiFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(BiosignalBinaryFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(GazePointAsciiFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(GazePointBinaryFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(VideoFramesFileWriter)));
 
-            Plugin.ScanPlugins(Registries, (file, ex) => ShowErrorMessage(ex, "Failed to load plugin: " + file));
+            foreach (var plugin in Plugin.ScanPlugins((file, ex) => ShowErrorMessage(ex, "Failed to load plugin: " + file))) plugin.Register(Registries);
 
             foreach (var entry in Registries.Registry<PluginAppEntry>().Registered)
                 if (entry.IsAutoStart)

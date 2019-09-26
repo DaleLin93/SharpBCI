@@ -140,15 +140,14 @@ namespace SharpBCI.Extensions.Presenters
 
         public PresenterAttribute(Type presenterType) => Presenter = Initiate(presenterType);
 
-        private static IPresenter Initiate(Type factoryType)
+        private static IPresenter Initiate(Type presenterType)
         {
             IPresenter presenter;
             lock (Presenters)
-                if (!Presenters.TryGetValue(factoryType, out presenter))
+                if (!Presenters.TryGetValue(presenterType, out presenter))
                 {
-                    if (!typeof(IPresenter).IsAssignableFrom(factoryType)) throw new ArgumentException("'presenterType' must implements IPresenter");
-                    var constructor = factoryType.GetNoArgConstructor() ?? throw new ArgumentException("No-arg constructor must implements for IPresenter");
-                    Presenters[factoryType] = presenter = (IPresenter)constructor.Invoke(EmptyArray<object>.Instance);
+                    if (!typeof(IPresenter).IsAssignableFrom(presenterType)) throw new ArgumentException("'presenterType' must implements IPresenter");
+                    Presenters[presenterType] = presenter = (IPresenter) Activator.CreateInstance(presenterType);
                 }
             return presenter;
         }

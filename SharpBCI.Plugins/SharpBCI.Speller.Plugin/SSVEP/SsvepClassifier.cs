@@ -4,7 +4,7 @@ using System.Threading;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
 using SharpBCI.Core.IO;
-using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.Devices.BiosignalSources;
 
 namespace SharpBCI.Paradigms.Speller.SSVEP
 {

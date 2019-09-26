@@ -8,7 +8,7 @@ using SharpBCI.Extensions.Presenters;
 using SharpBCI.Extensions.Streamers;
 using Path = SharpBCI.Extensions.Data.Path;
 
-namespace SharpBCI.Extensions.Devices
+namespace SharpBCI.Extensions.Devices.BiosignalSources
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]
