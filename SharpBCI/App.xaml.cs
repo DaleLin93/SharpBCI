@@ -96,8 +96,7 @@ namespace SharpBCI
         public static void ConfigSystemVariables()
         {
             var configWindow = new ParameterizedConfigWindow("System Variables",
-                    SystemVariables.ParameterDefinitions, SystemVariables.Context)
-                { Width = 800 };
+                SystemVariables.ParameterDefinitions, SystemVariables.Context) {Width = 800};
             if (!configWindow.ShowDialog(out var @params)) return;
             SystemVariables.Apply(@params);
             SaveSystemVariables();

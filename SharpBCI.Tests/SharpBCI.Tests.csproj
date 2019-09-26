@@ -108,6 +108,10 @@
       <Project>{ad675d2d-c113-4460-bedc-c6abdbe1a929}</Project>
       <Name>SharpBCI.Extensions</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SharpBCI.Plugins\SharpBCI.EGI.Plugin\SharpBCI.EGI.Plugin.csproj">
+      <Project>{f66a2db5-69ae-441d-8aad-a5bf58eaec07}</Project>
+      <Name>SharpBCI.EGI.Plugin</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SharpBCI\SharpBCI.csproj">
       <Project>{6b01b701-3305-4fd4-9a4c-79b1a8fab08b}</Project>
       <Name>SharpBCI</Name>

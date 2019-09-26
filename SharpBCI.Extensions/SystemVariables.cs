@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Persistence;
@@ -11,9 +12,17 @@ namespace SharpBCI.Extensions
 
         public static readonly Parameter<uint> PreparationCountdown = new Parameter<uint>("Preparation Countdown", "sec", null, 10U);
 
-        public static readonly IParameterDescriptor[] ParameterDefinitions = { PreparationCountdown };
+        public static readonly Parameter<bool> DisableUiAnimation = new Parameter<bool>("Disable UI Animation", false);
+
+        public static readonly IDescriptor[] ParameterDefinitions =
+        {
+            new ParameterGroup("Experiment", PreparationCountdown),
+            new ParameterGroup("GUI", DisableUiAnimation),
+        };
 
         public static readonly TransactionalContext Context = new TransactionalContext();
+
+        private static readonly IParameterDescriptor[] AllParameters = ParameterDefinitions.GetAllParameters().ToArray();
 
         public static void Apply([CanBeNull] IReadonlyContext context)
         {
@@ -27,14 +36,14 @@ namespace SharpBCI.Extensions
         public static void Serialize([NotNull] string filePath) => Serialize().JsonSerializeToFile(filePath, JsonUtils.PrettyFormat);
 
         [NotNull]
-        public static IDictionary<string, string> Serialize() => ParameterDefinitions.SerializeParams(Context);
+        public static IDictionary<string, string> Serialize() => AllParameters.SerializeParams(Context);
 
         public static void Deserialize([NotNull] string filePath) => Deserialize(JsonUtils.DeserializeFromFile<IDictionary<string, string>>(filePath));
 
         public static void Deserialize([CanBeNull] IDictionary<string, string> input)
         {
             if (input == null) return;
-            Apply(ParameterDefinitions.DeserializeParams(input));
+            Apply(AllParameters.DeserializeParams(input));
         }
 
     }

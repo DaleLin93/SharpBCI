@@ -201,7 +201,7 @@ namespace SharpBCI.EGI
             throw new IOException($"Synchronization did not succeed within {SyncLimit.TotalMilliseconds:N1} ms\n Synchronization accuracy is {diff} ms");
         }
 
-        public void SendEvent(int code, bool waitForAck = false) => SendEvent("EVEN", code, waitForAck);
+        public void SendEvent(int code, bool waitForAck = false) => SendEvent(code.ToString().TrimOrPadLeft(4, '0'), code, waitForAck);
 
         public void SendEvent(string name, int code, bool waitForAck = false) => SendEvent(name, new[] {new KeyValuePair<string, object>("CODE", code)}, waitForAck);
 
@@ -238,7 +238,7 @@ namespace SharpBCI.EGI
             _stream.Write(bytes, 0, sizeof(uint));
 
             // ReSharper disable once InvokeAsExtensionMethod for nullable string
-            foreach (var ch in StringUtils.TrimOrPad(name, 4, ' '))
+            foreach (var ch in StringUtils.TrimOrPadRight(name, 4, ' '))
                 _stream.WriteByte((byte) ch);
 
             bytes.WriteInt16AsNetworkOrder(0);
@@ -251,11 +251,11 @@ namespace SharpBCI.EGI
             {
                 // Write key
                 // ReSharper disable once InvokeAsExtensionMethod for nullable string
-                foreach (var ch in StringUtils.TrimOrPad(key.Item1, 4, ' ')) _stream.WriteByte((byte)ch);
+                foreach (var ch in StringUtils.TrimOrPadRight(key.Item1, 4, ' ')) _stream.WriteByte((byte)ch);
 
                 // Write type
                 // ReSharper disable once InvokeAsExtensionMethod for nullable string
-                foreach (var ch in StringUtils.TrimOrPad(key.Item2, 4, ' ')) _stream.WriteByte((byte)ch);
+                foreach (var ch in StringUtils.TrimOrPadRight(key.Item2, 4, ' ')) _stream.WriteByte((byte)ch);
 
                 // Write data length
                 bytes.WriteUInt16AsNetworkOrder((ushort) key.Item3.Length);
@@ -268,7 +268,14 @@ namespace SharpBCI.EGI
             if (waitForAck) _stream.ReadByte();
         }
 
-        public override void Accept(Timestamped<IMark> value) => SendEvent(value.Value.Label, value.Value.Code, false);
+        public override void Accept(Timestamped<IMark> value)
+        {
+            var mark = value.Value;
+            if (value.Value.Label == null)
+                SendEvent(mark.Code);
+            else 
+                SendEvent(mark.Label, mark.Code, false);
+        }
 
         public void Dispose() => Stop();
 

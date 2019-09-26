@@ -188,15 +188,8 @@ namespace SharpBCI.Windows
         private void Window_LayoutUpdated(object sender, EventArgs e)
         {
             if (!IsVisible || !_needResizeWindow || !IsLoaded) return;
-            var point = PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
-            var screen = System.Windows.Forms.Screen.FromPoint(point.RoundToSdPoint());
-            var scaleFactor = GraphicsUtils.Scale;
-            var maxHeight = screen.WorkingArea.Height / scaleFactor;
             var contentHeight = StackPanel.Children.OfType<FrameworkElement>().Sum(el => el.ActualHeight);
-            var newHeight = Math.Min(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight), maxHeight);
-            if (Math.Abs(newHeight - Height) > 1.0) BeginAnimation(HeightProperty, ViewHelper.CreateDoubleAnimation(Height, newHeight));
-            var offset = screen.WorkingArea.Bottom / scaleFactor - (Top + newHeight + (ActualHeight - Height));
-            if (offset < 0) BeginAnimation(TopProperty, ViewHelper.CreateDoubleAnimation(Top, Math.Max(0, Top + offset)));
+            this.UpdateWindowHeight(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight));
             _needResizeWindow = false;
         }
 

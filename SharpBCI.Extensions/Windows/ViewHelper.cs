@@ -6,6 +6,7 @@ using System.Windows.Media.Animation;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
+using MarukoLib.UI;
 
 namespace SharpBCI.Extensions.Windows
 {
@@ -20,6 +21,35 @@ namespace SharpBCI.Extensions.Windows
             var res = Resources[name];
             if (res == DependencyProperty.UnsetValue) throw new ProgrammingException($"Resource not found by name: '{name}'");
             return res;
+        }
+
+        public static void UpdateWindowHeight(this Window window, double newHeight)
+        {
+            var point = window.PointToScreen(new Point(window.ActualWidth / 2, window.ActualHeight / 2));
+            var screen = System.Windows.Forms.Screen.FromPoint(point.RoundToSdPoint());
+            var scaleFactor = GraphicsUtils.Scale;
+            var maxHeight = screen.WorkingArea.Height / scaleFactor;
+            newHeight = Math.Min(maxHeight, newHeight);
+            var height = window.Height;
+            var disableAnimation = SystemVariables.DisableUiAnimation.Get(SystemVariables.Context);
+            if (Math.Abs(newHeight - height) > 1.0)
+            {
+                if (disableAnimation)
+                    window.Height = newHeight;
+                else
+                    window.BeginAnimation(FrameworkElement.HeightProperty, CreateDoubleAnimation(height, newHeight),
+                        HandoffBehavior.SnapshotAndReplace);
+            }
+            var offset = screen.WorkingArea.Bottom / scaleFactor - (window.Top + newHeight + (window.ActualHeight - window.Height));
+            if (offset < 0)
+            {
+                var newTop = window.Top + offset;
+                if (disableAnimation)
+                    window.Top = newTop;
+                else
+                    window.BeginAnimation(Window.TopProperty, CreateDoubleAnimation(window.Top, Math.Max(0, newTop)),
+                        HandoffBehavior.SnapshotAndReplace);
+            }
         }
 
         public static DoubleAnimation CreateDoubleAnimation(double from, double to, FillBehavior? fillBehavior = null,

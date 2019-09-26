@@ -1,7 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -141,10 +138,11 @@ namespace SharpBCI.Extensions.Windows
 
         protected void UpdateVisibility(FrameworkElement element, bool visible, bool animate = true)
         {
-            if (!animate)
+            if (SystemVariables.DisableUiAnimation.Get(SystemVariables.Context) || !animate)
             {
                 element.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
                 element.Height = double.NaN;
+                AnimationCompleted?.Invoke(this, EventArgs.Empty);
                 return;
             }
             switch (visible)
