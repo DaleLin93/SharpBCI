@@ -34,13 +34,11 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             public float FixationPointSize;
 
-            public ITemporalPattern[] Patterns;
+            public ITemporalPattern Pattern;
 
             public RawRectangleF BorderRect;
 
             public RawRectangleF ContentRect;
-
-            public RawRectangleF[] DualFlickerRects;
 
             public SharpDX.Direct2D1.Ellipse CenterPointEllipse;
 
@@ -61,13 +59,6 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 }
                 else
                     ContentRect = BorderRect;
-
-                DualFlickerRects = new []
-                {
-                    new RawRectangleF(ContentRect.Left, ContentRect.Top, ContentRect.Left + ContentRect.Width() / 2, ContentRect.Bottom),
-                    new RawRectangleF(ContentRect.Left + ContentRect.Width() / 2, ContentRect.Top, ContentRect.Right, ContentRect.Bottom),
-                };
-
                 CenterPointEllipse = new SharpDX.Direct2D1.Ellipse(Center, FixationPointSize, FixationPointSize);
             }
 
@@ -84,8 +75,6 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         private readonly IMarkable _markable;
 
         private readonly StageProgram _stageProgram;
-
-        private readonly SsvepParadigm.Configuration.TestConfig.StimulationParadigm _stimParadigm;
 
         private readonly Block[] _blocks;
 
@@ -157,18 +146,13 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             _trialStartEvent = _paradigm.Config.Test.WaitKeyForTrial ? new AutoResetEvent(false) : null; 
             _markable = session.StreamerCollection.FindFirstOrDefault<IMarkable>();
 
-            _stimParadigm = _paradigm.Config.Test.Paradigm;
             _blocks = new Block[(int)_paradigm.Config.Gui.BlockLayout.Volume];
-            var patternMultiplier = _stimParadigm.GetParadigmPatternMultiplier();
             for (var i = 0; i < _blocks.Length; i++)
             {
                 _blocks[i].Size = new RawVector2(_paradigm.Config.Gui.BlockSize.Width, _paradigm.Config.Gui.BlockSize.Height);
                 _blocks[i].BorderWidth = (float)_paradigm.Config.Gui.BlockBorder.Width * (float)GraphicsUtils.Scale;
                 _blocks[i].FixationPointSize = _paradigm.Config.Gui.BlockFixationPoint.Size * (float) GraphicsUtils.Scale;
-                var patterns = new ITemporalPattern[patternMultiplier];
-                for (var j = 0; j < patternMultiplier; j++)
-                    patterns[j] = _paradigm.Config.Test.Patterns[i * patternMultiplier + j];
-                _blocks[i].Patterns = patterns.All(Functions.IsNull) ? null : patterns;
+                _blocks[i].Pattern = _paradigm.Config.Test.Patterns[i];
                 _blocks[i].UpdateGeometries();
             }
 
@@ -332,56 +316,25 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 if (_paradigmStarted) // Draw blocks
                 {
                     var secsPassed = (CurrentTime - _stageUpdatedAt) / 1000.0;
-                    switch (_stimParadigm)
+                    foreach (var block in _blocks)
                     {
-                        case SsvepParadigm.Configuration.TestConfig.StimulationParadigm.Flicker:
-                            foreach (var block in _blocks)
-                            {
-                                if (block.BorderWidth > 0)
-                                {
-                                    _solidColorBrush.Color = _blockBorderColor;
-                                    _renderTarget.FillRectangle(block.BorderRect, _solidColorBrush);
-                                }
-                                if (!_trialStarted || block.Patterns == null)
-                                    _solidColorBrush.Color = _blockNormalColor;
-                                else
-                                    _solidColorBrush.Color = Color.SmoothStep(_blockNormalColor, _blockFlashingColor,
-                                        (float) ConvertCosineValueToGrayScale(block.Patterns[0].Sample(secsPassed)));
-                                _renderTarget.FillRectangle(block.ContentRect, _solidColorBrush);
+                        if (block.BorderWidth > 0)
+                        {
+                            _solidColorBrush.Color = _blockBorderColor;
+                            _renderTarget.FillRectangle(block.BorderRect, _solidColorBrush);
+                        }
+                        if (!_trialStarted || block.Pattern == null)
+                            _solidColorBrush.Color = _blockNormalColor;
+                        else
+                            _solidColorBrush.Color = Color.SmoothStep(_blockNormalColor, _blockFlashingColor,
+                                (float) ConvertCosineValueToGrayScale(block.Pattern.Sample(secsPassed)));
+                        _renderTarget.FillRectangle(block.ContentRect, _solidColorBrush);
 
-                                if (block.FixationPointSize > 0)
-                                {
-                                    _solidColorBrush.Color = _blockFixationPointColor;
-                                    _renderTarget.FillEllipse(block.CenterPointEllipse, _solidColorBrush);
-                                }
-                            }
-                            break;
-                        case SsvepParadigm.Configuration.TestConfig.StimulationParadigm.DualFlickers:
-                            foreach (var block in _blocks)
-                            {
-                                if (block.BorderWidth > 0)
-                                {
-                                    _solidColorBrush.Color = _blockBorderColor;
-                                    _renderTarget.FillRectangle(block.BorderRect, _solidColorBrush);
-                                }
-
-                                for (var i = 0; i < block.DualFlickerRects.Length; i++)
-                                {
-                                    if (!_trialStarted || block.Patterns == null)
-                                        _solidColorBrush.Color = _blockNormalColor;
-                                    else
-                                        _solidColorBrush.Color = Color.SmoothStep(_blockNormalColor, _blockFlashingColor,
-                                            (float)ConvertCosineValueToGrayScale(block.Patterns[i].Sample(secsPassed)));
-                                    _renderTarget.FillRectangle(block.DualFlickerRects[i], _solidColorBrush);
-                                }
-
-                                if (block.FixationPointSize > 0)
-                                {
-                                    _solidColorBrush.Color = _blockFixationPointColor;
-                                    _renderTarget.FillEllipse(block.CenterPointEllipse, _solidColorBrush);
-                                }
-                            }
-                            break;
+                        if (block.FixationPointSize > 0)
+                        {
+                            _solidColorBrush.Color = _blockFixationPointColor;
+                            _renderTarget.FillEllipse(block.CenterPointEllipse, _solidColorBrush);
+                        }
                     }
                 }
                 else if (!(_displayText?.IsBlank() ?? true)) // Draw text

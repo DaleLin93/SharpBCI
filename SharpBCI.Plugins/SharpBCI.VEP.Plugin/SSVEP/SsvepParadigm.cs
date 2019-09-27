@@ -15,24 +15,6 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Paradigms.VEP.SSVEP
 {
 
-    public static class SsvepParadigmExt
-    {
-
-        public static int GetParadigmPatternMultiplier(this SsvepParadigm.Configuration.TestConfig.StimulationParadigm paradigm)
-        {
-            switch (paradigm)
-            {
-                case SsvepParadigm.Configuration.TestConfig.StimulationParadigm.Flicker:
-                    return 1;
-                case SsvepParadigm.Configuration.TestConfig.StimulationParadigm.DualFlickers:
-                    return 2;
-                default:
-                    throw new NotSupportedException();
-            }
-        }
-
-    }
-
     [Paradigm(ParadigmName, typeof(Factory), "1.0")]
     public class SsvepParadigm : Paradigm
     {
@@ -68,16 +50,11 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             public class TestConfig
             {
 
-                public enum StimulationParadigm
-                {
-                    Flicker, DualFlickers
-                }
-
-                public StimulationParadigm Paradigm;
-
-                public ITemporalPattern[] Patterns;
+                public bool Debug;
 
                 public BaselinePreference Baseline;
+
+                public ITemporalPattern[] Patterns;
 
                 public ulong TrialDuration;
 
@@ -100,14 +77,14 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             // Test Config
 
-            private static readonly Parameter<Configuration.TestConfig.StimulationParadigm> Paradigm = Parameter<Configuration.TestConfig.StimulationParadigm>.OfEnum("Paradigm");
-            
+            private static readonly Parameter<bool> Debug = new Parameter<bool>("Debug", false);
+
+            private static readonly Parameter<BaselinePreference> Baseline = new Parameter<BaselinePreference>("Baseline", null, null, new BaselinePreference(true, 10000));
+
             private static readonly Parameter<string> Patterns = Parameter<string>.CreateBuilder("Patterns")
                 .SetDescription("Available patterns is required, patterns are ordered by priority").SetUnit("Hz@π")
                 .SetDefaultValue("14@0,20@0; 15@0,21@0; 16@0,22@0; 17@0,23@0")
                 .Build();
-            
-            private static readonly Parameter<BaselinePreference> Baseline = new Parameter<BaselinePreference>("Baseline", null, null, new BaselinePreference(true, 10000));
 
             private static readonly Parameter<ulong> TrialDuration = new Parameter<ulong>("Trial Duration", "ms", null, 5000);
 
@@ -180,8 +157,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
                 new ParameterGroup("Display", Screen),
-                new ParameterGroup("General", Baseline),
-                new ParameterGroup("SSVEP", Paradigm, Patterns),
+                new ParameterGroup("General", Debug, Baseline, Patterns),
                 new ParameterGroup("Trial Params", WaitKeyForTrial, TrialDuration, TrialCount, InterStimulusInterval),
                 new ParameterGroup("User Interface", BackgroundColor, BlockSize, BlockLayout, BlockPosition, BlockBorder, BlockColors, BlockFixationPoint),
             };
@@ -196,8 +172,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 if (ReferenceEquals(Patterns, parameter))
                 {
                     var patterns = ParseMultiple(Patterns.Get(context));
-                    if ((int) BlockLayout.Get(context).Volume * Paradigm.Get(context).GetParadigmPatternMultiplier() > (patterns?.Length ?? 0))
-                        return ValidationResult.Failed("Input number of 'Pattern' value must not less than block count * paradigm multiplier");
+                    if ((int) BlockLayout.Get(context).Volume > (patterns?.Length ?? 0))
+                        return ValidationResult.Failed("Input number of 'Pattern' value must not less than block count");
                 }
                 return base.CheckValid(context, parameter);
             }
@@ -225,9 +201,9 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 },
                 Test = new Configuration.TestConfig
                 {
-                    Paradigm = Paradigm.Get(context),
-                    Patterns = Patterns.Get(context, ParseMultiple),
+                    Debug = Debug.Get(context),
                     Baseline = Baseline.Get(context),
+                    Patterns = Patterns.Get(context, ParseMultiple),
                     TrialDuration = TrialDuration.Get(context),
                     TrialCount = TrialCount.Get(context),
                     InterStimulusInterval = InterStimulusInterval.Get(context),
@@ -246,7 +222,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         public IStageProvider[] GetStageProviders(EventWaitHandle eventWaitHandle) => new IStageProvider[]
         {
             new DelayStageProvider("Preparing...", 1000),
-            new DelayStageProvider(Config.Test.Patterns.Join("\n"), 2500),
+            new ConditionStageProvider(Config.Test.Debug, new DelayStageProvider(Config.Test.Patterns.Join("\n"), 2500)),
             new CountdownStageProvider(SystemVariables.PreparationCountdown.Get(SystemVariables.Context)),
             new ConditionStageProvider(Config.Test.Baseline.IsAvailable, new BaselineStageProvider(Config.Test.Baseline.Duration)),
             new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
