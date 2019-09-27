@@ -155,18 +155,36 @@ namespace SharpBCI.Paradigms.VEP.MAVEP
         public override void Run(Session session) => new MavepExperimentWindow(session).Show();
 
         [JsonIgnore]
-        protected override IStageProvider[] StageProviders => new IStageProvider[]
+        protected override IStageProvider[] StageProviders
         {
-            new PreparationStageProvider(),
-            new ConditionStageProvider(Config.Test.Baseline.IsAvailable, new BaselineStageProvider(Config.Test.Baseline.Duration)),
-            new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
-            new DelayStageProvider(1000),
-            new MavepStageProvider(Config.Test),
-            new MarkedStageProvider(MarkerDefinitions.ParadigmEndMarker),
-            new ConditionStageProvider(Config.Test.Baseline.IsAvailable && Config.Test.Baseline.TwoSided, new BaselineStageProvider(Config.Test.Baseline.Duration)),
-            new DelayStageProvider(3000)
-        };
-
+            get
+            {
+                var randomBools = new RandomBools();
+                return new IStageProvider[]
+                {
+                    new PreparationStageProvider(),
+                    new ConditionStageProvider(Config.Test.Baseline.IsAvailable, new BaselineStageProvider(Config.Test.Baseline.Duration)),
+                    new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
+                    new DelayStageProvider(1000),
+                    new RepeatingStageProvider.Advanced(index =>
+                    {
+                        var value = randomBools.Next(); // false - 0, left-right; true - 1, right-left; 
+                        var start = new Stage {Marker = MarkerDefinitions.TrialStartMarker};
+                        var left = new Stage {Marker = LeftStimMarker, Duration = 25};
+                        var right = new Stage {Marker = RightStimMarker, Duration = 25};
+                        var blank = new Stage {Marker = StimClearMarker, Duration = 75};
+                        var end = new Stage {Marker = MarkerDefinitions.TrialEndMarker};
+                        var interval = new Stage {Marker = StimClearMarker, Duration = Config.Test.InterStimulusInterval};
+                        var first = value ? right : left;
+                        var second = value ? left : right;
+                        return new[] {start, first, blank, second, blank, end, interval};
+                    }, Config.Test.TrialCount), 
+                    new MarkedStageProvider(MarkerDefinitions.ParadigmEndMarker),
+                    new ConditionStageProvider(Config.Test.Baseline.IsAvailable && Config.Test.Baseline.TwoSided, new BaselineStageProvider(Config.Test.Baseline.Duration)),
+                    new DelayStageProvider(3000)
+                };
+            }
+        }
     }
 
 }
