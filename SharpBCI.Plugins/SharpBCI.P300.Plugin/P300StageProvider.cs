@@ -10,7 +10,7 @@ namespace SharpBCI.Paradigms.P300
     {
 
         public P300StageProvider(P300Paradigm.Configuration.TestConfig testConfig)
-            : base(new DelayStageProvider(testConfig.TrialInterval), new RepeatingStageProvider.Static(GenerateRepeatingStages(testConfig), testConfig.TrialCount)) { }
+            : base(new DelayStageProvider(testConfig.TrialInterval), new RepeatingStageProvider.Simple(GenerateRepeatingStages(testConfig), testConfig.TrialCount)) { }
 
         public static IEnumerable<Stage> GenerateRepeatingStages(P300Paradigm.Configuration.TestConfig testConfig)
         {

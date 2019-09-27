@@ -10,8 +10,8 @@ namespace SharpBCI.Extensions.StageProviders
 
         private readonly TimeSpan? _brokenCheckingPeriod;
 
-        public EventWaitingStageProvider(EventWaitHandle eventWaitHandle, long waitingPeriod) 
-            : this(eventWaitHandle, TimeSpan.FromMilliseconds(waitingPeriod)) { }
+        public EventWaitingStageProvider(EventWaitHandle eventWaitHandle, long waitingPeriodMillis) 
+            : this(eventWaitHandle, TimeSpan.FromMilliseconds(waitingPeriodMillis)) { }
 
         public EventWaitingStageProvider(EventWaitHandle eventWaitHandle, TimeSpan? brokenCheckingPeriod = null)
         {
@@ -32,7 +32,7 @@ namespace SharpBCI.Extensions.StageProviders
         public void Break()
         {
             if (IsBreakable) IsBroken = true;
-            else throw new NotSupportedException("'brokenCheckingPeriod' must be set to break.");
+            else throw new NotSupportedException("'brokenCheckingPeriod' must be set to support breaking.");
         }
 
         public Stage Next()

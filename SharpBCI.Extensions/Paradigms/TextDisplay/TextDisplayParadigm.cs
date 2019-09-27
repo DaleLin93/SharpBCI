@@ -104,7 +104,7 @@ namespace SharpBCI.Extensions.Paradigms.TextDisplay
         {
             new PreparationStageProvider(),
             new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
-            new RepeatingStageProvider.Static(new[]
+            new RepeatingStageProvider.Simple(new[]
             {
                 new Stage {Cue = Config.Gui.Text, Marker = MarkerDefinitions.TrialStartMarker, Duration = Config.Test.TrialDuration},
                 new Stage {Marker = MarkerDefinitions.TrialEndMarker, Duration = Config.Test.InterStimulusInterval},

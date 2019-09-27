@@ -10,7 +10,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
     {
 
         public SsvepStaticSpellerStageProvider(SpellerController spellerController, SpellerParadigm.Configuration.TestConfig testConfig)
-            : base(testConfig, true, RepeatingStageProvider.Static.Unlimited(SsvepSpellerStageProviderUtils.GenerateRepeatingStages(testConfig)))
+            : base(testConfig, true, RepeatingStageProvider.Simple.Unlimited(SsvepSpellerStageProviderUtils.GenerateRepeatingStages(testConfig)))
         {
             spellerController.Calibrated += (sender, e) => CalibrationCompleted();
             spellerController.Stopping += (sender, e) => Provider.Break();

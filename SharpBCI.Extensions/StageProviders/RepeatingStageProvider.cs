@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using JetBrains.Annotations;
 using SharpBCI.Core.Staging;
 
 namespace SharpBCI.Extensions.StageProviders
@@ -8,22 +10,55 @@ namespace SharpBCI.Extensions.StageProviders
     public abstract class RepeatingStageProvider : IStageProvider
     {
 
-        public class Static : RepeatingStageProvider
+        public class Simple : RepeatingStageProvider
         {
 
-            private new readonly IEnumerable<Stage> _stages;
+            private readonly IEnumerable<Stage> _repeatingStages;
 
-            public Static(Stage stage, uint count) : base(count) => _stages = new[] { stage };
+            public Simple(Stage stage, uint count)
+                : base(count) => _repeatingStages = new[] { stage };
 
-            public Static(IEnumerable<Stage> stages, uint count) : base(count) => _stages = stages;
+            public Simple(IEnumerable<Stage> stages, uint count)
+                : base(count) => _repeatingStages = stages;
 
-            public static Static Unlimited(params Stage[] stages) => Unlimited((IEnumerable<Stage>) stages);
+            public Simple(EventWaitHandle eventWaitHandle, IEnumerable<Stage> stages, uint count)
+                : base(eventWaitHandle, count) => _repeatingStages = stages;
 
-            public static Static Unlimited(IEnumerable<Stage> stages) => new Static(stages, UnlimitedCount);
+            public static Simple Unlimited(params Stage[] stages) => Unlimited((IEnumerable<Stage>)stages);
+
+            public static Simple Unlimited(IEnumerable<Stage> stages) => new Simple(stages, UnlimitedCount);
+
+            public static Simple Unlimited(EventWaitHandle eventWaitHandle, params Stage[] stages) => 
+                Unlimited(eventWaitHandle, (IEnumerable<Stage>)stages);
+
+            public static Simple Unlimited(EventWaitHandle eventWaitHandle, IEnumerable<Stage> stages) =>
+                new Simple(eventWaitHandle, stages, UnlimitedCount);
 
             public sealed override bool IsDynamic => IsUnlimited;
 
-            protected override IEnumerable<Stage> GetStages(uint index) => _stages;
+            protected override IEnumerable<Stage> GetStages(uint index) => _repeatingStages;
+
+        }
+
+        public class Advanced : RepeatingStageProvider
+        {
+
+            private readonly Func<uint, IEnumerable<Stage>> _stageProvidingFunc;
+
+            public Advanced(Func<uint, IEnumerable<Stage>> stageProvidingFunc, uint count)
+                : base(count) => _stageProvidingFunc = stageProvidingFunc;
+
+            public Advanced(EventWaitHandle eventWaitHandle, Func<uint, IEnumerable<Stage>> stageProvidingFunc, uint count) 
+                : base(eventWaitHandle, count) => _stageProvidingFunc = stageProvidingFunc;
+
+            public static Advanced Unlimited(Func<uint, IEnumerable<Stage>> func) => new Advanced(func, UnlimitedCount);
+
+            public static Advanced Unlimited(EventWaitHandle eventWaitHandle, Func<uint, IEnumerable<Stage>> func) => 
+                new Advanced(eventWaitHandle, func, UnlimitedCount);
+
+            public sealed override bool IsDynamic => IsUnlimited;
+
+            protected override IEnumerable<Stage> GetStages(uint index) => _stageProvidingFunc?.Invoke(index);
 
         }
 
@@ -33,7 +68,16 @@ namespace SharpBCI.Extensions.StageProviders
 
         private IEnumerator<Stage> _stages;
 
-        protected RepeatingStageProvider(uint count) => Count = count;
+        protected RepeatingStageProvider(uint count) : this(null, count) { }
+
+        protected RepeatingStageProvider(EventWaitHandle eventWaitHandle, uint count)
+        {
+            EventWaitHandle = eventWaitHandle;
+            Count = count;
+        }
+
+        [CanBeNull] 
+        public EventWaitHandle EventWaitHandle { get; }
 
         public uint Count { get; }
 
@@ -41,7 +85,7 @@ namespace SharpBCI.Extensions.StageProviders
 
         public abstract bool IsDynamic { get; }
 
-        public virtual bool IsPreloadable => !IsUnlimited && !IsDynamic;
+        public virtual bool IsPreloadable => !IsUnlimited && EventWaitHandle == null && !IsDynamic;
 
         public bool IsBreakable => true;
 
@@ -62,6 +106,7 @@ namespace SharpBCI.Extensions.StageProviders
                 if (!(_stages?.MoveNext() ?? false))
                 {
                     if (!IsUnlimited && _nextIndex >= Count) return null;
+                    if (EventWaitHandle != null) while(!EventWaitHandle.WaitOne()) { }
                     _stages = GetStages(_nextIndex)?.GetEnumerator();
                     _nextIndex++;
                 }

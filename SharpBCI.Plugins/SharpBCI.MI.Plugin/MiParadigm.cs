@@ -195,7 +195,7 @@ namespace SharpBCI.Paradigms.MI
                 new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://D:/A.gif"), Duration = 0, IsPreload = true},
                 new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://D:/B.gif"), Duration = 0, IsPreload = true}
             ),
-            new RepeatingStageProvider.Static(new Stage[]
+            new RepeatingStageProvider.Simple(new Stage[]
             {
                 new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://D:/A.gif"), Duration = 3000, IsPreload = false},
                 new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://D:/B.gif"), Duration = 3000, IsPreload = false},

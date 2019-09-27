@@ -7,7 +7,7 @@ namespace SharpBCI.Extensions.StageProviders
 
     public abstract class SegmentedStageProvider : IStageProvider
     {
-
+        
         private IEnumerator<Stage> _stages;
 
         protected SegmentedStageProvider(bool preloadable) => IsPreloadable = preloadable;

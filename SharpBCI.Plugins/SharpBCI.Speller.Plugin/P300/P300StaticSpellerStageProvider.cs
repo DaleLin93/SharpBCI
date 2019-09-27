@@ -11,7 +11,7 @@ namespace SharpBCI.Paradigms.Speller.P300
     {
 
         public P300StaticSpellerStageProvider(SpellerController spellerController, SpellerParadigm.Configuration.TestConfig testConfig)
-            : base(testConfig, false, RepeatingStageProvider.Static.Unlimited(P300SpellerStageProviderUtils.GenerateRepeatingStages(testConfig)))
+            : base(testConfig, false, RepeatingStageProvider.Simple.Unlimited(P300SpellerStageProviderUtils.GenerateRepeatingStages(testConfig)))
         {
             spellerController.Calibrated += (sender, e) => CalibrationCompleted();
             spellerController.Stopping += (sender, e) => ((RepeatingStageProvider)this[1]).Break();

@@ -10,7 +10,7 @@ namespace SharpBCI.Paradigms.Speller.EyeTracking
     {
 
         public EyeTrackingStaticSpellerStageProvider(SpellerController spellerController, SpellerParadigm.Configuration.TestConfig testConfig)
-            : base(testConfig, false, RepeatingStageProvider.Static.Unlimited(EyeTrackingSpellerStageProviderUtils.GenerateRepeatingStages(testConfig)))
+            : base(testConfig, false, RepeatingStageProvider.Simple.Unlimited(EyeTrackingSpellerStageProviderUtils.GenerateRepeatingStages(testConfig)))
         {
             spellerController.Calibrated += (sender, e) => CalibrationCompleted();
             spellerController.Stopping += (sender, e) => Provider.Break();
