@@ -26,7 +26,7 @@ Different experiment paradigms and external device drivers can be implemented th
         + **CCA** *C\+\+ cannonical correlation analysis library*
     + **SharpBCI.VEP.Plugin**  *Multiple visual evoked potential paradigms included, using DirectX to provide stable flicker rendering*
     + **SharpBCI.WebBrowser.Plugin** *Server side of BCI web browser paradigm, client side is a script running in Chrome*
-    + **SharpBCI.BiosignalSamplers.Plugin** *Bio-signal sampler drivers, e.g. Neuroscan, NeuroElectrics, OpenBCI, ...*
+    + **SharpBCI.BiosignalSources.Plugin** *Bio-signal sampler drivers, e.g. Neuroscan, NeuroElectrics, OpenBCI, ...*
     + **SharpBCI.EyeTrackers.Plugin** *Eye-tracker drivers, e.g. Tobii's eye-tracker*
     + **SharpBCI.VideoSources.Plugin** *Video source drivers, e.g. Web-Cam*
  + **SharpBCI.Tests** *Unit tests of SharpBCI*
@@ -35,7 +35,7 @@ Different experiment paradigms and external device drivers can be implemented th
 
 0. Install Visual Studio 2018 or later, clone [MarukoLib](https://github.com/DaleLin93/MarukoLib) and [SharpBCI](https://github.com/DaleLin93/SharpBCI) into same folder.
 1. Open Visual Studio **as administrator** and create a new empty Visual Studio solution.
-2. Add all projects in repo [MarukoLib](https://github.com/DaleLin93/MarukoLib) except '*MarukoLib.Dragonfly*' to the created solution.
+2. Add all projects in repo [MarukoLib](https://github.com/DaleLin93/MarukoLib) except '*MarukoLib.Dragonfly*' and '*MarukoLib.Tests*' to the created solution.
 3. Add '*SharpBCI.Core*', '*SharpBCI.Extensions*', '*SharpBCI*' projects into the solution.
 4. (*Optional*) Add some plugin projects into the solution as your wish.
 5. Set **SharpBCI** as the startup project.
@@ -44,7 +44,7 @@ Different experiment paradigms and external device drivers can be implemented th
 ### File Formats
 
 After the completion of a session, you can see some files that have the same filename but different suffixes in the data folder: 
- + **.mrk** *Experiment marker with timestamp with timestamp.* (ASCII; Comma-separated)
+ + **.mkr** *Experiment marker with timestamp with timestamp.* (ASCII; Comma-separated)
  + **.dat** *Biosignal data with timestamp.* (ASCII; Comma-separated)
  + **.gaz** *Eye gaze point data with timestamp.* (ASCII; Comma-separated)
  + **.vfs** *Video frames with timestamp.* (Binary)
@@ -58,14 +58,14 @@ After the completion of a session, you can see some files that have the same fil
 
 ### How to Create Your Own Paradigm
 
-You can implement a experiment easily by defining your own [Experiment](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Core/Experiment/Experiment.cs) with desired paramters and corresponding [ExperimentFactory](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Extensions/Experiments/ExperimentFactory.cs).
+You can implement a experiment easily by defining your own [Paradigm](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Core/Experiment/Paradigm.cs) with desired paramters and corresponding [ExperimentFactory](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Extensions/Experiments/ExperimentFactory.cs).
 
-![Demo Experiment](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Plugins/SharpBCI.Demo.Plugin/Configuration%20Preview.jpg)
+![Demo Paradigm](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Plugins/SharpBCI.Demo.Plugin/Configuration%20Preview.jpg)
 
 See [Demo Plugin](https://github.com/DaleLin93/SharpBCI/tree/master/SharpBCI.Plugins/SharpBCI.Demo.Plugin) for more detail.
 
 ### Currently Supported Devices
- + ***Biosignal Sampler***
+ + ***Biosignal Source***
      + *Generic Oscillator* (Sine wave simulated)
      + *Data File Reader* (Replay stored file)
      + *Neuroscan* (via TCP/IP from SCAN 4.5)
