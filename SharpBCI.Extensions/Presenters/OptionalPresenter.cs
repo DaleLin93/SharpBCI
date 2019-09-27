@@ -25,7 +25,7 @@ namespace SharpBCI.Extensions.Presenters
 
             private readonly ConstructorInfo _constructor;
 
-            private readonly PropertyInfo _hasProperty, _valueProperty;
+            private readonly PropertyInfo _hasValueProperty, _valueProperty;
 
             public Adapter(IParameterDescriptor parameter, Type valueType, Grid container, CheckBox checkBox, PresentedParameter presented)
             {
@@ -34,7 +34,7 @@ namespace SharpBCI.Extensions.Presenters
                 _checkBox = checkBox;
                 _presented = presented;
                 _constructor = _parameter.ValueType.GetConstructor(new [] {typeof(bool), valueType});
-                _hasProperty = _parameter.ValueType.GetProperty("Has");
+                _hasValueProperty = _parameter.ValueType.GetProperty("HasValue");
                 _valueProperty = _parameter.ValueType.GetProperty("Value");
             }
 
@@ -44,7 +44,7 @@ namespace SharpBCI.Extensions.Presenters
             {
                 if (_parameter.ValueType.IsInstanceOfType(value))
                 {
-                    _checkBox.IsChecked = _hasProperty.GetValue(value) as bool?;
+                    _checkBox.IsChecked = _hasValueProperty.GetValue(value) as bool?;
                     _presented.SetValue(_valueProperty.GetValue(value));
                 }
             }
@@ -55,18 +55,25 @@ namespace SharpBCI.Extensions.Presenters
 
         }
 
+        public static readonly NamedProperty<object> CheckBoxContentProperty = new NamedProperty<object>("CheckBoxContent");
+
+        public static readonly NamedProperty<IReadonlyContext> ValueTypePresentingContextProperty = new NamedProperty<IReadonlyContext>("ValueTypePresentingContext", EmptyContext.Instance);
+
         public static readonly OptionalPresenter Instance = new OptionalPresenter();
 
         public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             var valueType = param.ValueType.GetGenericType(typeof(Optional<>));
-            var presented = valueType.GetPresenter().Present(new MultiValuePresenter.ArrayElementParameter(param, valueType, EmptyContext.Instance), updateCallback);
+            var valueTypeContext = ValueTypePresentingContextProperty.Get(param.Metadata);
+            var valueTypeParam = new TypeOverridenParameter(param, valueType, valueTypeContext);
+            var presented = valueTypeParam.GetPresenter().Present(valueTypeParam, updateCallback);
 
             var container = new Grid();
             container.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
             container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength});
             container.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
             var checkbox = new CheckBox {IsChecked = true, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center};
+            if (CheckBoxContentProperty.TryGet(param.Metadata, out var checkBoxContent)) checkbox.Content = checkBoxContent;
 
             void IsCheckedChangedEventHandler(object sender, RoutedEventArgs e)
             {

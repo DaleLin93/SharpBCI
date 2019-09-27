@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using MarukoLib.DirectX;
@@ -15,6 +14,7 @@ using SharpBCI.Extensions.Patterns;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
 using SharpDX.Windows;
+using KeyEventArgs = System.Windows.Forms.KeyEventArgs;
 using RenderForm = SharpDX.Windows.RenderForm;
 
 namespace SharpBCI.Paradigms.VEP.SSVEP
@@ -143,7 +143,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             _session = session;
             _paradigm = (SsvepParadigm) session.Paradigm;
-            _trialStartEvent = _paradigm.Config.Test.WaitKeyForTrial ? new AutoResetEvent(false) : null; 
+            _trialStartEvent = _paradigm.Config.Test.WaitKeyForTrial.HasValue ? new AutoResetEvent(false) : null; 
             _markable = session.StreamerCollection.FindFirstOrDefault<IMarkable>();
 
             _blocks = new Block[(int)_paradigm.Config.Gui.BlockLayout.Volume];
@@ -228,8 +228,6 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 TextAlignment = SharpDX.DirectWrite.TextAlignment.Center,
                 ParagraphAlignment = SharpDX.DirectWrite.ParagraphAlignment.Center
             };
-            //                var rectangleGeometry = new D2D1.RoundedRectangleGeometry(_d2DFactory, 
-            //                    new D2D1.RoundedRectangle() { RadiusX = 32, RadiusY = 32, Rect = new RectangleF(128, 128, Width - 128 * 2, Height - 128 * 2) });
         }
 
         private void DisposeDirectXResources()
@@ -362,7 +360,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         private void Window_OnKeyUp(object sender, KeyEventArgs e)
         {
-            if (_trialStartEvent != null && e.KeyCode == Keys.S)
+            if (_trialStartEvent != null && e.KeyCode == _paradigm.Config.Test.WaitKeyForTrial.Value)
             {
                 _trialStartEvent.Set();
                 return;

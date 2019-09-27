@@ -8,20 +8,20 @@ namespace SharpBCI.Extensions.Data
     public struct Optional<T>
     {
 
-        private const string HasKey = "Has";
+        private const string HasValueKey = nameof(HasValue);
 
-        private const string ValueKey = "Value";
+        private const string ValueKey = nameof(Value);
 
         public Optional(T value) : this(true, value) { }
 
         [JsonConstructor]
-        public Optional([JsonProperty(HasKey)] bool has, [JsonProperty(ValueKey)] T value)
+        public Optional([JsonProperty(HasValueKey)] bool hasValue, [JsonProperty(ValueKey)] T value)
         {
-            Has = has;
+            HasValue = hasValue;
             Value = value;
         }
 
-        [JsonProperty(HasKey)] public bool Has { get; }
+        [JsonProperty(HasValueKey)] public bool HasValue { get; }
 
         [JsonProperty(ValueKey)] public T Value { get; }
 

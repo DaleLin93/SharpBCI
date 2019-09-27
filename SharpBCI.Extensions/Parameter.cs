@@ -170,6 +170,45 @@ namespace SharpBCI.Extensions
 
     }
 
+    internal sealed class TypeOverridenParameter : RoutedParameter
+    {
+
+        internal TypeOverridenParameter([NotNull] IParameterDescriptor originalParameter,
+            [NotNull] Type valueType, [NotNull] IReadonlyContext metadata) 
+            : this(originalParameter, valueType, metadata, Activator.CreateInstance(valueType), null) { }
+
+        internal TypeOverridenParameter([NotNull] IParameterDescriptor originalParameter,
+            [NotNull] Type valueType, [NotNull] IReadonlyContext metadata,
+            [CanBeNull] object defaultValue, [CanBeNull] IEnumerable selectableValues) : base(originalParameter)
+        {
+            ValueType = valueType;
+            Metadata = metadata;
+            DefaultValue = defaultValue;
+            SelectableValues = selectableValues;
+        }
+
+        public override string Key => OriginalParameter.Key;
+
+        public override string Name => OriginalParameter.Name;
+
+        public override string Unit => OriginalParameter.Unit;
+
+        public override string Description => OriginalParameter.Description;
+
+        public override Type ValueType { get; }
+
+        public override bool IsNullable => ValueType.IsNullableType();
+
+        public override object DefaultValue { get; }
+
+        public override IEnumerable SelectableValues { get; }
+
+        public override IReadonlyContext Metadata { get; }
+
+        public override bool IsValid(object value) => true;
+
+    }
+
     public sealed class InformationRewrittenParameter : RoutedParameter
     {
 

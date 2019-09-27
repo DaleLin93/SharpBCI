@@ -6,7 +6,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using JetBrains.Annotations;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Windows;
 
@@ -80,40 +79,6 @@ namespace SharpBCI.Extensions.Presenters
             public void SetEnabled(bool value) => _container.IsEnabled = value;
 
             public void SetValid(bool value) { }
-
-        }
-
-        internal sealed class ArrayElementParameter : RoutedParameter
-        {
-
-            internal ArrayElementParameter([NotNull] IParameterDescriptor originalParameter,
-                [NotNull] Type elementType, [NotNull] IReadonlyContext metadata) : base(originalParameter)
-            {
-                ElementType = elementType;
-                Metadata = metadata;
-            }
-
-            public Type ElementType { get; }
-
-            public override string Key => OriginalParameter.Key;
-
-            public override string Name => OriginalParameter.Name;
-
-            public override string Unit => OriginalParameter.Unit;
-
-            public override string Description => OriginalParameter.Description;
-
-            public override Type ValueType => ElementType;
-
-            public override bool IsNullable => ElementType.IsNullableType();
-
-            public override object DefaultValue => Activator.CreateInstance(ElementType);
-
-            public override IEnumerable SelectableValues => EmptyArray<object>.Instance;
-
-            public override IReadonlyContext Metadata { get; }
-
-            public override bool IsValid(object value) => true;
 
         }
 
@@ -217,8 +182,8 @@ namespace SharpBCI.Extensions.Presenters
             if (elementType.IsPrimitive) return PlainTextPresenter.Instance.Present(param, updateCallback);
 
             var elementList = new List<Tuple<PresentedParameter, UIElement>>();
-            var elementTypePresenter = elementType.GetPresenter();
-            var elementParameter = new ArrayElementParameter(param, elementType, ElementContextProperty.Get(param.Metadata));
+            var elementParameter = new TypeOverridenParameter(param, elementType, ElementContextProperty.Get(param.Metadata));
+            var elementPresenter = elementParameter.GetPresenter();
 
             /* Outer grid container, with rounded rect background */
             var container = new Grid {Margin = new Thickness(0, 3, 0, 3)};
@@ -244,7 +209,7 @@ namespace SharpBCI.Extensions.Presenters
             void AddRow()
             {
                 if (elementList.Count >= maximumElementCount) return;
-                var presentedParameter = elementTypePresenter.Present(elementParameter, updateCallback);
+                var presentedParameter = elementPresenter.Present(elementParameter, updateCallback);
 
                 if (!isFixed)
                 {
