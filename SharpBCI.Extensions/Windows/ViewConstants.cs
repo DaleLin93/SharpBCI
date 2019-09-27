@@ -17,7 +17,7 @@ namespace SharpBCI.Extensions.Windows
 
         public const int DefaultRowHeight = 22;
 
-        public const int Intend = 20;
+        public const int Intend = 15;
 
         public const string SharedResourceDictionaryUri = "pack://application:,,,/SharpBCI.Extensions;component/Resources/SharedResourceDictionary.xaml";
 

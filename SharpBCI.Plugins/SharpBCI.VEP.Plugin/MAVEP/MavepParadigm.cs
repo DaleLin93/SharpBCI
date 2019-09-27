@@ -110,7 +110,7 @@ namespace SharpBCI.Paradigms.VEP.MAVEP
 
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
-                new ParameterGroup("Paradigm Params", Baseline, TrialCount, InterStimulusInterval),
+                new ParameterGroup("Experimental", Baseline, TrialCount, InterStimulusInterval),
                 new ParameterGroup("User Interface", BackgroundColor, FixationPoint, Stimulus),
             };
 

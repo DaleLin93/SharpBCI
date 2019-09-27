@@ -181,7 +181,7 @@ namespace SharpBCI.Paradigms.CPT
 
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
-                new ParameterGroup("Paradigm Params", Still, PseudoRandom, TargetRate, LetterDuration, InterStimulusInterval, TotalDuration),
+                new ParameterGroup("Experimental", Still, PseudoRandom, TargetRate, LetterDuration, InterStimulusInterval, TotalDuration),
                 new ParameterGroup("UI Window", BackgroundColor),
                 new ParameterGroup("UI Font", FontSize, FontColor),
             };

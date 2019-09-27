@@ -147,7 +147,7 @@ namespace SharpBCI.Paradigms.Speller.MidasTouch
 
             private static readonly ParameterGroup DisplayGroup = new ParameterGroup("Display", Screen);
 
-            private static readonly ParameterGroup ParadigmParamsGroup = new ParameterGroup("Paradigm Params", BaselineDuration, TrialDuration, TrialCount, InterStimulusInterval, TargetRate);
+            private static readonly ParameterGroup ParadigmParamsGroup = new ParameterGroup("Experimental", BaselineDuration, TrialDuration, TrialCount, InterStimulusInterval, TargetRate);
 
             private static readonly ParameterGroup UiBasicGroup = new ParameterGroup("UI Basic", ColorScheme);
 

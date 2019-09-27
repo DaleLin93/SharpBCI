@@ -183,7 +183,7 @@ namespace SharpBCI.Paradigms.P300
 
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new ParameterGroupCollection()
                 .Add("Layout", Layout)
-                .Add("Paradigm Params", Strategy, TargetRate, TrialCount, TrialDuration, SubTrialCount, TrialInterval, DoubleFlashTargetDelay)
+                .Add("Experimental", Strategy, TargetRate, TrialCount, TrialDuration, SubTrialCount, TrialInterval, DoubleFlashTargetDelay)
                 .Add("UI Basic", BackgroundColor)
                 .Add("UI Block", BlockLayout, BlockPosition, BlockBorder, BlockNormalColor, BlockActivedColor, BlockTargetFlashingColor, UseBitmap);
 
