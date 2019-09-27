@@ -8,7 +8,7 @@ using MarukoLib.Lang.Exceptions;
 namespace SharpBCI.Extensions
 {
 
-    public struct MarkerDefinition
+    public struct MarkerDefinition : IRegistrable
     {
 
         internal MarkerDefinition(string name, uint color)
@@ -22,6 +22,8 @@ namespace SharpBCI.Extensions
         public uint Color { get; }
 
         public override string ToString() => Name;
+
+        string IRegistrable.Identifier => Name;
 
     }
 
@@ -57,7 +59,9 @@ namespace SharpBCI.Extensions
 
         private const string GlobalGroupName = "global";
 
-        public static IDictionary<int, MarkerDefinition> GlobalMarkers = new ReadOnlyDictionary<int, MarkerDefinition>(GetDefinedMarkers(typeof(MarkerDefinitions)));
+        public static readonly IRegistry<MarkerDefinition> MarkerRegistry;
+
+        public static readonly IDictionary<int, MarkerDefinition> GlobalMarkers;
 
         public const int GlobalMarkerBase = 0;
 
@@ -76,6 +80,15 @@ namespace SharpBCI.Extensions
         [MarkerDefinition(GlobalGroupName + ":baseline")] public const int BaselineEndMarker = GlobalMarkerBase + 22;
 
         [MarkerDefinition(GlobalGroupName + ":session", 0xFFCC0000)] public const int UserExitMarker = GlobalMarkerBase + 31;
+
+        static MarkerDefinitions()
+        {
+            GlobalMarkers = new ReadOnlyDictionary<int, MarkerDefinition>(GetDefinedMarkers(typeof(MarkerDefinitions)));
+            var registry = new Registry(typeof(MarkerDefinition));
+            foreach (var globalMarker in GlobalMarkers.Values)
+                registry.Register(globalMarker);
+            MarkerRegistry = new Registry<MarkerDefinition>(new ComplexRegistry(registry));
+        }
 
         public static IDictionary<int, MarkerDefinition> GetDefinedMarkers(Type type)
         {

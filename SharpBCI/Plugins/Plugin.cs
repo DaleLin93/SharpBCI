@@ -103,31 +103,23 @@ namespace SharpBCI.Plugins
         public void Register(Registries registries)
         {
             registries.Registry<Plugin>().Register(this);
-            foreach (var deviceType in DeviceTypes)
-                registries.Registry<PluginDeviceType>().Register(deviceType);
-            foreach (var appEntry in AppEntries)
-                registries.Registry<PluginAppEntry>().Register(appEntry);
-            foreach (var paradigm in Paradigms)
-                registries.Registry<PluginParadigm>().Register(paradigm);
-            foreach (var device in Devices)
-                registries.Registry<PluginDevice>().Register(device);
-            foreach (var streamConsumer in StreamConsumers)
-                registries.Registry<PluginStreamConsumer>().Register(streamConsumer);
+            registries.Registry<PluginDeviceType>().RegisterAll(DeviceTypes);
+            registries.Registry<PluginAppEntry>().RegisterAll(AppEntries);
+            registries.Registry<PluginParadigm>().RegisterAll(Paradigms);
+            registries.Registry<PluginDevice>().RegisterAll(Devices);
+            registries.Registry<PluginStreamConsumer>().RegisterAll(StreamConsumers);
+            MarkerDefinitions.MarkerRegistry.RegisterAll(CustomMarkers.Values);
         }
 
         public void Unregister(Registries registries)
         {
             registries.Registry<Plugin>().Unregister(this);
-            foreach (var deviceType in DeviceTypes)
-                registries.Registry<PluginDeviceType>().Unregister(deviceType);
-            foreach (var appEntry in AppEntries)
-                registries.Registry<PluginAppEntry>().Unregister(appEntry);
-            foreach (var paradigm in Paradigms)
-                registries.Registry<PluginParadigm>().Unregister(paradigm);
-            foreach (var device in Devices)
-                registries.Registry<PluginDevice>().Unregister(device);
-            foreach (var streamConsumer in StreamConsumers)
-                registries.Registry<PluginStreamConsumer>().Unregister(streamConsumer);
+            registries.Registry<PluginDeviceType>().UnregisterAll(DeviceTypes);
+            registries.Registry<PluginAppEntry>().UnregisterAll(AppEntries);
+            registries.Registry<PluginParadigm>().UnregisterAll(Paradigms);
+            registries.Registry<PluginDevice>().UnregisterAll(Devices);
+            registries.Registry<PluginStreamConsumer>().UnregisterAll(StreamConsumers);
+            MarkerDefinitions.MarkerRegistry.UnregisterAll(CustomMarkers.Values);
         }
 
         private void LoadMarkers()
