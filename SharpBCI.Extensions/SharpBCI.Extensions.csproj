@@ -112,6 +112,7 @@
     <Compile Include="Data\Path.cs" />
     <Compile Include="Devices\DeviceFactory.cs" />
     <Compile Include="Devices\MarkerSources\HeartbeatGenerator.cs" />
+    <Compile Include="Devices\MarkerSources\KeyboardTrigger.cs" />
     <Compile Include="Devices\MarkerSources\SerialPortMarkerSource.cs" />
     <Compile Include="Devices\MarkerSources\EmptyMarkerSource.cs" />
     <Compile Include="Devices\VideoSources\ScreenCapturer.cs" />
@@ -212,6 +213,10 @@
     <ProjectReference Include="..\..\MarukoLib\MarukoLib.DirectX\MarukoLib.DirectX.csproj">
       <Project>{e6db120f-4350-484d-99f8-0f159561c391}</Project>
       <Name>MarukoLib.DirectX</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\MarukoLib\MarukoLib.Interop\MarukoLib.Interop.csproj">
+      <Project>{1f8d87bf-b42d-4735-be0a-890cc5df927b}</Project>
+      <Name>MarukoLib.Interop</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\MarukoLib\MarukoLib.Lang\MarukoLib.Lang.csproj">
       <Project>{cdc6516e-2114-4e81-8ba0-9d3e93f8da15}</Project>

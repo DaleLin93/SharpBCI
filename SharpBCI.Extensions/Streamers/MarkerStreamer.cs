@@ -30,7 +30,12 @@ namespace SharpBCI.Extensions.Streamers
 
         public readonly IMarkerSource MarkerSource;
 
-        public MarkerStreamer(IMarkerSource markerSource, IClock clock) : base(nameof(MarkerStreamer), clock) => MarkerSource = markerSource;
+        public MarkerStreamer(IMarkerSource markerSource, IClock clock) : base(nameof(MarkerStreamer), clock)
+        {
+            MarkerSource = markerSource;
+            Started += (sender, e) => MarkerSource.Open();
+            Stopped += (sender, e) => MarkerSource.Shutdown();
+        }
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
         public MarkerStreamer(IMarkerSource markerSource, IClock clock, IStreamConsumer<Timestamped<IMarker>> consumer) : this(markerSource, clock) => Attach(consumer);
