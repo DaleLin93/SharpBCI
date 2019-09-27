@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 using MarukoLib.DirectX;
 using MarukoLib.Lang;
@@ -78,6 +79,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         private readonly SsvepParadigm _paradigm;
 
+        private readonly AutoResetEvent _trialStartEvent;
+
         private readonly IMarkable _markable;
 
         private readonly StageProgram _stageProgram;
@@ -151,6 +154,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             _session = session;
             _paradigm = (SsvepParadigm) session.Paradigm;
+            _trialStartEvent = _paradigm.Config.Test.WaitKeyForTrial ? new AutoResetEvent(false) : null; 
             _markable = session.StreamerCollection.FindFirstOrDefault<IMarkable>();
 
             _stimParadigm = _paradigm.Config.Test.Paradigm;
@@ -168,7 +172,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 _blocks[i].UpdateGeometries();
             }
 
-            _stageProgram = _paradigm.CreateStagedProgram(session);
+            _stageProgram = _paradigm.CreateStagedProgram(session, _trialStartEvent);
             _stageProgram.StageChanged += StageProgram_StageChanged;
 
             /* Type conversion */
@@ -405,6 +409,11 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         private void Window_OnKeyUp(object sender, KeyEventArgs e)
         {
+            if (_trialStartEvent != null && e.KeyCode == Keys.S)
+            {
+                _trialStartEvent.Set();
+                return;
+            }
             if (e.KeyCode != Keys.Escape) return;
             _markable?.Mark(MarkerDefinitions.UserExitMarker);
             Stop(true);

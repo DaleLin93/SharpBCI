@@ -1,10 +1,10 @@
 ﻿using MarukoLib.Lang;
-using Newtonsoft.Json;
 using SharpBCI.Core.Staging;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Threading;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
@@ -34,7 +34,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
     }
 
     [Paradigm(ParadigmName, typeof(Factory), "1.0")]
-    public class SsvepParadigm : StagedParadigm.Basic
+    public class SsvepParadigm : Paradigm
     {
 
         public const string ParadigmName = "Steady-State Visual Evoked Potentials (SSVEP)";
@@ -85,6 +85,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
                 public ulong InterStimulusInterval;
 
+                public bool WaitKeyForTrial;
+
             }
 
             public GuiConfig Gui;
@@ -112,6 +114,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             private static readonly Parameter<uint> TrialCount = new Parameter<uint>("Trial Count", null, null, Predicates.Positive, 50);
 
             private static readonly Parameter<ulong> InterStimulusInterval = new Parameter<ulong>("Inter-Stimulus Interval", "ms", null, 1300);
+
+            private static readonly Parameter<bool> WaitKeyForTrial = new Parameter<bool>("Wait Key For Trial", false);
 
             // GUI
 
@@ -176,14 +180,15 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
                 new ParameterGroup("Display", Screen),
-                new ParameterGroup("Paradigm Params", Paradigm, Patterns, Baseline, TrialDuration, TrialCount, InterStimulusInterval),
-                new ParameterGroup("UI Basic", BackgroundColor),
-                new ParameterGroup("UI Block", BlockSize, BlockLayout, BlockPosition, BlockBorder, BlockColors, BlockFixationPoint),
+                new ParameterGroup("General", Baseline),
+                new ParameterGroup("SSVEP", Paradigm, Patterns),
+                new ParameterGroup("Trial Params", WaitKeyForTrial, TrialDuration, TrialCount, InterStimulusInterval),
+                new ParameterGroup("User Interface", BackgroundColor, BlockSize, BlockLayout, BlockPosition, BlockBorder, BlockColors, BlockFixationPoint),
             };
 
             public override IReadOnlyCollection<ISummary> Summaries => new ISummary[]
             {
-                Summary.FromInstance<SsvepParadigm>("Paradigm Duration", paradigm => $"{paradigm.StageProviders.GetStages().GetDuration().TotalSeconds} s")
+                Summary.FromInstance<SsvepParadigm>("Estimated Duration", paradigm => $"{paradigm.GetStageProviders(null).GetStages().GetDuration().TotalSeconds} s"),
             };
 
             public override ValidationResult CheckValid(IReadonlyContext context, IParameterDescriptor parameter)
@@ -196,6 +201,14 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 }
                 return base.CheckValid(context, parameter);
             }
+
+            public override bool IsVisible(IReadonlyContext context, IDescriptor descriptor)
+            {
+                if (ReferenceEquals(InterStimulusInterval, descriptor)) return !WaitKeyForTrial.Get(context);
+                return base.IsVisible(context, descriptor);
+            }
+
+            public override bool IsVisible(IReadonlyContext context, ISummary summary) => !WaitKeyForTrial.Get(context);
 
             public override SsvepParadigm Create(IReadonlyContext context) => new SsvepParadigm(new Configuration
             {
@@ -218,6 +231,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                     TrialDuration = TrialDuration.Get(context),
                     TrialCount = TrialCount.Get(context),
                     InterStimulusInterval = InterStimulusInterval.Get(context),
+                    WaitKeyForTrial = WaitKeyForTrial.Get(context),
                 }
             });
 
@@ -229,8 +243,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         public override void Run(Session session) => new SsvepExperimentWindow(session).Show();
 
-        [JsonIgnore]
-        protected override IStageProvider[] StageProviders => new IStageProvider[]
+        public IStageProvider[] GetStageProviders(EventWaitHandle eventWaitHandle) => new IStageProvider[]
         {
             new DelayStageProvider("Preparing...", 1000),
             new DelayStageProvider(Config.Test.Patterns.Join("\n"), 2500),
@@ -238,11 +251,17 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             new ConditionStageProvider(Config.Test.Baseline.IsAvailable, new BaselineStageProvider(Config.Test.Baseline.Duration)),
             new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
             new DelayStageProvider(1000),
-            new SsvepStageProvider(Config.Test),
+            new RepeatingStageProvider.Simple(eventWaitHandle, new[]
+            {
+                new Stage {Marker = MarkerDefinitions.TrialStartMarker, Duration = Config.Test.TrialDuration},
+                new Stage {Marker = MarkerDefinitions.TrialEndMarker, Duration = Config.Test.WaitKeyForTrial ? 0 : Config.Test.InterStimulusInterval},
+            }, Config.Test.TrialCount),
             new MarkedStageProvider(MarkerDefinitions.ParadigmEndMarker),
             new ConditionStageProvider(Config.Test.Baseline.IsAvailable && Config.Test.Baseline.TwoSided, new BaselineStageProvider(Config.Test.Baseline.Duration)),
             new DelayStageProvider(3000)
         };
+
+        public StageProgram CreateStagedProgram(Session session, EventWaitHandle eventWaitHandle) => new StageProgram(session.Clock, GetStageProviders(eventWaitHandle));
 
     }
 
