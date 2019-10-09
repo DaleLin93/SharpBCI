@@ -27,6 +27,7 @@ using SharpBCI.Extensions.Devices.VideoSources;
 using SharpBCI.Extensions.Paradigms.TextDisplay;
 using SharpBCI.Extensions.Paradigms.Countdown;
 using SharpBCI.Extensions.Windows;
+using MarukoLib.UI;
 
 namespace SharpBCI
 {
@@ -58,6 +59,7 @@ namespace SharpBCI
         {
             log4net.Config.XmlConfigurator.Configure();
             SetRealTimePriority();
+            ControlUtils.SetupPressEnterToMoveFocusForAllTextbox();
         }
 
         public App()
