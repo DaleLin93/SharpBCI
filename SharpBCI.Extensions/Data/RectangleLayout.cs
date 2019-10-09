@@ -44,7 +44,7 @@ namespace SharpBCI.Extensions.Data
                     descriptors.AddLast(HMargin);
                     descriptors.AddLast(VMargin);
                 }
-                return descriptors;
+                return descriptors.AsReadonly();
             }
 
             public override RectangleLayout Create(IParameterDescriptor parameter, IReadonlyContext context)

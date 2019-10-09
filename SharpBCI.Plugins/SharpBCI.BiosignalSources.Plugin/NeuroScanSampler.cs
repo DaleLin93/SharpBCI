@@ -293,7 +293,6 @@ namespace SharpBCI.BiosignalSources
             _stream.Flush();
             try { Thread.Sleep(1200); } catch (Exception) { /* ignored */ }
             _tcpClient.Close();
-            _tcpClient.Dispose();
             try { Thread.Sleep(500); } catch (Exception) { /* ignored */ }
         }
 

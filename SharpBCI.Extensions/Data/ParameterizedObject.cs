@@ -28,7 +28,8 @@ namespace SharpBCI.Extensions.Data
     public abstract class ParameterizedObjectFactory<T> : IParameterizedObjectFactory where T : IParameterizedObject
     {
 
-        public virtual IReadOnlyCollection<IParameterDescriptor> GetParameters(IParameterDescriptor parameter) => GetType().ReadStaticFields<IParameterDescriptor>();
+        public virtual IReadOnlyCollection<IParameterDescriptor> GetParameters(IParameterDescriptor parameter) =>
+            GetType().ReadStaticFields<IParameterDescriptor>().AsReadonly();
 
         public virtual bool IsEnabled(IReadonlyContext context, IParameterDescriptor parameter) => true;
 
@@ -36,9 +37,11 @@ namespace SharpBCI.Extensions.Data
 
         public abstract IReadonlyContext Parse(IParameterDescriptor parameter, T value);
 
-        IParameterizedObject IParameterizedObjectFactory.Create(IParameterDescriptor parameter, IReadonlyContext context) => Create(parameter, context);
+        IParameterizedObject IParameterizedObjectFactory.Create(IParameterDescriptor parameter, IReadonlyContext context) => 
+            Create(parameter, context);
 
-        IReadonlyContext IParameterizedObjectFactory.Parse(IParameterDescriptor parameter, IParameterizedObject parameterizedObject) => Parse(parameter, (T) parameterizedObject);
+        IReadonlyContext IParameterizedObjectFactory.Parse(IParameterDescriptor parameter, IParameterizedObject parameterizedObject) =>
+            Parse(parameter, (T) parameterizedObject);
 
     }
 
@@ -56,7 +59,8 @@ namespace SharpBCI.Extensions.Data
             lock (Factories)
                 if (!Factories.TryGetValue(factoryType, out factory))
                 {
-                    if (!typeof(IParameterizedObjectFactory).IsAssignableFrom(factoryType)) throw new ArgumentException("'factoryType' must implements IParameterizedObjectFactory");
+                    if (!typeof(IParameterizedObjectFactory).IsAssignableFrom(factoryType))
+                        throw new ArgumentException("'factoryType' must implements IParameterizedObjectFactory");
                     Factories[factoryType] = factory = (IParameterizedObjectFactory) Activator.CreateInstance(factoryType);
                 }
             return factory;
@@ -75,7 +79,8 @@ namespace SharpBCI.Extensions.Data
 
         public static ParameterizedObjectAttribute GetParameterizedObjectAttribute(this Type type)
         {
-            if (!typeof(IParameterizedObject).IsAssignableFrom(type)) throw new ArgumentException($"Given type '{type.FullName}' must implements interface IParameterizedObject");
+            if (!typeof(IParameterizedObject).IsAssignableFrom(type))
+                throw new ArgumentException($"Given type '{type.FullName}' must implements interface IParameterizedObject");
             var attribute = type.GetCustomAttribute<ParameterizedObjectAttribute>(true);
             if (attribute != null) return attribute;
             foreach (var @interface in type.GetInterfaces())

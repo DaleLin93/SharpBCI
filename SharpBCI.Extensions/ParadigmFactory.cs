@@ -104,26 +104,27 @@ namespace SharpBCI.Extensions
     public abstract class ParadigmFactory : IParadigmFactory 
     {
 
-        public static IReadOnlyCollection<IGroupDescriptor> ScanGroups(Type type, bool findUngroupedParameters = true, bool recursively = true)
+        public static IReadOnlyCollection<IGroupDescriptor> ScanGroups(Type type, bool findParametersNotInGroups = true, bool recursively = true)
         {
             var groups = type.ReadFields<IGroupDescriptor>(null, recursively);
             var rootGroups = new LinkedList<IGroupDescriptor>(groups);
             foreach (var group in groups)
                 foreach (var parameterGroup in group.GetAllGroups(false))
                     rootGroups.Remove(parameterGroup);
-            if (!findUngroupedParameters) return rootGroups;
+            if (!findParametersNotInGroups) return rootGroups.AsReadonly();
             var parameters = type.ReadFields<IParameterDescriptor>(null, recursively);
             var unusedParameters = new HashSet<IParameterDescriptor>();
             foreach (var parameter in parameters)
                 unusedParameters.Add(parameter);
             foreach (var parameter in rootGroups.GetAllParameters())
                 unusedParameters.Remove(parameter);
-            if (unusedParameters.Any())
-                return new List<IGroupDescriptor>(rootGroups) { new ParameterGroup(null, null, unusedParameters) };
-            return rootGroups;
+            var extraGroup = new ParameterGroup(null, null, unusedParameters.AsReadonly());
+            return unusedParameters.Any()
+                ? new List<IGroupDescriptor>(rootGroups) {extraGroup}
+                : rootGroups.AsReadonly();
         }
 
-        public static IReadOnlyCollection<ISummary> ScanSummaries(Type type, bool recursively = true) => type.ReadFields<ISummary>(null, recursively);
+        public static IReadOnlyCollection<ISummary> ScanSummaries(Type type, bool recursively = true) => type.ReadFields<ISummary>(null, recursively).AsReadonly();
 
         public virtual IReadOnlyCollection<IGroupDescriptor> GetParameterGroups(Type paradigmClz) => EmptyArray<IGroupDescriptor>.Instance;
 

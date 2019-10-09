@@ -1,6 +1,7 @@
 ﻿using System;
 using SharpBCI.Core.Staging;
 using System.Collections.Generic;
+using MarukoLib.Lang;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.StageProviders;
 
@@ -51,7 +52,7 @@ namespace SharpBCI.Paradigms.Speller.P300
             for (var i = 0; i < testConfig.SubTrialCount; i++)
                 stages.AddLast(new Stage { Marker = SpellerMarkerDefinitions.SubTrialMarker, Duration = subTrialDuration });
             stages.AddLast(new Stage {Marker = MarkerDefinitions.TrialEndMarker, Duration = testConfig.DynamicInterval ? 0 : testConfig.Trial.Interval});
-            return stages;
+            return stages.AsReadonly();
         }
 
     }

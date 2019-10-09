@@ -91,7 +91,7 @@ namespace SharpBCI.Plugins
                     exceptionHandler(file, e);
                 }
             }
-            return plugins;
+            return plugins.AsReadonly();
         }
 
         public string Name { get; }

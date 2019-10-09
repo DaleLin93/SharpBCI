@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>SharpBCI.EyeTrackers</RootNamespace>
     <AssemblyName>SharpBCI.EyeTrackers.Plugin</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <NuGetPackageImportStamp>
