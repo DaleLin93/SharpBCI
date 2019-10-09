@@ -143,6 +143,7 @@ namespace SharpBCI.Windows
 
         public LauncherWindow()
         {
+            if (App.IsRealtimePriority) Title += " (Realtime)"; 
             InitializeComponent();
             InitializeHeaderPanel();
             InitializeFooterPanel();

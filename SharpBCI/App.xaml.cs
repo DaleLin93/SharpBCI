@@ -57,6 +57,7 @@ namespace SharpBCI
 
         static App()
         {
+            AppDomain.CurrentDomain.UnhandledException += AppDomain_UnhandledException;
             log4net.Config.XmlConfigurator.Configure();
             SetRealTimePriority();
             ControlUtils.SetupPressEnterToMoveFocusForAllTextbox();
@@ -65,7 +66,6 @@ namespace SharpBCI
         public App()
         {
             Instance = this;
-            AppDomain.CurrentDomain.UnhandledException += AppDomain_UnhandledException;
             Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
             if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
         }
@@ -73,6 +73,8 @@ namespace SharpBCI
         public static App Instance { get; private set; }
 
         public static string SystemVariableFilePath => Path.Combine(FileUtils.ExecutableDirectory, SystemVariableFile);
+
+        public static bool IsRealtimePriority => Process.GetCurrentProcess().PriorityClass == ProcessPriorityClass.RealTime;
 
         public static bool IsAdministrator()
         {
