@@ -143,7 +143,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             _session = session;
             _paradigm = (SsvepParadigm) session.Paradigm;
-            _trialStartEvent = _paradigm.Config.Test.WaitKeyForTrial.HasValue ? new AutoResetEvent(false) : null; 
+            _trialStartEvent = _paradigm.Config.Test.PressKeyToStart.HasValue ? new AutoResetEvent(false) : null; 
             _markable = session.StreamerCollection.FindFirstOrDefault<IMarkable>();
 
             _blocks = new Block[(int)_paradigm.Config.Gui.BlockLayout.Volume];
@@ -360,7 +360,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         private void Window_OnKeyUp(object sender, KeyEventArgs e)
         {
-            if (_trialStartEvent != null && e.KeyCode == _paradigm.Config.Test.WaitKeyForTrial.Value)
+            if (_trialStartEvent != null && e.KeyCode == _paradigm.Config.Test.PressKeyToStart.Value)
             {
                 _trialStartEvent.Set();
                 return;

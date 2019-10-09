@@ -58,7 +58,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
                 public ITemporalPattern[] Patterns;
 
-                public Optional<Keys> WaitKeyForTrial;
+                public Optional<Keys> PressKeyToStart;
 
                 public ulong TrialDuration;
 
@@ -85,10 +85,10 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             private static readonly Parameter<string> Patterns = Parameter<string>.CreateBuilder("Patterns")
                 .SetDescription("Available patterns is required, patterns are ordered by priority").SetUnit("Hz@π")
-                .SetDefaultValue("14@0,20@0; 15@0,21@0; 16@0,22@0; 17@0,23@0")
+                .SetDefaultValue("15")
                 .Build();
 
-            private static readonly Parameter<Optional<Keys>> WaitKeyForTrial = Parameter<Optional<Keys>>.CreateBuilder("Wait Key For Trial")
+            private static readonly Parameter<Optional<Keys>> PressKeyToStart = Parameter<Optional<Keys>>.CreateBuilder("Press Key To Start")
                 .SetMetadata(OptionalPresenter.ValueTypePresentingContextProperty, new Context {[Presenters.PresenterProperty] = SelectablePresenter.Instance})
                 .SetDefaultValue(new Optional<Keys>(false, Keys.S))
                 .Build();
@@ -162,8 +162,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
                 new ParameterGroup("Display", Screen),
-                new ParameterGroup("General", Debug, Baseline, Patterns),
-                new ParameterGroup("Trial Params", WaitKeyForTrial, TrialDuration, TrialCount, InterStimulusInterval),
+                new ParameterGroup("General", Debug, Baseline, Patterns, PressKeyToStart),
+                new ParameterGroup("Trial Params", TrialDuration, TrialCount, InterStimulusInterval),
                 new ParameterGroup("User Interface", BackgroundColor, BlockSize, BlockLayout, BlockPosition, BlockBorder, BlockColors, BlockFixationPoint),
             };
 
@@ -183,14 +183,6 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 return base.CheckValid(context, parameter);
             }
 
-            public override bool IsVisible(IReadonlyContext context, IDescriptor descriptor)
-            {
-                if (ReferenceEquals(InterStimulusInterval, descriptor)) return !WaitKeyForTrial.Get(context).HasValue;
-                return base.IsVisible(context, descriptor);
-            }
-
-            public override bool IsVisible(IReadonlyContext context, ISummary summary) => !WaitKeyForTrial.Get(context).HasValue;
-
             public override SsvepParadigm Create(IReadonlyContext context) => new SsvepParadigm(new Configuration
             {
                 Gui = new Configuration.GuiConfig
@@ -209,7 +201,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                     Debug = Debug.Get(context),
                     Baseline = Baseline.Get(context),
                     Patterns = Patterns.Get(context, ParseMultiple),
-                    WaitKeyForTrial = WaitKeyForTrial.Get(context),
+                    PressKeyToStart = PressKeyToStart.Get(context),
                     TrialDuration = TrialDuration.Get(context),
                     TrialCount = TrialCount.Get(context),
                     InterStimulusInterval = InterStimulusInterval.Get(context),
@@ -232,10 +224,11 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             new ConditionStageProvider(Config.Test.Baseline.IsAvailable, new BaselineStageProvider(Config.Test.Baseline.Duration)),
             new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
             new DelayStageProvider(1000),
-            new RepeatingStageProvider.Simple(eventWaitHandle, new[]
+            new EventWaitingStageProvider(eventWaitHandle),
+            new RepeatingStageProvider.Simple(new[]
             {
                 new Stage {Marker = MarkerDefinitions.TrialStartMarker, Duration = Config.Test.TrialDuration},
-                new Stage {Marker = MarkerDefinitions.TrialEndMarker, Duration = Config.Test.WaitKeyForTrial.HasValue ? 0 : Config.Test.InterStimulusInterval},
+                new Stage {Marker = MarkerDefinitions.TrialEndMarker, Duration = Config.Test.InterStimulusInterval},
             }, Config.Test.TrialCount),
             new MarkedStageProvider(MarkerDefinitions.ParadigmEndMarker),
             new ConditionStageProvider(Config.Test.Baseline.IsAvailable && Config.Test.Baseline.TwoSided, new BaselineStageProvider(Config.Test.Baseline.Duration)),
