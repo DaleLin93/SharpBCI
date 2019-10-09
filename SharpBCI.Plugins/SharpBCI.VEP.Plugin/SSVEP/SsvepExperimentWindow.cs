@@ -12,6 +12,9 @@ using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Patterns;
 using SharpDX;
+using D2D1 = SharpDX.Direct2D1;
+using D3D11 = SharpDX.Direct3D11;
+using DXGI = SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using SharpDX.Windows;
 using KeyEventArgs = System.Windows.Forms.KeyEventArgs;
@@ -23,43 +26,261 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
     internal class SsvepExperimentWindow : RenderForm, IDisposable
     {
 
-        private struct Block
+        private interface IStimulationPresenter
+        {
+
+            void Initialize(D2D1.RenderTarget renderTarget, RawVector2 size, Block[] blocks);
+
+            void Destory();
+
+            void Present(D2D1.RenderTarget renderTarget, Block block, double secsPassed);
+
+        }
+
+        private class Square01StimulationPresenter : IStimulationPresenter
+        {
+
+            private readonly Color _normalColor;
+
+            private readonly Color _flashingColor;
+
+            private D2D1.SolidColorBrush _brush;
+
+            public Square01StimulationPresenter(Color normalColor, Color flashingColor)
+            {
+                _normalColor = normalColor;
+                _flashingColor = flashingColor;
+            }
+
+            public void Initialize(D2D1.RenderTarget renderTarget, RawVector2 size, Block[] blocks) => _brush = new D2D1.SolidColorBrush(renderTarget, _normalColor);
+
+            public void Destory() => _brush.Dispose();
+
+            public void Present(D2D1.RenderTarget renderTarget, Block block, double secsPassed)
+            {
+                _brush.Color = (float)ConvertCosineValueToGrayScale(block.Pattern.Sample(secsPassed)) < 0.5 ? _flashingColor : _normalColor;
+                renderTarget.FillRectangle(block.ContentRect, _brush);
+            }
+
+        }
+
+        private class SineGradientStimulationPresenter : IStimulationPresenter
+        {
+
+            private readonly Color _normalColor;
+
+            private readonly Color _flashingColor;
+
+            private D2D1.SolidColorBrush _brush;
+
+            public SineGradientStimulationPresenter(Color normalColor, Color flashingColor)
+            {
+                _normalColor = normalColor;
+                _flashingColor = flashingColor;
+            }
+
+            public void Initialize(D2D1.RenderTarget renderTarget, RawVector2 size, Block[] blocks) => _brush = new D2D1.SolidColorBrush(renderTarget, _normalColor);
+
+            public void Destory() => _brush.Dispose();
+
+            public void Present(D2D1.RenderTarget renderTarget, Block block, double secsPassed)
+            {
+                _brush.Color = Color.SmoothStep(_normalColor, _flashingColor, (float)ConvertCosineValueToGrayScale(block.Pattern.Sample(secsPassed)));
+                renderTarget.FillRectangle(block.ContentRect, _brush);
+            }
+
+        }
+
+        private class SquareCheckerboardStimulationPresenter : IStimulationPresenter
+        {
+
+            private readonly Color _normalColor;
+
+            private readonly Color _flashingColor;
+
+            private readonly int _density;
+
+            private D2D1.Bitmap _bitmap0, _bitmap1;
+
+            private D2D1.BitmapBrush _brush;
+
+            public SquareCheckerboardStimulationPresenter(Color normalColor, Color flashingColor)
+            {
+                _normalColor = normalColor;
+                _flashingColor = flashingColor;
+                _density = 5;
+            }
+
+            private static void DrawCheckerboard(System.Drawing.Bitmap bitmap, System.Drawing.Color color0, System.Drawing.Color color1, int subLen)
+            {
+                var imgWidth = bitmap.Width;
+                var imgHeight = bitmap.Height;
+                for (int r = 0; r < imgHeight; r++)
+                    for (int c = 0; c < imgWidth; c++)
+                        bitmap.SetPixel(c, r, (r / subLen % 2) == (c / subLen % 2) ? color0 : color1);
+            }
+
+            public void Initialize(D2D1.RenderTarget renderTarget, RawVector2 size, Block[] blocks)
+            {
+                var width = (int)Math.Round(size.X);
+                var height = (int)Math.Round(size.Y);
+                var longerSide = Math.Max(width, height);
+                var subLen = longerSide / _density + Math.Sign(longerSide % _density);
+                var bitmap = new System.Drawing.Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                var color0 = _normalColor.ToSd();
+                var color1 = _flashingColor.ToSd();
+                DrawCheckerboard(bitmap, color0, color1, subLen);
+                _bitmap0 = bitmap.ToD2D1Bitmap(renderTarget);
+                DrawCheckerboard(bitmap, color1, color0, subLen);
+                _bitmap1 = bitmap.ToD2D1Bitmap(renderTarget);
+                bitmap.Dispose();
+                _brush = new D2D1.BitmapBrush(renderTarget, _bitmap0);
+                _brush.ExtendModeX = D2D1.ExtendMode.Wrap;
+                _brush.ExtendModeY = D2D1.ExtendMode.Wrap;
+                _brush.InterpolationMode = D2D1.BitmapInterpolationMode.NearestNeighbor;
+                foreach (var block in blocks) block.Tag = Matrix3x2.Translation(block.ContentRect.Left, block.ContentRect.Top);
+
+            }
+
+            public void Destory()
+            {
+                _bitmap0?.Dispose();
+                _bitmap1?.Dispose();
+                _brush?.Dispose();
+            }
+
+            public void Present(D2D1.RenderTarget renderTarget, Block block, double secsPassed)
+            {
+                var bitmap = (float)ConvertCosineValueToGrayScale(block.Pattern.Sample(secsPassed)) < 0.5 ? _bitmap0 : _bitmap1;
+                if (bitmap == null) return;
+                _brush.Bitmap = bitmap;
+                _brush.Transform = (Matrix3x2)block.Tag;
+                renderTarget.FillRectangle(block.ContentRect, _brush);
+            }
+
+        }
+
+        private class SquareCheckerboardRadicalStimulationPresenter : IStimulationPresenter
+        {
+
+            private readonly Color _normalColor;
+
+            private readonly Color _flashingColor;
+
+            private readonly int _density, _densityTheta;
+
+            private D2D1.Bitmap _bitmap0, _bitmap1;
+
+            private D2D1.BitmapBrush _brush;
+
+            public SquareCheckerboardRadicalStimulationPresenter(Color normalColor, Color flashingColor)
+            {
+                _normalColor = normalColor;
+                _flashingColor = flashingColor;
+                _density = 8;
+                _densityTheta = 16;
+            }
+
+            private static void DrawCheckerboard(System.Drawing.Bitmap bitmap, System.Drawing.Color color0, System.Drawing.Color color1, double subLen, double subRad)
+            {
+                var imgWidth = bitmap.Width;
+                var imgHeight = bitmap.Height;
+                var centerX = imgWidth / 2.0;
+                var centerY = imgHeight / 2.0;
+                for (int r = 0; r < imgHeight; r++)
+                    for (int c = 0; c < imgWidth; c++)
+                    {
+                        var dx = centerX - c;
+                        var dy = centerY - r;
+                        var dist = Math.Sqrt(dx * dx + dy * dy);
+                        var rad = Math.Atan2(dy, dx) + Math.PI * 2;
+                        var color = ((int)Math.Round(dist / subLen) % 2) == ((int)Math.Round(rad / subRad) % 2) ? color0 : color1;
+                        bitmap.SetPixel(c, r, color);
+                    }
+            }
+
+            public void Initialize(D2D1.RenderTarget renderTarget, RawVector2 size, Block[] blocks)
+            {
+                var width = (int)Math.Round(size.X);
+                var height = (int)Math.Round(size.Y);
+                var subLen = Math.Max(size.X, size.Y) / _density;
+                var subRad = Math.PI * 2 / _densityTheta;
+                var bitmap = new System.Drawing.Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                var color0 = _normalColor.ToSd();
+                var color1 = _flashingColor.ToSd();
+                DrawCheckerboard(bitmap, color0, color1, subLen, subRad);
+                _bitmap0 = bitmap.ToD2D1Bitmap(renderTarget);
+                DrawCheckerboard(bitmap, color1, color0, subLen, subRad);
+                _bitmap1 = bitmap.ToD2D1Bitmap(renderTarget);
+                bitmap.Dispose();
+                _brush = new D2D1.BitmapBrush(renderTarget, _bitmap0);
+                _brush.ExtendModeX = D2D1.ExtendMode.Wrap;
+                _brush.ExtendModeY = D2D1.ExtendMode.Wrap;
+                _brush.InterpolationMode = D2D1.BitmapInterpolationMode.NearestNeighbor;
+                foreach (var block in blocks) block.Tag = Matrix3x2.Translation(block.ContentRect.Left, block.ContentRect.Top);
+
+            }
+
+            public void Destory()
+            {
+                _bitmap0?.Dispose();
+                _bitmap1?.Dispose();
+                _brush?.Dispose();
+            }
+
+            public void Present(D2D1.RenderTarget renderTarget, Block block, double secsPassed)
+            {
+                var bitmap = (float)ConvertCosineValueToGrayScale(block.Pattern.Sample(secsPassed)) < 0.5 ? _bitmap0 : _bitmap1;
+                if (bitmap == null) return;
+                _brush.Bitmap = bitmap;
+                _brush.Transform = (Matrix3x2)block.Tag;
+                renderTarget.FillRectangle(block.ContentRect, _brush);
+            }
+
+        }
+
+        private class Block
         {
             
             public RawVector2 Center;
 
             public RawVector2 Size;
 
-            public float BorderWidth;
-
-            public float FixationPointSize;
-
             public ITemporalPattern Pattern;
 
-            public RawRectangleF BorderRect;
+            public RawRectangleF? BorderRect;
 
             public RawRectangleF ContentRect;
 
-            public SharpDX.Direct2D1.Ellipse CenterPointEllipse;
+            public D2D1.Ellipse? CenterPointEllipse;
 
-            public void UpdateGeometries()
+            public object Tag;
+
+            public void UpdateGeometries(float borderWidth, float fixationPointSize)
             {
                 float halfWidth = Size.X / 2, halfHeight = Size.Y / 2;
-                BorderRect.Left = Center.X - halfWidth;
-                BorderRect.Right = Center.X + halfWidth;
-                BorderRect.Top = Center.Y - halfHeight;
-                BorderRect.Bottom = Center.Y + halfHeight;
-
-                if (BorderWidth > 0)
+                var outerRect = new RawRectangleF
                 {
-                    ContentRect.Left = BorderRect.Left + BorderWidth;
-                    ContentRect.Right = BorderRect.Right - BorderWidth;
-                    ContentRect.Top = BorderRect.Top + BorderWidth;
-                    ContentRect.Bottom = BorderRect.Bottom - BorderWidth;
+                    Left = Center.X - halfWidth,
+                    Right = Center.X + halfWidth,
+                    Top = Center.Y - halfHeight,
+                    Bottom = Center.Y + halfHeight
+                };
+
+                if (borderWidth > 0)
+                {
+                    BorderRect = outerRect;
+                    ContentRect.Left = outerRect.Left + borderWidth;
+                    ContentRect.Right = outerRect.Right - borderWidth;
+                    ContentRect.Top = outerRect.Top + borderWidth;
+                    ContentRect.Bottom = outerRect.Bottom - borderWidth;
                 }
                 else
-                    ContentRect = BorderRect;
-                CenterPointEllipse = new SharpDX.Direct2D1.Ellipse(Center, FixationPointSize, FixationPointSize);
+                {
+                    BorderRect = null;
+                    ContentRect = outerRect;
+                }
+                CenterPointEllipse = fixationPointSize > 0 ? new D2D1.Ellipse(Center, fixationPointSize, fixationPointSize) : (D2D1.Ellipse?)null;
             }
 
         }
@@ -77,6 +298,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         private readonly StageProgram _stageProgram;
 
         private readonly Block[] _blocks;
+
+        private readonly IStimulationPresenter _presenter;
 
         /* Paradigm variables */
 
@@ -104,21 +327,21 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         /* D3D Resources */
 
-        private readonly SharpDX.DXGI.PresentParameters _presentParameters = new SharpDX.DXGI.PresentParameters();
+        private readonly DXGI.PresentParameters _presentParameters = new DXGI.PresentParameters();
         
-        private SharpDX.Direct3D11.Device _d3DDevice;
+        private D3D11.Device _d3DDevice;
 
-        private SharpDX.Direct3D11.DeviceContext _d3DDeviceContext;
+        private D3D11.DeviceContext _d3DDeviceContext;
 
-        private SharpDX.DXGI.SwapChain1 _swapChain;
+        private DXGI.SwapChain1 _swapChain;
 
-        private SharpDX.Direct3D11.RenderTargetView _renderTargetView;
+        private D3D11.RenderTargetView _renderTargetView;
 
-        private SharpDX.Direct2D1.Factory _d2DFactory;
+        private D2D1.Factory _d2DFactory;
 
-        private SharpDX.Direct2D1.RenderTarget _renderTarget;
+        private D2D1.RenderTarget _renderTarget;
 
-        private SharpDX.Direct2D1.SolidColorBrush _solidColorBrush;
+        private D2D1.SolidColorBrush _solidColorBrush;
 
         private SharpDX.DirectWrite.Factory _dwFactory;
 
@@ -146,18 +369,16 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             _trialStartEvent = _paradigm.Config.Test.PressKeyToStart.HasValue ? new AutoResetEvent(false) : null; 
             _markable = session.StreamerCollection.FindFirstOrDefault<IMarkable>();
 
+            _stageProgram = _paradigm.CreateStagedProgram(session, _trialStartEvent);
+            _stageProgram.StageChanged += StageProgram_StageChanged;
+
             _blocks = new Block[(int)_paradigm.Config.Gui.BlockLayout.Volume];
             for (var i = 0; i < _blocks.Length; i++)
             {
-                _blocks[i].Size = new RawVector2(_paradigm.Config.Gui.BlockSize.Width, _paradigm.Config.Gui.BlockSize.Height);
-                _blocks[i].BorderWidth = (float)_paradigm.Config.Gui.BlockBorder.Width * (float)GraphicsUtils.Scale;
-                _blocks[i].FixationPointSize = _paradigm.Config.Gui.BlockFixationPoint.Size * (float) GraphicsUtils.Scale;
-                _blocks[i].Pattern = _paradigm.Config.Test.Patterns[i];
-                _blocks[i].UpdateGeometries();
+                var block = _blocks[i] = new Block();
+                block.Size = new RawVector2(_paradigm.Config.Gui.BlockSize.Width, _paradigm.Config.Gui.BlockSize.Height);
+                block.Pattern = _paradigm.Config.Test.Patterns[i];
             }
-
-            _stageProgram = _paradigm.CreateStagedProgram(session, _trialStartEvent);
-            _stageProgram.StageChanged += StageProgram_StageChanged;
 
             /* Type conversion */
             _backgroundColor = _paradigm.Config.Gui.BackgroundColor.ToSdColor().ToSdx();
@@ -166,6 +387,25 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             _blockNormalColor = _paradigm.Config.Gui.BlockColors[0].ToSdColor().ToSdx();
             _blockFlashingColor = _paradigm.Config.Gui.BlockColors[1].ToSdColor().ToSdx();
             _blockFixationPointColor = _paradigm.Config.Gui.BlockFixationPoint.Color.ToSdColor().ToSdx();
+
+            /* Initialize presneter */
+            switch (_paradigm.Config.Test.StimulationType)
+            {
+                case SsvepStimulationType.Square01:
+                    _presenter = new Square01StimulationPresenter(_blockNormalColor, _blockFlashingColor);
+                    break;
+                case SsvepStimulationType.SineGradient:
+                    _presenter = new SineGradientStimulationPresenter(_blockNormalColor, _blockFlashingColor);
+                    break;
+                case SsvepStimulationType.SquareCheckerboard:
+                    _presenter = new SquareCheckerboardStimulationPresenter(_blockNormalColor, _blockFlashingColor);
+                    break;
+                case SsvepStimulationType.SquareCheckerboardRadical:
+                    _presenter = new SquareCheckerboardRadicalStimulationPresenter(_blockNormalColor, _blockFlashingColor);
+                    break;
+                default:
+                    throw new NotSupportedException(_paradigm.Config.Test.StimulationType.ToString());
+            }
         }
 
         private static double ConvertCosineValueToGrayScale(double cosVal) => (-cosVal + 1) / 2;
@@ -178,48 +418,60 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         public new void Dispose()
         {
+            _presenter.Destory();
             lock (_renderContextLock)
                 DisposeDirectXResources();
             base.Dispose();
         }
 
+        private void UpdateResources()
+        {
+            lock (_renderContextLock)
+                InitializeDirectXResources();
+            var guiScale = (float)GraphicsUtils.Scale;
+            var borderWidth = Math.Max(0, (float)_paradigm.Config.Gui.BlockBorder.Width * guiScale);
+            var fixationPointSize = _paradigm.Config.Gui.BlockFixationPoint.Size * guiScale;
+            var blockSize = UpdateBlocks(borderWidth, fixationPointSize);
+            _presenter.Initialize(_renderTarget, new RawVector2(blockSize.X - borderWidth * 2, blockSize.Y - borderWidth * 2), _blocks);
+        }
+
         private void InitializeDirectXResources()
         {
             var clientSize = ClientSize;
-            var backBufferDesc = new SharpDX.DXGI.ModeDescription(clientSize.Width, clientSize.Height,
-                new SharpDX.DXGI.Rational(60, 1), SharpDX.DXGI.Format.R8G8B8A8_UNorm);
+            var backBufferDesc = new DXGI.ModeDescription(clientSize.Width, clientSize.Height,
+                new DXGI.Rational(60, 1), DXGI.Format.R8G8B8A8_UNorm);
 
-            var swapChainDesc = new SharpDX.DXGI.SwapChainDescription()
+            var swapChainDesc = new DXGI.SwapChainDescription()
             {
                 ModeDescription = backBufferDesc,
-                SampleDescription = new SharpDX.DXGI.SampleDescription(1, 0),
-                Usage = SharpDX.DXGI.Usage.RenderTargetOutput,
+                SampleDescription = new DXGI.SampleDescription(1, 0),
+                Usage = DXGI.Usage.RenderTargetOutput,
                 BufferCount = 1,
                 OutputHandle = Handle,
-                SwapEffect = SharpDX.DXGI.SwapEffect.Discard,
-                IsWindowed = false
+                SwapEffect = DXGI.SwapEffect.Discard,
+                IsWindowed = _paradigm.Config.Test.Debug
             };
 
-            SharpDX.Direct3D11.Device.CreateWithSwapChain(SharpDX.Direct3D.DriverType.Hardware, SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport,
+            D3D11.Device.CreateWithSwapChain(SharpDX.Direct3D.DriverType.Hardware, D3D11.DeviceCreationFlags.BgraSupport,
                 new[] { SharpDX.Direct3D.FeatureLevel.Level_10_0 }, swapChainDesc,
                 out _d3DDevice, out var swapChain);
             _d3DDeviceContext = _d3DDevice.ImmediateContext;
 
-            _swapChain = new SharpDX.DXGI.SwapChain1(swapChain.NativePointer);
+            _swapChain = new DXGI.SwapChain1(swapChain.NativePointer);
 
-            _d2DFactory = new SharpDX.Direct2D1.Factory();
+            _d2DFactory = new D2D1.Factory();
 
-            using (var backBuffer = _swapChain.GetBackBuffer<SharpDX.Direct3D11.Texture2D>(0))
+            using (var backBuffer = _swapChain.GetBackBuffer<D3D11.Texture2D>(0))
             {
-                _renderTargetView = new SharpDX.Direct3D11.RenderTargetView(_d3DDevice, backBuffer);
-                _renderTarget = new SharpDX.Direct2D1.RenderTarget(_d2DFactory, backBuffer.QueryInterface<SharpDX.DXGI.Surface>(),
-                    new SharpDX.Direct2D1.RenderTargetProperties(new SharpDX.Direct2D1.PixelFormat(SharpDX.DXGI.Format.Unknown, SharpDX.Direct2D1.AlphaMode.Premultiplied)))
+                _renderTargetView = new D3D11.RenderTargetView(_d3DDevice, backBuffer);
+                _renderTarget = new D2D1.RenderTarget(_d2DFactory, backBuffer.QueryInterface<DXGI.Surface>(),
+                    new D2D1.RenderTargetProperties(new D2D1.PixelFormat(DXGI.Format.Unknown, D2D1.AlphaMode.Premultiplied)))
                 {
-                    TextAntialiasMode = SharpDX.Direct2D1.TextAntialiasMode.Cleartype
+                    TextAntialiasMode = D2D1.TextAntialiasMode.Cleartype
                 };
             }
 
-            _solidColorBrush = new SharpDX.Direct2D1.SolidColorBrush(_renderTarget, Color.White);
+            _solidColorBrush = new D2D1.SolidColorBrush(_renderTarget, Color.White);
 
             _dwFactory = new SharpDX.DirectWrite.Factory(SharpDX.DirectWrite.FactoryType.Shared);
             _textFormat = new SharpDX.DirectWrite.TextFormat(_dwFactory, "Arial", SharpDX.DirectWrite.FontWeight.Bold,
@@ -242,7 +494,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             _d3DDevice.Dispose();
         }
 
-        private void UpdateBlocks()
+        private RawVector2 UpdateBlocks(float borderWidth, float fixationPointSize)
         {
             var scaleFactor = (float)GraphicsUtils.Scale;
             var layout = _paradigm.Config.Gui.BlockLayout;
@@ -289,17 +541,20 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 offsetY = (winH - hSum) * position.GetVerticalPosition().ToPosition1D().GetPositionValue();
             }
 
+            var blockSize = new RawVector2(blockWidth, blockHeight);
             for (var i = 0; i < _blocks.Length; i++)
             {
+                var block = _blocks[i];
                 var row = i / layout[1];
                 var col = i % layout[1];
 
-                _blocks[i].Center.X = offsetX + blockFrameW * col + blockFrameW / 2F;
-                _blocks[i].Center.Y = offsetY + blockFrameH * row + blockFrameH / 2F;
+                block.Center.X = offsetX + blockFrameW * col + blockFrameW / 2F;
+                block.Center.Y = offsetY + blockFrameH * row + blockFrameH / 2F;
 
-                _blocks[i].Size = new RawVector2(blockWidth, blockHeight);
-                _blocks[i].UpdateGeometries();
+                block.Size = blockSize;
+                block.UpdateGeometries(borderWidth, fixationPointSize);
             }
+            return blockSize;
         }
 
         private void OnRender()
@@ -316,22 +571,23 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                     var secsPassed = (CurrentTime - _stageUpdatedAt) / 1000.0;
                     foreach (var block in _blocks)
                     {
-                        if (block.BorderWidth > 0)
+                        if (block.BorderRect != null)
                         {
                             _solidColorBrush.Color = _blockBorderColor;
-                            _renderTarget.FillRectangle(block.BorderRect, _solidColorBrush);
+                            _renderTarget.FillRectangle(block.BorderRect.Value, _solidColorBrush);
                         }
                         if (!_trialStarted || block.Pattern == null)
+                        {
                             _solidColorBrush.Color = _blockNormalColor;
+                            _renderTarget.FillRectangle(block.ContentRect, _solidColorBrush);
+                        }
                         else
-                            _solidColorBrush.Color = Color.SmoothStep(_blockNormalColor, _blockFlashingColor,
-                                (float) ConvertCosineValueToGrayScale(block.Pattern.Sample(secsPassed)));
-                        _renderTarget.FillRectangle(block.ContentRect, _solidColorBrush);
+                            _presenter.Present(_renderTarget, block, secsPassed);
 
-                        if (block.FixationPointSize > 0)
+                        if (block.CenterPointEllipse != null)
                         {
                             _solidColorBrush.Color = _blockFixationPointColor;
-                            _renderTarget.FillEllipse(block.CenterPointEllipse, _solidColorBrush);
+                            _renderTarget.FillEllipse(block.CenterPointEllipse.Value, _solidColorBrush);
                         }
                     }
                 }
@@ -339,20 +595,18 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 {
                     _solidColorBrush.Color = _fontColor;
                     _renderTarget.DrawText(_displayText, _textFormat, new RawRectangleF(0, 0, Width, Height),
-                        _solidColorBrush, SharpDX.Direct2D1.DrawTextOptions.None);
+                        _solidColorBrush, D2D1.DrawTextOptions.None);
                 }
 
                 _renderTarget.EndDraw();
 
-                _swapChain.Present(1, SharpDX.DXGI.PresentFlags.None, _presentParameters);
+                _swapChain.Present(1, DXGI.PresentFlags.None, _presentParameters);
             }
         }
 
         private void Window_OnLoaded(object sender, EventArgs e)
         {
-            lock (_renderContextLock)
-                InitializeDirectXResources();
-            UpdateBlocks();
+            UpdateResources();
 
             _session.Start();
             _stageProgram.Start();
@@ -374,12 +628,10 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         {
             lock (_renderContextLock)
             {
-                if (_d3DDeviceContext?.IsDisposed ?? true)
-                    return;
+                if (_d3DDeviceContext?.IsDisposed ?? true) return;
                 DisposeDirectXResources();
-                InitializeDirectXResources();
             }
-            UpdateBlocks();
+            UpdateResources();
         }
 
         private void StageProgram_StageChanged(object sender, StageChangedEventArgs e)

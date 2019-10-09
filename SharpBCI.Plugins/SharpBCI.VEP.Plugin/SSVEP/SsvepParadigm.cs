@@ -17,6 +17,11 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Paradigms.VEP.SSVEP
 {
 
+    public enum SsvepStimulationType
+    {
+        Square01, SineGradient, SquareCheckerboard, SquareCheckerboardRadical
+    }
+
     [Paradigm(ParadigmName, typeof(Factory), "1.0")]
     public class SsvepParadigm : Paradigm
     {
@@ -47,6 +52,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
                 public Fixation BlockFixationPoint;
 
+                public ushort CheckerboardDensity;
+
             }
 
             public class TestConfig
@@ -57,6 +64,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 public BaselinePreference Baseline;
 
                 public ITemporalPattern[] Patterns;
+
+                public SsvepStimulationType StimulationType;
 
                 public Optional<Keys> PressKeyToStart;
 
@@ -87,6 +96,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 .SetDescription("Available patterns is required, patterns are ordered by priority").SetUnit("Hz@π")
                 .SetDefaultValue("15")
                 .Build();
+
+            private static readonly Parameter<SsvepStimulationType> StimulationType = Parameter<SsvepStimulationType>.OfEnum("Stimulation Type", SsvepStimulationType.SineGradient);
 
             private static readonly Parameter<Optional<Keys>> PressKeyToStart = Parameter<Optional<Keys>>.CreateBuilder("Press Key To Start")
                 .SetMetadata(OptionalPresenter.ValueTypePresentingContextProperty, new Context {[Presenters.PresenterProperty] = SelectablePresenter.Instance})
@@ -128,6 +139,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             private static readonly Parameter<Fixation> BlockFixationPoint = new Parameter<Fixation>("Block Fixation Point", new Fixation(2, Color.Red));
 
+            private static readonly Parameter<ushort> CheckerboardDensity = new Parameter<ushort>("Checkerboard Density", 5);
+
             private static ITemporalPattern[] ParseMultiple(string expression)
             {
                 var strArray = expression.Contains(';') ? expression.Split(';') : new[] { expression };
@@ -162,9 +175,9 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
                 new ParameterGroup("Display", Screen),
-                new ParameterGroup("General", Debug, Baseline, Patterns, PressKeyToStart),
+                new ParameterGroup("General", Debug, Baseline, Patterns, StimulationType, PressKeyToStart),
                 new ParameterGroup("Trial Params", TrialDuration, TrialCount, InterStimulusInterval),
-                new ParameterGroup("User Interface", BackgroundColor, BlockSize, BlockLayout, BlockPosition, BlockBorder, BlockColors, BlockFixationPoint),
+                new ParameterGroup("User Interface", BackgroundColor, BlockSize, BlockLayout, BlockPosition, BlockBorder, BlockColors, BlockFixationPoint, CheckerboardDensity),
             };
 
             public override IReadOnlyCollection<ISummary> Summaries => new ISummary[]
@@ -183,6 +196,16 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 return base.CheckValid(context, parameter);
             }
 
+            public override bool IsVisible(IReadonlyContext context, IDescriptor descriptor)
+            {
+                if (ReferenceEquals(descriptor, CheckerboardDensity))
+                {
+                    var stimulationType = StimulationType.Get(context);
+                    return stimulationType == SsvepStimulationType.SquareCheckerboard || stimulationType == SsvepStimulationType.SquareCheckerboardRadical;
+                }
+                return base.IsVisible(context, descriptor);
+            }
+
             public override SsvepParadigm Create(IReadonlyContext context) => new SsvepParadigm(new Configuration
             {
                 Gui = new Configuration.GuiConfig
@@ -194,13 +217,15 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                     BlockPosition = BlockPosition.Get(context),
                     BlockBorder = BlockBorder.Get(context),
                     BlockColors = BlockColors.Get(context),
-                    BlockFixationPoint = BlockFixationPoint.Get(context)
+                    BlockFixationPoint = BlockFixationPoint.Get(context),
+                    CheckerboardDensity = CheckerboardDensity.Get(context)
                 },
                 Test = new Configuration.TestConfig
                 {
                     Debug = Debug.Get(context),
                     Baseline = Baseline.Get(context),
                     Patterns = Patterns.Get(context, ParseMultiple),
+                    StimulationType = StimulationType.Get(context),
                     PressKeyToStart = PressKeyToStart.Get(context),
                     TrialDuration = TrialDuration.Get(context),
                     TrialCount = TrialCount.Get(context),
