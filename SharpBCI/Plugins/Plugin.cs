@@ -83,7 +83,7 @@ namespace SharpBCI.Plugins
                 Logger.Info("ScanPlugins - loading plugin", "assemblyFile", file);
                 try
                 {
-                    plugins.AddLast(new Plugin(Assembly.LoadFile(file)));
+                    plugins.AddLast(new Plugin(Assembly.UnsafeLoadFrom(file)));
                 }
                 catch (Exception e)
                 {

@@ -157,6 +157,7 @@ namespace SharpBCI
                 }
                 if (ErrorMessageBuilder.Length == 0) ErrorMessageBuilder.Append(ex.GetType().Name);
                 message = ErrorMessageBuilder.ToString();
+                ErrorMessageBuilder.Clear();
             }
             MessageBox.Show(message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
