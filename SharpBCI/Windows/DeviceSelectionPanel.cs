@@ -174,15 +174,15 @@ namespace SharpBCI.Windows
         {
             if (App.Instance == null) return;
             DeviceTypes = App.Instance.Registries.Registry<PluginDeviceType>().Registered.Select(el => el.DeviceType).ToArray();
+            Children.Add(ViewHelper.CreateGroupHeader(DisplayHeader ? "Devices" : null, "Device Configuration"));
             foreach (var deviceType in DeviceTypes)
             {
                 var controlGroup = _deviceControlGroups[deviceType] = new DeviceTypeViewModel(deviceType);
                 controlGroup.DeviceComboBox.SelectionChanged += DeviceComboBox_SelectionChanged;
                 controlGroup.ConfigButton.Click += DeviceConfigBtn_Click;
                 controlGroup.PreviewButton.Click += DevicePreviewBtn_Click;
+                this.AddRow(deviceType.DisplayName, controlGroup.Container);
             }
-            Children.Add(ViewHelper.CreateGroupHeader(DisplayHeader ? "Devices" : null, "Device Configuration"));
-            foreach (var deviceType in DeviceTypes) this.AddRow(deviceType.DisplayName, _deviceControlGroups[deviceType].Container);
             UpdateDevices();
         }
 

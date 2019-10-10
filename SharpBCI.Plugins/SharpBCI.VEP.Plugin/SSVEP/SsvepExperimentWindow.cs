@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using MarukoLib.DirectX;
@@ -12,6 +13,7 @@ using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Patterns;
 using SharpDX;
+using SharpDX.Direct3D9;
 using D2D1 = SharpDX.Direct2D1;
 using D3D11 = SharpDX.Direct3D11;
 using DXGI = SharpDX.DXGI;
@@ -31,7 +33,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             void Initialize(D2D1.RenderTarget renderTarget, RawVector2 size, Block[] blocks);
 
-            void Destory();
+            void Destroy();
 
             void Present(D2D1.RenderTarget renderTarget, Block block, double secsPassed);
 
@@ -54,7 +56,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             public void Initialize(D2D1.RenderTarget renderTarget, RawVector2 size, Block[] blocks) => _brush = new D2D1.SolidColorBrush(renderTarget, _normalColor);
 
-            public void Destory() => _brush.Dispose();
+            public void Destroy() => _brush.Dispose();
 
             public void Present(D2D1.RenderTarget renderTarget, Block block, double secsPassed)
             {
@@ -81,7 +83,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             public void Initialize(D2D1.RenderTarget renderTarget, RawVector2 size, Block[] blocks) => _brush = new D2D1.SolidColorBrush(renderTarget, _normalColor);
 
-            public void Destory() => _brush.Dispose();
+            public void Destroy() => _brush.Dispose();
 
             public void Present(D2D1.RenderTarget renderTarget, Block block, double secsPassed)
             {
@@ -115,8 +117,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             {
                 var imgWidth = bitmap.Width;
                 var imgHeight = bitmap.Height;
-                for (int r = 0; r < imgHeight; r++)
-                    for (int c = 0; c < imgWidth; c++)
+                for (var r = 0; r < imgHeight; r++)
+                    for (var c = 0; c < imgWidth; c++)
                         bitmap.SetPixel(c, r, (r / subLen % 2) == (c / subLen % 2) ? color0 : color1);
             }
 
@@ -135,14 +137,13 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 _bitmap1 = bitmap.ToD2D1Bitmap(renderTarget);
                 bitmap.Dispose();
                 _brush = new D2D1.BitmapBrush(renderTarget, _bitmap0);
-                _brush.ExtendModeX = D2D1.ExtendMode.Wrap;
-                _brush.ExtendModeY = D2D1.ExtendMode.Wrap;
+                _brush.ExtendModeX = _brush.ExtendModeY = D2D1.ExtendMode.Clamp;
                 _brush.InterpolationMode = D2D1.BitmapInterpolationMode.NearestNeighbor;
                 foreach (var block in blocks) block.Tag = Matrix3x2.Translation(block.ContentRect.Left, block.ContentRect.Top);
 
             }
 
-            public void Destory()
+            public void Destroy()
             {
                 _bitmap0?.Dispose();
                 _bitmap1?.Dispose();
@@ -187,14 +188,14 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 var imgHeight = bitmap.Height;
                 var centerX = imgWidth / 2.0;
                 var centerY = imgHeight / 2.0;
-                for (int r = 0; r < imgHeight; r++)
-                    for (int c = 0; c < imgWidth; c++)
+                for (var r = 0; r < imgHeight; r++)
+                    for (var c = 0; c < imgWidth; c++)
                     {
                         var dx = centerX - c;
                         var dy = centerY - r;
                         var dist = Math.Sqrt(dx * dx + dy * dy);
                         var rad = Math.Atan2(dy, dx) + Math.PI * 2;
-                        var color = ((int)Math.Round(dist / subLen) % 2) == ((int)Math.Round(rad / subRad) % 2) ? color0 : color1;
+                        var color = (int)Math.Round(dist / subLen) % 2 == (int)Math.Round(rad / subRad) % 2 ? color0 : color1;
                         bitmap.SetPixel(c, r, color);
                     }
             }
@@ -214,14 +215,13 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 _bitmap1 = bitmap.ToD2D1Bitmap(renderTarget);
                 bitmap.Dispose();
                 _brush = new D2D1.BitmapBrush(renderTarget, _bitmap0);
-                _brush.ExtendModeX = D2D1.ExtendMode.Wrap;
-                _brush.ExtendModeY = D2D1.ExtendMode.Wrap;
+                _brush.ExtendModeX = _brush.ExtendModeY = D2D1.ExtendMode.Clamp;
                 _brush.InterpolationMode = D2D1.BitmapInterpolationMode.NearestNeighbor;
                 foreach (var block in blocks) block.Tag = Matrix3x2.Translation(block.ContentRect.Left, block.ContentRect.Top);
 
             }
 
-            public void Destory()
+            public void Destroy()
             {
                 _bitmap0?.Dispose();
                 _bitmap1?.Dispose();
@@ -388,7 +388,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             _blockFlashingColor = _paradigm.Config.Gui.BlockColors[1].ToSdColor().ToSdx();
             _blockFixationPointColor = _paradigm.Config.Gui.BlockFixationPoint.Color.ToSdColor().ToSdx();
 
-            /* Initialize presneter */
+            /* Initialize presenter */
             switch (_paradigm.Config.Test.StimulationType)
             {
                 case SsvepStimulationType.Square01:
@@ -418,7 +418,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         public new void Dispose()
         {
-            _presenter.Destory();
+            _presenter.Destroy();
             lock (_renderContextLock)
                 DisposeDirectXResources();
             base.Dispose();
@@ -432,7 +432,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             var borderWidth = Math.Max(0, (float)_paradigm.Config.Gui.BlockBorder.Width * guiScale);
             var fixationPointSize = _paradigm.Config.Gui.BlockFixationPoint.Size * guiScale;
             var blockSize = UpdateBlocks(borderWidth, fixationPointSize);
-            _presenter.Initialize(_renderTarget, new RawVector2(blockSize.X - borderWidth * 2, blockSize.Y - borderWidth * 2), _blocks);
+            lock (_renderContextLock)
+                _presenter.Initialize(_renderTarget, new RawVector2(blockSize.X - borderWidth * 2, blockSize.Y - borderWidth * 2), _blocks);
         }
 
         private void InitializeDirectXResources()
@@ -456,8 +457,9 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 new[] { SharpDX.Direct3D.FeatureLevel.Level_10_0 }, swapChainDesc,
                 out _d3DDevice, out var swapChain);
             _d3DDeviceContext = _d3DDevice.ImmediateContext;
-
+            
             _swapChain = new DXGI.SwapChain1(swapChain.NativePointer);
+// TODO            _swapChain.ResizeTarget();
 
             _d2DFactory = new D2D1.Factory();
 
