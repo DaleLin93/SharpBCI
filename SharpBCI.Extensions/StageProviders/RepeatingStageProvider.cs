@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using JetBrains.Annotations;
+using MarukoLib.Lang;
 using SharpBCI.Core.Staging;
 
 namespace SharpBCI.Extensions.StageProviders
@@ -43,20 +44,29 @@ namespace SharpBCI.Extensions.StageProviders
         public class Advanced : RepeatingStageProvider
         {
 
+            private readonly bool _preloadable;
+
             private readonly Func<uint, IEnumerable<Stage>> _stageProvidingFunc;
 
-            public Advanced(Func<uint, IEnumerable<Stage>> stageProvidingFunc, uint count)
-                : base(count) => _stageProvidingFunc = stageProvidingFunc;
+            public Advanced(Func<uint, IStageProvider> stageProviderFunc, uint count, bool preloadable = true)
+                : this(idx => stageProviderFunc(idx)?.AsEnumerable() ?? EmptyArray<Stage>.Instance, count, preloadable) { }
 
-            public Advanced(EventWaitHandle eventWaitHandle, Func<uint, IEnumerable<Stage>> stageProvidingFunc, uint count) 
-                : base(eventWaitHandle, count) => _stageProvidingFunc = stageProvidingFunc;
+            public Advanced(Func<uint, IEnumerable<Stage>> stageProvidingFunc, uint count, bool preloadable = true)
+                : this(null, stageProvidingFunc, count, preloadable) { } 
+
+            public Advanced(EventWaitHandle eventWaitHandle, Func<uint, IEnumerable<Stage>> stageProvidingFunc, uint count, bool preloadable = true)
+                : base(eventWaitHandle, count)
+            {
+                _stageProvidingFunc = stageProvidingFunc;
+                _preloadable = preloadable;
+            }
 
             public static Advanced Unlimited(Func<uint, IEnumerable<Stage>> func) => new Advanced(func, UnlimitedCount);
 
-            public static Advanced Unlimited(EventWaitHandle eventWaitHandle, Func<uint, IEnumerable<Stage>> func) => 
+            public static Advanced Unlimited(EventWaitHandle eventWaitHandle, Func<uint, IEnumerable<Stage>> func) =>
                 new Advanced(eventWaitHandle, func, UnlimitedCount);
 
-            public sealed override bool IsDynamic => IsUnlimited;
+            public sealed override bool IsDynamic => IsUnlimited || !_preloadable;
 
             protected override IEnumerable<Stage> GetStages(uint index) => _stageProvidingFunc?.Invoke(index);
 

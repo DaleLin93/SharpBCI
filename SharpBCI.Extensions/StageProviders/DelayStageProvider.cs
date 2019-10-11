@@ -10,6 +10,8 @@ namespace SharpBCI.Extensions.StageProviders
 
         public DelayStageProvider(string cue, ulong milliseconds) : base(new Stage { Identifier = "Delay" + milliseconds, Cue = cue, Duration = milliseconds }) { }
 
+        public DelayStageProvider(string identifier, string cue, ulong milliseconds) : base(new Stage { Identifier = identifier, Cue = cue, Duration = milliseconds }) { }
+
     }
 
 }

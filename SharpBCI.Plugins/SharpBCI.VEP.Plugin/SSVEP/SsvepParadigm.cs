@@ -67,13 +67,15 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
                 public SsvepStimulationType StimulationType;
 
-                public Optional<Keys> PressKeyToStart;
+                public Optional<Keys> PressKeyToStartBlock;
 
-                public ulong TrialDuration;
+                public TrialPreference TrialPreference;
 
-                public uint TrialCount;
+                public byte ExperimentBlockCount;
 
-                public ulong InterStimulusInterval;
+                public ulong InterBlockInterval;
+
+                public uint TrialCountPerBlock;
 
             }
 
@@ -99,16 +101,18 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             private static readonly Parameter<SsvepStimulationType> StimulationType = Parameter<SsvepStimulationType>.OfEnum("Stimulation Type", SsvepStimulationType.SineGradient);
 
-            private static readonly Parameter<Optional<Keys>> PressKeyToStart = Parameter<Optional<Keys>>.CreateBuilder("Press Key To Start")
+            private static readonly Parameter<Optional<Keys>> PressKeyToStartBlock = Parameter<Optional<Keys>>.CreateBuilder("Press Key To Start Block")
                 .SetMetadata(OptionalPresenter.ValueTypePresentingContextProperty, new Context {[Presenters.PresenterProperty] = SelectablePresenter.Instance})
                 .SetDefaultValue(new Optional<Keys>(false, Keys.S))
                 .Build();
 
-            private static readonly Parameter<ulong> TrialDuration = new Parameter<ulong>("Trial Duration", "ms", null, 5000);
+            private static readonly Parameter<TrialPreference> TrialPreference = new Parameter<TrialPreference>("Trial", "ms", null, new TrialPreference(5000, 1000));
 
-            private static readonly Parameter<uint> TrialCount = new Parameter<uint>("Trial Count", null, null, Predicates.Positive, 50);
+            private static readonly Parameter<byte> ExperimentBlockCount = new Parameter<byte>("Experiment Block Count", null, null, Predicates.Positive, 1);
 
-            private static readonly Parameter<ulong> InterStimulusInterval = new Parameter<ulong>("Inter-Stimulus Interval", "ms", null, 1300);
+            private static readonly Parameter<ulong> InterBlockInterval = new Parameter<ulong>("Inter-Block Interval", "ms", null, 5000);
+
+            private static readonly Parameter<uint> TrialCountPerBlock = new Parameter<uint>("Trial Count Per Block", null, null, Predicates.Positive, 50);
 
             // GUI
 
@@ -175,8 +179,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
                 new ParameterGroup("Display", Screen),
-                new ParameterGroup("General", Debug, Baseline, Patterns, StimulationType, PressKeyToStart),
-                new ParameterGroup("Trial Params", TrialDuration, TrialCount, InterStimulusInterval),
+                new ParameterGroup("General", Debug, Baseline, Patterns, StimulationType, PressKeyToStartBlock),
+                new ParameterGroup("Trial Params", TrialPreference, ExperimentBlockCount, InterBlockInterval, TrialCountPerBlock),
                 new ParameterGroup("User Interface", BackgroundColor, BlockSize, BlockLayout, BlockPosition, BlockBorder, BlockColors, BlockFixationPoint, CheckerboardDensity),
             };
 
@@ -226,10 +230,11 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                     Baseline = Baseline.Get(context),
                     Patterns = Patterns.Get(context, ParseMultiple),
                     StimulationType = StimulationType.Get(context),
-                    PressKeyToStart = PressKeyToStart.Get(context),
-                    TrialDuration = TrialDuration.Get(context),
-                    TrialCount = TrialCount.Get(context),
-                    InterStimulusInterval = InterStimulusInterval.Get(context),
+                    PressKeyToStartBlock = PressKeyToStartBlock.Get(context),
+                    TrialPreference = TrialPreference.Get(context),
+                    ExperimentBlockCount = ExperimentBlockCount.Get(context),
+                    InterBlockInterval = InterBlockInterval.Get(context),
+                    TrialCountPerBlock = TrialCountPerBlock.Get(context),
                 }
             });
 
@@ -247,14 +252,19 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             new ConditionStageProvider(Config.Test.Debug, new DelayStageProvider(Config.Test.Patterns.Join("\n"), 2500)),
             new CountdownStageProvider(SystemVariables.PreparationCountdown.Get(SystemVariables.Context)),
             new ConditionStageProvider(Config.Test.Baseline.IsAvailable, new BaselineStageProvider(Config.Test.Baseline.Duration)),
-            new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
             new DelayStageProvider(1000),
-            new EventWaitingStageProvider(eventWaitHandle),
-            new RepeatingStageProvider.Simple(new[]
-            {
-                new Stage {Marker = MarkerDefinitions.TrialStartMarker, Duration = Config.Test.TrialDuration},
-                new Stage {Marker = MarkerDefinitions.TrialEndMarker, Duration = Config.Test.InterStimulusInterval},
-            }, Config.Test.TrialCount),
+            new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
+            new RepeatingStageProvider.Advanced(blockIndex => new CompositeStageProvider(
+                new ConditionStageProvider(eventWaitHandle != null, new EventWaitingStageProvider(eventWaitHandle)),
+                new MarkedStageProvider(MarkerDefinitions.BlockStartMarker),
+                new RepeatingStageProvider.Simple(new[]
+                {
+                    new Stage {Marker = MarkerDefinitions.TrialStartMarker, Duration = Config.Test.TrialPreference.Duration},
+                    new Stage {Marker = MarkerDefinitions.TrialEndMarker, Duration = Config.Test.TrialPreference.Interval},
+                }, Config.Test.TrialCountPerBlock),
+                new MarkedStageProvider(MarkerDefinitions.BlockEndMarker),
+                new ConditionStageProvider(blockIndex < Config.Test.ExperimentBlockCount - 1, new DelayStageProvider(Config.Test.InterBlockInterval))
+            ), Config.Test.ExperimentBlockCount, eventWaitHandle == null),
             new MarkedStageProvider(MarkerDefinitions.ParadigmEndMarker),
             new ConditionStageProvider(Config.Test.Baseline.IsAvailable && Config.Test.Baseline.TwoSided, new BaselineStageProvider(Config.Test.Baseline.Duration)),
             new DelayStageProvider(3000)

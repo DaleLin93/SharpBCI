@@ -65,21 +65,53 @@ namespace SharpBCI.Extensions
 
         public const int GlobalMarkerBase = 0;
 
+        public const int SessionMarkerBase = 10;
+
+        public const int ParadigmMarkerBase = 20;
+
+        public const int BlockMarkerBase = 30;
+
+        public const int TrialMarkerBase = 40;
+
         public const int CustomMarkerBase = 100;
 
-        [MarkerDefinition(GlobalGroupName + ":paradigm")] public const int ParadigmStartMarker = GlobalMarkerBase + 1;
+        #region Baseline Part
 
-        [MarkerDefinition(GlobalGroupName + ":paradigm")] public const int ParadigmEndMarker = GlobalMarkerBase + 2;
+        [MarkerDefinition(GlobalGroupName + ":baseline")] public const int BaselineStartMarker = GlobalMarkerBase + 1;
 
-        [MarkerDefinition(GlobalGroupName + ":trial", 0xFF008800)] public const int TrialStartMarker = GlobalMarkerBase + 11;
+        [MarkerDefinition(GlobalGroupName + ":baseline")] public const int BaselineEndMarker = GlobalMarkerBase + 2;
 
-        [MarkerDefinition(GlobalGroupName + ":trial", 0xFF880000)] public const int TrialEndMarker = GlobalMarkerBase + 12;
+        #endregion
 
-        [MarkerDefinition(GlobalGroupName + ":baseline")] public const int BaselineStartMarker = GlobalMarkerBase + 21;
+        #region Session Part
 
-        [MarkerDefinition(GlobalGroupName + ":baseline")] public const int BaselineEndMarker = GlobalMarkerBase + 22;
+        [MarkerDefinition(GlobalGroupName + ":session", 0xFFCC0000)] public const int UserExitMarker = SessionMarkerBase + 9;
 
-        [MarkerDefinition(GlobalGroupName + ":session", 0xFFCC0000)] public const int UserExitMarker = GlobalMarkerBase + 31;
+        #endregion
+
+        #region Paradigm Part
+
+        [MarkerDefinition(GlobalGroupName + ":paradigm")] public const int ParadigmStartMarker = ParadigmMarkerBase + 1;
+
+        [MarkerDefinition(GlobalGroupName + ":paradigm")] public const int ParadigmEndMarker = ParadigmMarkerBase + 2;
+
+        #endregion
+
+        #region Block Part
+
+        [MarkerDefinition(GlobalGroupName + ":block")] public const int BlockStartMarker = BlockMarkerBase + 1;
+
+        [MarkerDefinition(GlobalGroupName + ":block")] public const int BlockEndMarker = BlockMarkerBase + 2;
+
+        #endregion
+
+        #region Trial Part
+
+        [MarkerDefinition(GlobalGroupName + ":trial", 0xFF008800)] public const int TrialStartMarker = TrialMarkerBase + 1;
+
+        [MarkerDefinition(GlobalGroupName + ":trial", 0xFF880000)] public const int TrialEndMarker = TrialMarkerBase + 2;
+
+        #endregion
 
         static MarkerDefinitions()
         {
