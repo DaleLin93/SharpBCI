@@ -31,7 +31,7 @@ namespace SharpBCI.EGI
 
             public static readonly Parameter<string> IpAddressParam = new Parameter<string>("IP Address", defaultValue: "127.0.0.1");
 
-            public static readonly Parameter<int> PortParam = new Parameter<int>("Port", 1234);
+            public static readonly Parameter<int> PortParam = new Parameter<int>("Port", 55513);
 
             public static readonly Parameter<ushort> SyncLimitParam = new Parameter<ushort>("Sync Limit", "ms", null, 5);
 
@@ -194,7 +194,7 @@ namespace SharpBCI.EGI
                 _stream.Flush();
                 _stream.ReadByte();
                 var ackTime = DateTimeUtils.CurrentTimeMillis - start;
-                diff = ackTime - syncTime;
+                diff = (ackTime - syncTime) / 2;
                 if (diff <= SyncLimit.TotalMilliseconds) return start;
                 retry++;
             } while (retry <= SyncRetryCount);
