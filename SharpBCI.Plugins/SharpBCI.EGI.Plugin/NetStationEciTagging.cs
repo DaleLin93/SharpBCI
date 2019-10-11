@@ -21,10 +21,10 @@ namespace SharpBCI.EGI
     /// See: https://github.com/Psychtoolbox-3/Psychtoolbox-3/blob/fab0b49fd38ec477e3b4573f23dbd7766b0a89aa/Psychtoolbox/PsychHardware/NetStation.m
     /// </summary>
     [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
-    public class NetStationTagging : StreamConsumer<Timestamped<IMarker>>, IDisposable
+    public class NetStationEciTagging : StreamConsumer<Timestamped<IMarker>>, IDisposable
     {
 
-        public const string ConsumerName = "Net Station Tagging";
+        public const string ConsumerName = "Net Station ECI Tagging";
 
         public class Factory : StreamConsumerFactory<Timestamped<IMarker>>
         {
@@ -40,7 +40,7 @@ namespace SharpBCI.EGI
             public Factory() : base(IpAddressParam, PortParam, SyncLimitParam, SyncRetryCountParam) { }
 
             public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num) =>
-                new NetStationTagging(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context),
+                new NetStationEciTagging(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context),
                     TimeSpan.FromMilliseconds(SyncLimitParam.Get(context)), SyncRetryCountParam.Get(context));
 
         }
@@ -51,11 +51,11 @@ namespace SharpBCI.EGI
 
         private long _syncBaseTime;
         
-        public NetStationTagging(int port, TimeSpan syncLimit, ushort syncRetryCount) : this(IPAddress.Loopback, port, syncLimit, syncRetryCount) { }
+        public NetStationEciTagging(int port, TimeSpan syncLimit, ushort syncRetryCount) : this(IPAddress.Loopback, port, syncLimit, syncRetryCount) { }
 
-        public NetStationTagging(IPAddress address, int port, TimeSpan syncLimit, ushort syncRetryCount) : this(new IPEndPoint(address, port), syncLimit, syncRetryCount) { }
+        public NetStationEciTagging(IPAddress address, int port, TimeSpan syncLimit, ushort syncRetryCount) : this(new IPEndPoint(address, port), syncLimit, syncRetryCount) { }
 
-        public NetStationTagging(IPEndPoint endPoint, TimeSpan syncLimit, ushort syncRetryCount)
+        public NetStationEciTagging(IPEndPoint endPoint, TimeSpan syncLimit, ushort syncRetryCount)
         {
             EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
             SyncLimit = syncLimit;
@@ -65,7 +65,7 @@ namespace SharpBCI.EGI
             Start();
         }
 
-        ~NetStationTagging() => Stop();
+        ~NetStationEciTagging() => Stop();
 
         public IPEndPoint EndPoint { get; }
 
