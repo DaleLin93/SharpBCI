@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using MarukoLib.DirectX;
@@ -13,7 +12,6 @@ using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Patterns;
 using SharpDX;
-using SharpDX.Direct3D9;
 using D2D1 = SharpDX.Direct2D1;
 using D3D11 = SharpDX.Direct3D11;
 using DXGI = SharpDX.DXGI;
@@ -285,8 +283,6 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         }
 
-        private readonly object _renderContextLock = new object();
-
         private readonly Session _session;
 
         private readonly SsvepParadigm _paradigm;
@@ -327,19 +323,11 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         /* D3D Resources */
 
-        private readonly DXGI.PresentParameters _presentParameters = new DXGI.PresentParameters();
-        
         private D3D11.Device _d3DDevice;
-
-        private D3D11.DeviceContext _d3DDeviceContext;
-
-        private DXGI.SwapChain1 _swapChain;
-
-        private D3D11.RenderTargetView _renderTargetView;
 
         private D2D1.Factory _d2DFactory;
 
-        private D2D1.RenderTarget _renderTarget;
+        private D2D1.WindowRenderTarget _renderTarget;
 
         private D2D1.SolidColorBrush _solidColorBrush;
 
@@ -419,59 +407,38 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         public new void Dispose()
         {
             _presenter.Destroy();
-            lock (_renderContextLock)
-                DisposeDirectXResources();
+            DisposeDirectXResources();
             base.Dispose();
         }
 
         private void UpdateResources()
         {
-            lock (_renderContextLock)
-                InitializeDirectXResources();
+            if (_renderTarget == null) return;
+            var clientSize = ClientSize;
+            _renderTarget.Resize(new Size2(clientSize.Width, clientSize.Height));
             var guiScale = (float)GraphicsUtils.Scale;
             var borderWidth = Math.Max(0, (float)_paradigm.Config.Gui.BlockBorder.Width * guiScale);
             var fixationPointSize = _paradigm.Config.Gui.BlockFixationPoint.Size * guiScale;
             var blockSize = UpdateBlocks(borderWidth, fixationPointSize);
-            lock (_renderContextLock)
-                _presenter.Initialize(_renderTarget, new RawVector2(blockSize.X - borderWidth * 2, blockSize.Y - borderWidth * 2), _blocks);
+            _presenter.Initialize(_renderTarget, new RawVector2(blockSize.X - borderWidth * 2, blockSize.Y - borderWidth * 2), _blocks);
         }
 
         private void InitializeDirectXResources()
         {
             var clientSize = ClientSize;
-            var backBufferDesc = new DXGI.ModeDescription(clientSize.Width, clientSize.Height,
-                new DXGI.Rational(60, 1), DXGI.Format.R8G8B8A8_UNorm);
 
-            var swapChainDesc = new DXGI.SwapChainDescription()
-            {
-                ModeDescription = backBufferDesc,
-                SampleDescription = new DXGI.SampleDescription(1, 0),
-                Usage = DXGI.Usage.RenderTargetOutput,
-                BufferCount = 1,
-                OutputHandle = Handle,
-                SwapEffect = DXGI.SwapEffect.Discard,
-                IsWindowed = _paradigm.Config.Test.Debug
-            };
-
-            D3D11.Device.CreateWithSwapChain(SharpDX.Direct3D.DriverType.Hardware, D3D11.DeviceCreationFlags.BgraSupport,
-                new[] { SharpDX.Direct3D.FeatureLevel.Level_10_0 }, swapChainDesc,
-                out _d3DDevice, out var swapChain);
-            _d3DDeviceContext = _d3DDevice.ImmediateContext;
-            
-            _swapChain = new DXGI.SwapChain1(swapChain.NativePointer);
-// TODO            _swapChain.ResizeTarget();
+            _d3DDevice = new D3D11.Device(SharpDX.Direct3D.DriverType.Hardware, D3D11.DeviceCreationFlags.BgraSupport, SharpDX.Direct3D.FeatureLevel.Level_10_0);
 
             _d2DFactory = new D2D1.Factory();
 
-            using (var backBuffer = _swapChain.GetBackBuffer<D3D11.Texture2D>(0))
-            {
-                _renderTargetView = new D3D11.RenderTargetView(_d3DDevice, backBuffer);
-                _renderTarget = new D2D1.RenderTarget(_d2DFactory, backBuffer.QueryInterface<DXGI.Surface>(),
-                    new D2D1.RenderTargetProperties(new D2D1.PixelFormat(DXGI.Format.Unknown, D2D1.AlphaMode.Premultiplied)))
+            _renderTarget = new D2D1.WindowRenderTarget(_d2DFactory,
+                new D2D1.RenderTargetProperties(new D2D1.PixelFormat(DXGI.Format.Unknown, D2D1.AlphaMode.Ignore)),
+                new D2D1.HwndRenderTargetProperties
                 {
-                    TextAntialiasMode = D2D1.TextAntialiasMode.Cleartype
-                };
-            }
+                    Hwnd = Handle,
+                    PixelSize = new Size2(clientSize.Width, clientSize.Height),
+                    PresentOptions = D2D1.PresentOptions.Immediately, 
+                });
 
             _solidColorBrush = new D2D1.SolidColorBrush(_renderTarget, Color.White);
 
@@ -489,10 +456,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             _textFormat.Dispose();
             _dwFactory.Dispose();
             _renderTarget.Dispose();
-            _renderTargetView.Dispose();
             _d2DFactory.Dispose();
-            _swapChain.Dispose();
-            _d3DDeviceContext.Dispose();
             _d3DDevice.Dispose();
         }
 
@@ -561,53 +525,49 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         private void OnRender()
         {
-            lock (_renderContextLock)
+            if (_renderTarget?.IsDisposed ?? true) return;
+
+            _renderTarget.BeginDraw();
+            _renderTarget.Clear(_backgroundColor);
+
+            if (_paradigmStarted) // Draw blocks
             {
-                if (_renderTarget?.IsDisposed ?? true) return;
-
-                _renderTarget.BeginDraw();
-                _renderTarget.Clear(_backgroundColor);
-
-                if (_paradigmStarted) // Draw blocks
+                var secsPassed = (CurrentTime - _stageUpdatedAt) / 1000.0;
+                foreach (var block in _blocks)
                 {
-                    var secsPassed = (CurrentTime - _stageUpdatedAt) / 1000.0;
-                    foreach (var block in _blocks)
+                    if (block.BorderRect != null)
                     {
-                        if (block.BorderRect != null)
-                        {
-                            _solidColorBrush.Color = _blockBorderColor;
-                            _renderTarget.FillRectangle(block.BorderRect.Value, _solidColorBrush);
-                        }
-                        if (!_trialStarted || block.Pattern == null)
-                        {
-                            _solidColorBrush.Color = _blockNormalColor;
-                            _renderTarget.FillRectangle(block.ContentRect, _solidColorBrush);
-                        }
-                        else
-                            _presenter.Present(_renderTarget, block, secsPassed);
+                        _solidColorBrush.Color = _blockBorderColor;
+                        _renderTarget.FillRectangle(block.BorderRect.Value, _solidColorBrush);
+                    }
+                    if (!_trialStarted || block.Pattern == null)
+                    {
+                        _solidColorBrush.Color = _blockNormalColor;
+                        _renderTarget.FillRectangle(block.ContentRect, _solidColorBrush);
+                    }
+                    else
+                        _presenter.Present(_renderTarget, block, secsPassed);
 
-                        if (block.CenterPointEllipse != null)
-                        {
-                            _solidColorBrush.Color = _blockFixationPointColor;
-                            _renderTarget.FillEllipse(block.CenterPointEllipse.Value, _solidColorBrush);
-                        }
+                    if (block.CenterPointEllipse != null)
+                    {
+                        _solidColorBrush.Color = _blockFixationPointColor;
+                        _renderTarget.FillEllipse(block.CenterPointEllipse.Value, _solidColorBrush);
                     }
                 }
-                else if (!(_displayText?.IsBlank() ?? true)) // Draw text
-                {
-                    _solidColorBrush.Color = _fontColor;
-                    _renderTarget.DrawText(_displayText, _textFormat, new RawRectangleF(0, 0, Width, Height),
-                        _solidColorBrush, D2D1.DrawTextOptions.None);
-                }
-
-                _renderTarget.EndDraw();
-
-                _swapChain.Present(1, DXGI.PresentFlags.None, _presentParameters);
             }
+            else if (!(_displayText?.IsBlank() ?? true)) // Draw text
+            {
+                _solidColorBrush.Color = _fontColor;
+                _renderTarget.DrawText(_displayText, _textFormat, new RawRectangleF(0, 0, Width, Height),
+                    _solidColorBrush, D2D1.DrawTextOptions.None);
+            }
+
+            _renderTarget.EndDraw();
         }
 
         private void Window_OnLoaded(object sender, EventArgs e)
         {
+            InitializeDirectXResources();
             UpdateResources();
 
             _session.Start();
@@ -626,15 +586,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             Stop(true);
         }
 
-        private void Window_OnResize(object sender, EventArgs e)
-        {
-            lock (_renderContextLock)
-            {
-                if (_d3DDeviceContext?.IsDisposed ?? true) return;
-                DisposeDirectXResources();
-            }
-            UpdateResources();
-        }
+        private void Window_OnResize(object sender, EventArgs e) => UpdateResources();
 
         private void StageProgram_StageChanged(object sender, StageChangedEventArgs e)
         {
@@ -677,7 +629,6 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         [SuppressMessage("ReSharper", "InconsistentlySynchronizedField")]
         private void Stop(bool userInterrupted = false)
         {
-            _swapChain.IsFullScreen = false;
             Dispose();
             Close();
             _stageProgram.Stop();
