@@ -37,11 +37,13 @@ namespace SharpBCI.EGI
 
             public static readonly Parameter<ushort> SyncRetryCountParam = new Parameter<ushort>("Sync Retry Count", 1000);
 
-            public Factory() : base(IpAddressParam, PortParam, SyncLimitParam, SyncRetryCountParam) { }
+            public static readonly Parameter<MarkerDefinition?> TrEvOverridenParam = new Parameter<MarkerDefinition?>("TREV Overriden", "Override marker label to TREV", defaultValue: null);
+
+            public Factory() : base(IpAddressParam, PortParam, SyncLimitParam, SyncRetryCountParam, TrEvOverridenParam) { }
 
             public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new NetStationEciTagging(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context),
-                    TimeSpan.FromMilliseconds(SyncLimitParam.Get(context)), SyncRetryCountParam.Get(context));
+                    TimeSpan.FromMilliseconds(SyncLimitParam.Get(context)), SyncRetryCountParam.Get(context), TrEvOverridenParam.Get(context));
 
         }
 
@@ -50,16 +52,19 @@ namespace SharpBCI.EGI
         private readonly Stream _stream;
 
         private long _syncBaseTime;
-        
-        public NetStationEciTagging(int port, TimeSpan syncLimit, ushort syncRetryCount) : this(IPAddress.Loopback, port, syncLimit, syncRetryCount) { }
 
-        public NetStationEciTagging(IPAddress address, int port, TimeSpan syncLimit, ushort syncRetryCount) : this(new IPEndPoint(address, port), syncLimit, syncRetryCount) { }
+        public NetStationEciTagging(int port, TimeSpan syncLimit, ushort syncRetryCount, MarkerDefinition? trevOverriden = null) 
+            : this(IPAddress.Loopback, port, syncLimit, syncRetryCount, trevOverriden) { }
 
-        public NetStationEciTagging(IPEndPoint endPoint, TimeSpan syncLimit, ushort syncRetryCount)
+        public NetStationEciTagging(IPAddress address, int port, TimeSpan syncLimit, ushort syncRetryCount, MarkerDefinition? trevOverriden = null)
+            : this(new IPEndPoint(address, port), syncLimit, syncRetryCount, trevOverriden) { }
+
+        public NetStationEciTagging(IPEndPoint endPoint, TimeSpan syncLimit, ushort syncRetryCount, MarkerDefinition? trevOverriden = null)
         {
             EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
             SyncLimit = syncLimit;
             SyncRetryCount = syncRetryCount;
+            TrevOverriden = trevOverriden;
             _tcpClient = Connect(endPoint);
             _stream = _tcpClient.GetStream();
             Start();
@@ -72,6 +77,8 @@ namespace SharpBCI.EGI
         public TimeSpan SyncLimit { get; }
 
         public ushort SyncRetryCount { get; }
+
+        public MarkerDefinition? TrevOverriden { get; }
 
         private static TcpClient Connect(IPEndPoint endPoint)
         {
@@ -270,11 +277,13 @@ namespace SharpBCI.EGI
 
         public override void Accept(Timestamped<IMarker> value)
         {
-            var mark = value.Value;
-            if (value.Value.Label == null)
-                SendEvent(mark.Code);
+            var marker = value.Value;
+            var label = marker.Label;
+            if (TrevOverriden.HasValue && TrevOverriden.Value.Code == marker.Code) label = "TREV"; 
+            if (label == null)
+                SendEvent(marker.Code);
             else 
-                SendEvent(mark.Label, mark.Code, false);
+                SendEvent(label, marker.Code, false);
         }
 
         public void Dispose() => Stop();
