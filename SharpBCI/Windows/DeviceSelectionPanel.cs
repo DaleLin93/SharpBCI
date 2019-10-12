@@ -37,6 +37,27 @@ namespace SharpBCI.Windows
 
     }
 
+    public class ConsumerChangedEventArgs : EventArgs
+    {
+
+        public readonly DeviceType DeviceType;
+
+        public readonly PluginStreamConsumer OldConsumer, NewConsumer;
+
+        public readonly IReadonlyContext OldConsumerParams;
+
+        public IReadonlyContext NewConsumerParams;
+
+        public ConsumerChangedEventArgs(DeviceType deviceType, PluginStreamConsumer oldConsumer, PluginStreamConsumer newConsumer, IReadonlyContext oldConsumerParams)
+        {
+            DeviceType = deviceType;
+            OldConsumer = oldConsumer;
+            NewConsumer = newConsumer;
+            OldConsumerParams = oldConsumerParams;
+        }
+
+    }
+
     public class DeviceSelectionPanel : StackPanel
     {
 
@@ -167,6 +188,8 @@ namespace SharpBCI.Windows
         public event EventHandler<DeviceChangedEventArgs> DeviceChanged;
 
         public event EventHandler<ConsumerChangedEventArgs> ConsumerChanged;
+
+        private readonly ReferenceCounter _deviceParamsUpdateLock = new ReferenceCounter();
 
         private readonly IDictionary<DeviceType, DeviceTypeViewModel> _deviceControlGroups = new Dictionary<DeviceType, DeviceTypeViewModel>(16);
 
@@ -305,6 +328,7 @@ namespace SharpBCI.Windows
         
         private void DeviceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_deviceParamsUpdateLock.IsReferred) return;
             var controlGroup = (DeviceTypeViewModel) ((ComboBox) sender).Tag;
             var newDevice = controlGroup.DeviceComboBox.SelectedItem as PluginDevice;
             controlGroup.ConfigButton.IsEnabled = newDevice?.Factory != null;
@@ -321,12 +345,19 @@ namespace SharpBCI.Windows
             var controlGroup = (DeviceTypeViewModel) ((Button) sender).Tag;
             var selectedItem = (PluginDevice) controlGroup.DeviceComboBox.SelectedItem;
             if (selectedItem?.Factory == null) return;
-            var deviceConfigWindow = new DeviceConfigWindow(selectedItem, controlGroup.CurrentDevice.Params,
+            var deviceConfigWindow = new DeviceConfigWindow(controlGroup.DeviceType, selectedItem, controlGroup.CurrentDevice.Params,
                 controlGroup.CurrentConsumers.Select(Constructable<PluginStreamConsumer>.ToTuple).ToArray()) {Width = 500};
+            deviceConfigWindow.DeviceChanged += (s0, e0) => DeviceChanged?.Invoke(this, e0);
             deviceConfigWindow.ConsumerChanged += (s0, e0) => ConsumerChanged?.Invoke(this, e0);
-            if (deviceConfigWindow.ShowDialog(out var deviceParams, out var consumers))
+            if (deviceConfigWindow.ShowDialog(out var device, out var consumers))
             {
-                controlGroup.CurrentDevice.Params = deviceParams;
+                if (controlGroup.CurrentDevice.Target != device.Item1)
+                    using (_ = _deviceParamsUpdateLock.Ref()) 
+                    {
+                        controlGroup.CurrentDevice.Target = device.Item1;
+                        controlGroup.DeviceComboBox.FindAndSelect(device.Item1?.Identifier, 0);
+                    }
+                controlGroup.CurrentDevice.Params = device.Item2;
                 controlGroup.CurrentConsumers = consumers.Select(Constructable<PluginStreamConsumer>.Of).ToArray();
             }
         }

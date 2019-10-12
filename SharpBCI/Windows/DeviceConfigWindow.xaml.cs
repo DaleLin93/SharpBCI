@@ -17,24 +17,6 @@ using SharpBCI.Plugins;
 namespace SharpBCI.Windows
 {
 
-    public class ConsumerChangedEventArgs : EventArgs
-    {
-
-        public readonly PluginStreamConsumer OldConsumer, NewConsumer;
-
-        public readonly IReadonlyContext OldConsumerParams;
-
-        public IReadonlyContext NewConsumerParams;
-
-        public ConsumerChangedEventArgs(PluginStreamConsumer oldConsumer, PluginStreamConsumer newConsumer, IReadonlyContext oldConsumerParams)
-        {
-            OldConsumer = oldConsumer;
-            NewConsumer = newConsumer;
-            OldConsumerParams = oldConsumerParams;
-        }
-
-    }
-
     /// <inheritdoc cref="Window" />
     /// <summary>
     /// Interaction logic for ParameterizedConfigWindow.xaml
@@ -42,7 +24,7 @@ namespace SharpBCI.Windows
     public partial class DeviceConfigWindow
     {
 
-        private class ConsumerConfigViewModel
+        private class EntityConfigViewModel<T>
         {
 
             internal readonly StackPanel Container;
@@ -51,41 +33,65 @@ namespace SharpBCI.Windows
 
             internal readonly ParameterPanel ParamPanel;
             
-            internal PluginStreamConsumer CurrentConsumer;
+            internal T Current;
 
-            public ConsumerConfigViewModel(IEnumerable consumers)
+            public EntityConfigViewModel(string type, string groupDesc, IEnumerable selections) : this(type, groupDesc, new StackPanel(), selections) { }
+
+            public EntityConfigViewModel(string type, string groupDesc, StackPanel container, IEnumerable selections)
             {
-                Container = new StackPanel();
-                var consumerGroupPanel = Container.AddGroupPanel("Consumer", "Consumer Selection");
-                ComboBox = new ComboBox {ItemsSource = consumers, Tag = this};
-                consumerGroupPanel.AddRow("Consumer", ComboBox);
+                Container = container;
+                var consumerGroupPanel = Container.AddGroupPanel(type, groupDesc);
+                ComboBox = new ComboBox {ItemsSource = selections, Tag = this};
+                consumerGroupPanel.AddRow(type, ComboBox);
                 ParamPanel = new ParameterPanel {AllowCollapse = false, Tag = this};
                 Container.Children.Add(ParamPanel);
             }
 
         }
 
+        private class DeviceConfigViewModel : EntityConfigViewModel<PluginDevice>
+        {
+            public DeviceConfigViewModel(StackPanel container, IEnumerable devices) : base("Device", "Device Selection", container, devices) { }
+        }
+
+        private class ConsumerConfigViewModel : EntityConfigViewModel<PluginStreamConsumer>
+        {
+            public ConsumerConfigViewModel(IEnumerable consumers) : base("Consumer", "Consumer Selection", consumers) { }
+        }
+
         public const string NoneIdentifier = "<NONE>";
+
+        public event EventHandler<DeviceChangedEventArgs> DeviceChanged;
 
         public event EventHandler<ConsumerChangedEventArgs> ConsumerChanged;
 
-        private readonly PluginDevice _device;
+        private readonly DeviceType _deviceType;
 
-        private readonly LinkedList<ConsumerConfigViewModel> _configViewModels = new LinkedList<ConsumerConfigViewModel>();
+        private readonly DeviceConfigViewModel _deviceViewModel;
+
+        private readonly LinkedList<ConsumerConfigViewModel> _consumerViewModels = new LinkedList<ConsumerConfigViewModel>();
 
         private bool _needResizeWindow;
 
-        public DeviceConfigWindow([NotNull] PluginDevice device, [CanBeNull] IReadonlyContext deviceParams,
+        public DeviceConfigWindow([NotNull] DeviceType deviceType, [CanBeNull] PluginDevice device, [CanBeNull] IReadonlyContext deviceParams,
             [CanBeNull] IReadOnlyCollection<Tuple<PluginStreamConsumer, IReadonlyContext>> consumers)
         {
             InitializeComponent();
             Title = $"{device.Identifier} Configuration";
 
-            _device = device;
+            _deviceType = deviceType;
+
+            _deviceViewModel = new DeviceConfigViewModel(DeviceConfigContainer, GetDeviceList(_deviceType));
+            _deviceViewModel.ComboBox.SelectionChanged += DeviceComboBox_OnSelectionChanged;
+            _deviceViewModel.ComboBox.SelectedIndex = 0;
+            _deviceViewModel.ParamPanel.ContextChanged += ConfigurationPanel_OnContextChanged;
+            _deviceViewModel.ParamPanel.LayoutChanged += ConfigurationPanel_OnLayoutChanged;
+            _deviceViewModel.Current = device;
+
             Loaded += (sender, e) =>
             {
-                InitializeDeviceConfigurationPanel(device ?? throw new ArgumentNullException(nameof(device)));
-                DeviceConfigurationPanel.Context = deviceParams ?? EmptyContext.Instance;
+                _deviceViewModel.ComboBox.FindAndSelect(device?.Identifier, 0);
+                _deviceViewModel.ParamPanel.Context = deviceParams ?? EmptyContext.Instance;
 
                 if (consumers != null)
                     foreach (var consumer in consumers)
@@ -93,31 +99,37 @@ namespace SharpBCI.Windows
                         if (string.IsNullOrWhiteSpace(consumer.Item1?.Identifier)) continue;
                         var viewModel = AddConsumerConfig();
                         viewModel.ComboBox.FindAndSelect(consumer.Item1.Identifier, 0);
-                        InitializeConsumerConfigurationPanel(viewModel, consumer.Item1);
                         viewModel.ParamPanel.Context = consumer.Item2 ?? EmptyContext.Instance;
                     }
 
-                if (!_configViewModels.Any()) AddConsumerConfig();
+                if (!_consumerViewModels.Any()) AddConsumerConfig();
             };
         }
 
         private ConsumerConfigViewModel AddConsumerConfig()
         {
-            var viewModel = new ConsumerConfigViewModel(GetConsumerList(_device.DeviceType));
+            var viewModel = new ConsumerConfigViewModel(GetConsumerList(_deviceType));
             viewModel.ComboBox.SelectionChanged += ConsumerComboBox_OnSelectionChanged;
             viewModel.ComboBox.SelectedIndex = 0;
             viewModel.ParamPanel.ContextChanged += ConfigurationPanel_OnContextChanged;
             viewModel.ParamPanel.LayoutChanged += ConfigurationPanel_OnLayoutChanged;
-            _configViewModels.AddLast(viewModel);
+            _consumerViewModels.AddLast(viewModel);
             ConsumersStackPanel.Children.Add(viewModel.Container);
             return viewModel;
         }
 
-        private static IEnumerable<IDescriptor> AsGroup(string name, IEnumerable<IDescriptor> @params)
+        private static IEnumerable<IDescriptor> AsGroup(IEnumerable<IDescriptor> @params)
         {
             if (@params == null) return EmptyArray<IDescriptor>.Instance;
             var array = @params.ToArray();
-            return array.Length == 0 ? array : new IDescriptor[] {new ParameterGroup(name, array) };
+            return array.Length == 0 ? array : new IDescriptor[] {new ParameterGroup(array) };
+        }
+
+        private static IList GetDeviceList(DeviceType deviceType)
+        {
+            var list = new List<object> { NoneIdentifier };
+            list.AddRange(App.Instance.Registries.Registry<PluginDevice>().Registered.Where(pd => pd.DeviceType == deviceType));
+            return list;
         }
 
         private static IList GetConsumerList(DeviceType deviceType)
@@ -130,41 +142,42 @@ namespace SharpBCI.Windows
             return list;
         }
 
-        public bool ShowDialog([NotNull] out IReadonlyContext deviceParams, [NotNull] out IReadOnlyCollection<Tuple<PluginStreamConsumer, IReadonlyContext>> consumers)
+        public bool ShowDialog([NotNull] out Tuple<PluginDevice, IReadonlyContext> device, [NotNull] out IReadOnlyCollection<Tuple<PluginStreamConsumer, IReadonlyContext>> consumers)
         {
-            deviceParams = EmptyContext.Instance;
+            device = new Tuple<PluginDevice, IReadonlyContext>(null, EmptyContext.Instance);
             consumers = EmptyArray<Tuple<PluginStreamConsumer, IReadonlyContext>>.Instance;
             var dialogResult = ShowDialog() ?? false;
             if (!dialogResult) return false;
-            deviceParams = DeviceConfigurationPanel.Context;
-            var consumerList = new List<Tuple<PluginStreamConsumer, IReadonlyContext>>(_configViewModels.Count);
-            consumerList.AddRange(from viewModel in _configViewModels where viewModel.CurrentConsumer != null 
-                select new Tuple<PluginStreamConsumer, IReadonlyContext>(viewModel.CurrentConsumer, viewModel.ParamPanel.Context));
+            device = new Tuple<PluginDevice, IReadonlyContext>(_deviceViewModel.Current, _deviceViewModel.ParamPanel.Context);
+            var consumerList = new List<Tuple<PluginStreamConsumer, IReadonlyContext>>(_consumerViewModels.Count);
+            consumerList.AddRange(from viewModel in _consumerViewModels where viewModel.Current != null 
+                select new Tuple<PluginStreamConsumer, IReadonlyContext>(viewModel.Current, viewModel.ParamPanel.Context));
             consumers = consumerList;
             return true;
         }
 
         private void InitializeDeviceConfigurationPanel(PluginDevice device)
         {
-            DeviceConfigurationPanel.SetDescriptors(device?.Factory as IParameterPresentAdapter, AsGroup("Device", device?.Factory.GetParameters(device.DeviceClass)));
+            _deviceViewModel.Current = device;
+            _deviceViewModel.ParamPanel.SetDescriptors(device?.Factory as IParameterPresentAdapter, AsGroup(device?.Factory.GetParameters(device.DeviceClass)));
 
             ScrollView.InvalidateScrollInfo();
-            _needResizeWindow = true;
+            _needResizeWindow = IsLoaded;
         }
 
         private void InitializeConsumerConfigurationPanel(ConsumerConfigViewModel consumerConfigViewModel, PluginStreamConsumer consumer)
         {
-            consumerConfigViewModel.ParamPanel.SetDescriptors(consumer?.Factory as IParameterPresentAdapter, consumer?.Factory.GetParameters(consumer.ConsumerClass));
+            consumerConfigViewModel.Current = consumer;
+            consumerConfigViewModel.ParamPanel.SetDescriptors(consumer?.Factory as IParameterPresentAdapter, AsGroup(consumer?.Factory.GetParameters(consumer.ConsumerClass)));
 
-            consumerConfigViewModel.CurrentConsumer = consumer;
             ScrollView.InvalidateScrollInfo();
-            _needResizeWindow = true;
+            _needResizeWindow = IsLoaded;
         }
 
         private void Confirm()
         {
-            var deviceInvalidParams = DeviceConfigurationPanel.GetInvalidParams().ToArray();
-            var consumerInvalidParamsArray = _configViewModels.Select(vm => vm.ParamPanel.GetInvalidParams().ToArray()).ToArray();
+            var deviceInvalidParams = _deviceViewModel.ParamPanel.GetInvalidParams().ToArray();
+            var consumerInvalidParamsArray = _consumerViewModels.Select(vm => vm.ParamPanel.GetInvalidParams().ToArray()).ToArray();
             if (deviceInvalidParams.Any() || (consumerInvalidParamsArray.Sum(p => (int?)p.Length) ?? 0) > 0)
             {
                 var stringBuilder = new StringBuilder();
@@ -193,6 +206,7 @@ namespace SharpBCI.Windows
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.Escape) Close();
             if (e.KeyStates == Keyboard.GetKeyStates(Key.Return) && Keyboard.Modifiers == ModifierKeys.Alt) Confirm();
         }
 
@@ -204,13 +218,26 @@ namespace SharpBCI.Windows
 
         private void ConfigurationPanel_OnContextChanged(object sender, ContextChangedEventArgs e) { }
 
+        private void DeviceComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var comboBox = (ComboBox)sender;
+            var viewModel = (DeviceConfigViewModel)comboBox.Tag;
+            var device = comboBox.SelectedItem as PluginDevice;
+
+            var eventArgs = new DeviceChangedEventArgs(_deviceType, viewModel.Current, device, viewModel.ParamPanel.Context);
+            DeviceChanged?.Invoke(this, eventArgs);
+
+            InitializeDeviceConfigurationPanel(device);
+            viewModel.ParamPanel.Context = eventArgs.NewDeviceParams ?? EmptyContext.Instance;
+        }
+
         private void ConsumerComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var comboBox = (ComboBox) sender;
             var viewModel = (ConsumerConfigViewModel) comboBox.Tag;
             var streamConsumer = comboBox.SelectedItem as PluginStreamConsumer;
 
-            var eventArgs = new ConsumerChangedEventArgs(viewModel.CurrentConsumer, streamConsumer, viewModel.ParamPanel.Context);
+            var eventArgs = new ConsumerChangedEventArgs(_deviceType, viewModel.Current, streamConsumer, viewModel.ParamPanel.Context);
             ConsumerChanged?.Invoke(this, eventArgs);
 
             InitializeConsumerConfigurationPanel(viewModel, streamConsumer);
