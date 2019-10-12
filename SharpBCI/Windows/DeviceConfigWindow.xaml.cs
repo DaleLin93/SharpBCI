@@ -71,6 +71,8 @@ namespace SharpBCI.Windows
 
         private readonly LinkedList<ConsumerConfigViewModel> _consumerViewModels = new LinkedList<ConsumerConfigViewModel>();
 
+        private bool _loadCompleted;
+
         private bool _needResizeWindow;
 
         public DeviceConfigWindow([NotNull] DeviceType deviceType, [CanBeNull] PluginDevice device, [CanBeNull] IReadonlyContext deviceParams,
@@ -103,6 +105,7 @@ namespace SharpBCI.Windows
                     }
 
                 if (!_consumerViewModels.Any()) AddConsumerConfig();
+                _loadCompleted = true;
             };
         }
 
@@ -200,7 +203,7 @@ namespace SharpBCI.Windows
         {
             if (!IsVisible || !_needResizeWindow || !IsLoaded) return;
             var contentHeight = StackPanel.Children.OfType<FrameworkElement>().Sum(el => el.ActualHeight);
-            this.UpdateWindowHeight(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight));
+            this.UpdateWindowHeight(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight), _loadCompleted);
             _needResizeWindow = false;
         }
 

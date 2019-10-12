@@ -23,7 +23,7 @@ namespace SharpBCI.Extensions.Windows
             return res;
         }
 
-        public static void UpdateWindowHeight(this Window window, double newHeight)
+        public static void UpdateWindowHeight(this Window window, double newHeight, bool animation = true)
         {
             var point = window.PointToScreen(new Point(window.ActualWidth / 2, window.ActualHeight / 2));
             var screen = System.Windows.Forms.Screen.FromPoint(point.RoundToSdPoint());
@@ -31,7 +31,7 @@ namespace SharpBCI.Extensions.Windows
             var maxHeight = screen.WorkingArea.Height / scaleFactor;
             newHeight = Math.Min(maxHeight, newHeight);
             var height = window.Height;
-            var disableAnimation = SystemVariables.DisableUiAnimation.Get(SystemVariables.Context);
+            var disableAnimation = animation && SystemVariables.DisableUiAnimation.Get(SystemVariables.Context);
             if (Math.Abs(newHeight - height) > 1.0)
             {
                 if (disableAnimation)
