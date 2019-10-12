@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
@@ -11,6 +12,7 @@ using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
+using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Devices.MarkerSources;
 using SharpBCI.Extensions.Streamers;
 
@@ -26,6 +28,22 @@ namespace SharpBCI.EGI
 
         public const string ConsumerName = "Net Station ECI Tagging";
 
+        public struct TrPulseGenParams
+        {
+
+            public readonly MarkerDefinition? StartSignal, EndSignal;
+
+            public readonly TimeSpan Interval;
+
+            public TrPulseGenParams(MarkerDefinition? startSignal, MarkerDefinition? endSignal, TimeSpan interval)
+            {
+                StartSignal = startSignal;
+                EndSignal = endSignal;
+                Interval = interval;
+            }
+
+        }
+
         public class Factory : StreamConsumerFactory<Timestamped<IMarker>>
         {
 
@@ -37,13 +55,35 @@ namespace SharpBCI.EGI
 
             public static readonly Parameter<ushort> SyncRetryCountParam = new Parameter<ushort>("Sync Retry Count", 1000);
 
-            public static readonly Parameter<MarkerDefinition?> TrEvOverridenParam = new Parameter<MarkerDefinition?>("TREV Overriden", "Override marker label to TREV", defaultValue: null);
+            public static readonly Parameter<bool> GenerateTrPulseParam = new Parameter<bool>("Generate TR Pulse", false);
 
-            public Factory() : base(IpAddressParam, PortParam, SyncLimitParam, SyncRetryCountParam, TrEvOverridenParam) { }
+            public static readonly Parameter<MarkerDefinition?> TrPulseStartSignalParam = new Parameter<MarkerDefinition?>("TR Pulse Start Signal", defaultValue: null);
 
-            public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num) =>
-                new NetStationEciTagging(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context),
-                    TimeSpan.FromMilliseconds(SyncLimitParam.Get(context)), SyncRetryCountParam.Get(context), TrEvOverridenParam.Get(context));
+            public static readonly Parameter<MarkerDefinition?> TrPulseEndSignalParam = new Parameter<MarkerDefinition?>("TR Pulse End Signal", defaultValue: null);
+
+            public static readonly Parameter<TimeInterval> TrPulseIntervalParam = new Parameter<TimeInterval>("TR Pulse Interval", defaultValue: new TimeInterval(2, TimeUnit.Second));
+
+            public Factory() : base(IpAddressParam, PortParam, SyncLimitParam, SyncRetryCountParam, 
+                GenerateTrPulseParam, TrPulseStartSignalParam, TrPulseEndSignalParam, TrPulseIntervalParam) { }
+
+            public override bool IsVisible(IReadonlyContext context, IDescriptor descriptor)
+            {
+                if (ReferenceEquals(descriptor, TrPulseStartSignalParam) 
+                    || ReferenceEquals(descriptor, TrPulseEndSignalParam) 
+                    || ReferenceEquals(descriptor, TrPulseIntervalParam)) 
+                    return GenerateTrPulseParam.Get(context);
+                return base.IsVisible(context, descriptor);
+            }
+
+            public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
+            {
+                TrPulseGenParams? trParams = null;
+                if (GenerateTrPulseParam.Get(context))
+                    trParams = new TrPulseGenParams(TrPulseStartSignalParam.Get(context),
+                        TrPulseEndSignalParam.Get(context), TrPulseIntervalParam.Get(context).TimeSpan);
+                return new NetStationEciTagging(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context),
+                    TimeSpan.FromMilliseconds(SyncLimitParam.Get(context)), SyncRetryCountParam.Get(context), trParams);
+            }
 
         }
 
@@ -51,22 +91,27 @@ namespace SharpBCI.EGI
 
         private readonly Stream _stream;
 
+        private readonly ManualResetEvent _trPulseEvent;
+
         private long _syncBaseTime;
 
-        public NetStationEciTagging(int port, TimeSpan syncLimit, ushort syncRetryCount, MarkerDefinition? trevOverriden = null) 
-            : this(IPAddress.Loopback, port, syncLimit, syncRetryCount, trevOverriden) { }
+        private Thread _trPulseThread;
 
-        public NetStationEciTagging(IPAddress address, int port, TimeSpan syncLimit, ushort syncRetryCount, MarkerDefinition? trevOverriden = null)
-            : this(new IPEndPoint(address, port), syncLimit, syncRetryCount, trevOverriden) { }
+        public NetStationEciTagging(int port, TimeSpan syncLimit, ushort syncRetryCount, TrPulseGenParams? trPulseParams = null) 
+            : this(IPAddress.Loopback, port, syncLimit, syncRetryCount, trPulseParams) { }
 
-        public NetStationEciTagging(IPEndPoint endPoint, TimeSpan syncLimit, ushort syncRetryCount, MarkerDefinition? trevOverriden = null)
+        public NetStationEciTagging(IPAddress address, int port, TimeSpan syncLimit, ushort syncRetryCount, TrPulseGenParams? trPulseParams = null)
+            : this(new IPEndPoint(address, port), syncLimit, syncRetryCount, trPulseParams) { }
+
+        public NetStationEciTagging(IPEndPoint endPoint, TimeSpan syncLimit, ushort syncRetryCount, TrPulseGenParams? trPulseParams = null)
         {
             EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
             SyncLimit = syncLimit;
             SyncRetryCount = syncRetryCount;
-            TrevOverriden = trevOverriden;
+            TrPulseParams = trPulseParams;
             _tcpClient = Connect(endPoint);
             _stream = _tcpClient.GetStream();
+            _trPulseEvent = trPulseParams == null ? null : new ManualResetEvent(false);
             Start();
         }
 
@@ -78,7 +123,7 @@ namespace SharpBCI.EGI
 
         public ushort SyncRetryCount { get; }
 
-        public MarkerDefinition? TrevOverriden { get; }
+        public TrPulseGenParams? TrPulseParams { get; }
 
         private static TcpClient Connect(IPEndPoint endPoint)
         {
@@ -92,13 +137,16 @@ namespace SharpBCI.EGI
 
                 stream.WriteFully(new[] { (byte)'Q', (byte)'M', (byte)'A', (byte)'C', (byte)'-' });
                 stream.Flush();
-                switch ((char)stream.ReadByte())
+                var resp = (char) stream.ReadByte();
+                switch (resp)
                 {
                     case 'F':
                         throw new IOException("Connection: ECI error");
                     case 'I':
                         if (stream.ReadByte() != 1) throw new IOException("Connection: Unknown ECI version");
                         break;
+                    default:
+                        throw new NotSupportedException($"Unknown symbol: '{resp}'");
                 }
             }
             catch (Exception)
@@ -185,28 +233,32 @@ namespace SharpBCI.EGI
 
         public long Synchronize()
         {
+            // TODO: sync with session clock
             var start = DateTimeUtils.CurrentTimeMillis;
             var retry = 0;
             long diff;
-            do
-            {
-                var bytes = new byte[sizeof(int)];
-                _stream.WriteByte((byte) 'A');
-                _stream.Flush();
-                _stream.ReadByte();
-                var syncTime = DateTimeUtils.CurrentTimeMillis - start;
-                _stream.WriteByte((byte) 'T');
-                bytes.WriteInt32AsNetworkOrder((int) syncTime);
-                _stream.Write(bytes, 0, sizeof(int));
-                _stream.Flush();
-                _stream.ReadByte();
-                var ackTime = DateTimeUtils.CurrentTimeMillis - start;
-                diff = (ackTime - syncTime) / 2;
-                if (diff <= SyncLimit.TotalMilliseconds) return start;
-                retry++;
-            } while (retry <= SyncRetryCount);
+            lock (_tcpClient)
+                do
+                {
+                    var bytes = new byte[sizeof(int)];
+                    _stream.WriteByte((byte) 'A');
+                    _stream.Flush();
+                    _stream.ReadByte();
+                    var syncTime = DateTimeUtils.CurrentTimeMillis - start;
+                    _stream.WriteByte((byte) 'T');
+                    bytes.WriteInt32AsNetworkOrder((int) syncTime);
+                    _stream.Write(bytes, 0, sizeof(int));
+                    _stream.Flush();
+                    _stream.ReadByte();
+                    var ackTime = DateTimeUtils.CurrentTimeMillis - start;
+                    diff = (ackTime - syncTime) / 2;
+                    if (diff <= SyncLimit.TotalMilliseconds) return start;
+                    retry++;
+                } while (retry <= SyncRetryCount);
             throw new IOException($"Synchronization did not succeed within {SyncLimit.TotalMilliseconds:N1} ms\n Synchronization accuracy is {diff} ms");
         }
+
+        public void SendTrEvt(bool waitForAck = false) => SendEvent("TREV", 0, waitForAck);
 
         public void SendEvent(int code, bool waitForAck = false) => SendEvent(code.ToString().TrimOrPadLeft(4, '0'), code, waitForAck);
 
@@ -219,6 +271,7 @@ namespace SharpBCI.EGI
 
         public void SendEvent(string name, int startTime, uint duration, KeyValuePair<string, object>[] keys, bool waitForAck = false)
         {
+            var bytes = new byte[sizeof(int)];
             var keyLength = 15;
             var keyDataList = new LinkedList<Tuple<string, string, byte[]>>();
             foreach (var key in keys)
@@ -229,61 +282,67 @@ namespace SharpBCI.EGI
                 keyDataList.AddLast(new Tuple<string, string, byte[]>(key.Key, type, data));
             }
 
-            var bytes = new byte[sizeof(int)];
-            _stream.WriteByte((byte) 'D');
-
-            // Write key length
-            bytes.WriteUInt16AsNetworkOrder((ushort) keyLength);
-            _stream.Write(bytes, 0, sizeof(ushort));
-
-            // Write start time
-            bytes.WriteInt32AsNetworkOrder(startTime);
-            _stream.Write(bytes, 0, sizeof(int));
-
-            // Write duration
-            bytes.WriteUInt32AsNetworkOrder(duration);
-            _stream.Write(bytes, 0, sizeof(uint));
-
-            // ReSharper disable once InvokeAsExtensionMethod for nullable string
-            foreach (var ch in StringUtils.TrimOrPadRight(name, 4, ' '))
-                _stream.WriteByte((byte) ch);
-
-            bytes.WriteInt16AsNetworkOrder(0);
-            _stream.Write(bytes, 0, sizeof(short));
-
-            // Write key count
-            _stream.WriteByte((byte) keyDataList.Count);
-
-            foreach (var key in keyDataList)
+            lock (_tcpClient)
             {
-                // Write key
-                // ReSharper disable once InvokeAsExtensionMethod for nullable string
-                foreach (var ch in StringUtils.TrimOrPadRight(key.Item1, 4, ' ')) _stream.WriteByte((byte)ch);
+                _stream.WriteByte((byte)'D');
 
-                // Write type
-                // ReSharper disable once InvokeAsExtensionMethod for nullable string
-                foreach (var ch in StringUtils.TrimOrPadRight(key.Item2, 4, ' ')) _stream.WriteByte((byte)ch);
-
-                // Write data length
-                bytes.WriteUInt16AsNetworkOrder((ushort) key.Item3.Length);
+                // Write key length
+                bytes.WriteUInt16AsNetworkOrder((ushort)keyLength);
                 _stream.Write(bytes, 0, sizeof(ushort));
 
-                // Write data
-                _stream.Write(key.Item3, 0, key.Item3.Length);
+                // Write start time
+                bytes.WriteInt32AsNetworkOrder(startTime);
+                _stream.Write(bytes, 0, sizeof(int));
+
+                // Write duration
+                bytes.WriteUInt32AsNetworkOrder(duration);
+                _stream.Write(bytes, 0, sizeof(uint));
+
+                // ReSharper disable once InvokeAsExtensionMethod for nullable string
+                foreach (var ch in StringUtils.TrimOrPadRight(name, 4, ' '))
+                    _stream.WriteByte((byte)ch);
+
+                bytes.WriteInt16AsNetworkOrder(0);
+                _stream.Write(bytes, 0, sizeof(short));
+
+                // Write key count
+                _stream.WriteByte((byte)keyDataList.Count);
+
+                foreach (var key in keyDataList)
+                {
+                    // Write key
+                    // ReSharper disable once InvokeAsExtensionMethod for nullable string
+                    foreach (var ch in StringUtils.TrimOrPadRight(key.Item1, 4, ' ')) _stream.WriteByte((byte)ch);
+
+                    // Write type
+                    // ReSharper disable once InvokeAsExtensionMethod for nullable string
+                    foreach (var ch in StringUtils.TrimOrPadRight(key.Item2, 4, ' ')) _stream.WriteByte((byte)ch);
+
+                    // Write data length
+                    bytes.WriteUInt16AsNetworkOrder((ushort)key.Item3.Length);
+                    _stream.Write(bytes, 0, sizeof(ushort));
+
+                    // Write data
+                    _stream.Write(key.Item3, 0, key.Item3.Length);
+                }
+                _stream.Flush();
+                if (waitForAck) _stream.ReadByte();
             }
-            _stream.Flush();
-            if (waitForAck) _stream.ReadByte();
         }
 
         public override void Accept(Timestamped<IMarker> value)
         {
             var marker = value.Value;
             var label = marker.Label;
-            if (TrevOverriden.HasValue && TrevOverriden.Value.Code == marker.Code) label = "TREV"; 
             if (label == null)
                 SendEvent(marker.Code);
             else 
-                SendEvent(label, marker.Code, false);
+                SendEvent(label, marker.Code);
+            if (TrPulseParams == null) return;
+            var startCode = TrPulseParams?.StartSignal?.Code;
+            var endCode = TrPulseParams?.EndSignal?.Code;
+            if (startCode.HasValue && startCode.Value == marker.Code) _trPulseEvent?.Set();
+            if (endCode.HasValue && endCode.Value == marker.Code) _trPulseEvent?.Reset();
         }
 
         public void Dispose() => Stop();
@@ -291,7 +350,15 @@ namespace SharpBCI.EGI
         private void Start()
         {
             _syncBaseTime = Synchronize();
-            _stream.WriteByte((byte)'B'); // start recording
+            if (TrPulseParams.HasValue)
+            {
+                if (TrPulseParams.Value.StartSignal.HasValue)
+                    _trPulseEvent?.Reset();
+                else 
+                    _trPulseEvent?.Set();
+                (_trPulseThread = new Thread(TrPulseWorker) { IsBackground = true }).Start();
+            }
+            lock (_tcpClient) _stream.WriteByte((byte)'B'); // start recording
         }
 
         private void Stop()
@@ -299,6 +366,8 @@ namespace SharpBCI.EGI
             lock (_tcpClient)
                 if (_tcpClient.Connected)
                 {
+                    _trPulseThread?.Abort();
+                    _trPulseThread = null;
                     _stream.WriteByte((byte)'E'); // stop recording
                     _stream.Flush();
                     _stream.ReadByte();
@@ -308,6 +377,34 @@ namespace SharpBCI.EGI
                     _stream.ReadByte();
                     _tcpClient.Close();
                 }
+        }
+
+        private void TrPulseWorker()
+        {
+            var currentThread = Thread.CurrentThread;
+            Debug.Assert(TrPulseParams != null, nameof(TrPulseParams) + " != null");
+            var intervalInMillis = (int)TrPulseParams.Value.Interval.TotalMilliseconds;
+            var next = DateTimeUtils.CurrentTimeMillis + intervalInMillis;
+            while (currentThread == _trPulseThread && _trPulseEvent.WaitOne())
+            {
+                var now = DateTimeUtils.CurrentTimeMillis;
+                /* Send event */
+                if (now >= next)
+                {
+                    next = now + intervalInMillis;
+                    SendTrEvt();
+                }
+                /* Sleep waiting */
+                if (next - now > 200) 
+                {
+                    Thread.Sleep((int)(next - now - 100));
+                    now = DateTimeUtils.CurrentTimeMillis;
+                }
+                /* Spin waiting */
+                long diff;
+                while ((diff = next - now) < 200 && diff > 10)
+                    now = DateTimeUtils.CurrentTimeMillis; 
+            }
         }
 
     }
