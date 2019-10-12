@@ -85,6 +85,10 @@ namespace SharpBCI.Extensions
 
         #region Session Part
 
+        [MarkerDefinition(GlobalGroupName + ":session", 0xFFCC0000)] public const int SessionStartMarker = SessionMarkerBase + 1;
+
+        [MarkerDefinition(GlobalGroupName + ":session", 0xFFCC0000)] public const int SessionEndMarker = SessionMarkerBase + 2;
+
         [MarkerDefinition(GlobalGroupName + ":session", 0xFFCC0000)] public const int UserExitMarker = SessionMarkerBase + 9;
 
         #endregion
