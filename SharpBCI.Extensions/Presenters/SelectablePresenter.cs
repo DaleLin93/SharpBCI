@@ -75,8 +75,8 @@ namespace SharpBCI.Extensions.Presenters
                 var @checked = false;
                 foreach (var radioButton in _radioButtons)
                 {
-                    bool equal;
-                    if (equal = Equals(ToStringOverridenWrapper.TryUnwrap(radioButton.Content), value)) @checked = true;
+                    var equal = Equals(ToStringOverridenWrapper.TryUnwrap(radioButton.Content), value);
+                    if (equal) @checked = true;
                     radioButton.IsChecked = equal;
                 }
                 if (!@checked && _radioButtons.Any()) _radioButtons[0].IsChecked = true;

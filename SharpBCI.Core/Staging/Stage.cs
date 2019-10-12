@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 
 namespace SharpBCI.Core.Staging
 {
+
     [JsonObject(MemberSerialization.OptIn)]
     public class Stage : ContextObject
     {

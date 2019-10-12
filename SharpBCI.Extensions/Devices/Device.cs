@@ -11,9 +11,12 @@ namespace SharpBCI.Extensions.Devices
     public interface IStreamerFactory
     {
 
-        [NotNull] Type ValueType { get; }
+        /// <summary>
+        /// The type of streaming value.
+        /// </summary>
+        [NotNull] Type StreamingType { get; }
 
-        [NotNull] IStreamer Create([NotNull] IDevice device, [NotNull] IClock clock);
+        [CanBeNull] IStreamer Create([CanBeNull] IDevice device, [NotNull] IClock clock);
 
     }
 

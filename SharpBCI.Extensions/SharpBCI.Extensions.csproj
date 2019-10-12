@@ -114,7 +114,6 @@
     <Compile Include="Devices\MarkerSources\HeartbeatGenerator.cs" />
     <Compile Include="Devices\MarkerSources\KeyboardTrigger.cs" />
     <Compile Include="Devices\MarkerSources\SerialPortMarkerSource.cs" />
-    <Compile Include="Devices\MarkerSources\EmptyMarkerSource.cs" />
     <Compile Include="Devices\VideoSources\ScreenCapturer.cs" />
     <Compile Include="Devices\MarkerSources\MarkerSource.cs" />
     <Compile Include="Devices\VideoSources\VideoSource.cs" />

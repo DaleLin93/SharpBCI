@@ -35,9 +35,9 @@ namespace SharpBCI.Windows
             
             internal T Current;
 
-            public EntityConfigViewModel(string type, string groupDesc, IEnumerable selections) : this(type, groupDesc, new StackPanel(), selections) { }
+            internal EntityConfigViewModel(string type, string groupDesc, IEnumerable selections) : this(type, groupDesc, new StackPanel(), selections) { }
 
-            public EntityConfigViewModel(string type, string groupDesc, StackPanel container, IEnumerable selections)
+            internal EntityConfigViewModel(string type, string groupDesc, StackPanel container, IEnumerable selections)
             {
                 Container = container;
                 var consumerGroupPanel = Container.AddGroupPanel(type, groupDesc);
@@ -75,11 +75,11 @@ namespace SharpBCI.Windows
 
         private bool _needResizeWindow;
 
-        public DeviceConfigWindow([NotNull] DeviceType deviceType, [CanBeNull] PluginDevice device, [CanBeNull] IReadonlyContext deviceParams,
+        public DeviceConfigWindow(DeviceType deviceType, [CanBeNull] PluginDevice device, [CanBeNull] IReadonlyContext deviceParams,
             [CanBeNull] IReadOnlyCollection<Tuple<PluginStreamConsumer, IReadonlyContext>> consumers)
         {
             InitializeComponent();
-            Title = $"{device.Identifier} Configuration";
+            Title = $"{deviceType.DisplayName} Configuration";
 
             _deviceType = deviceType;
 
@@ -130,14 +130,15 @@ namespace SharpBCI.Windows
 
         private static IList GetDeviceList(DeviceType deviceType)
         {
-            var list = new List<object> { NoneIdentifier };
+            var list = new List<object>();
+            if (!deviceType.IsRequired) list.Add(NoneIdentifier);
             list.AddRange(App.Instance.Registries.Registry<PluginDevice>().Registered.Where(pd => pd.DeviceType == deviceType));
             return list;
         }
 
         private static IList GetConsumerList(DeviceType deviceType)
         {
-            var streamerValueType = deviceType.StreamerFactory?.ValueType;
+            var streamerValueType = deviceType.StreamerFactory?.StreamingType;
             if (streamerValueType == null) return new object[] { NoneIdentifier };
             var list = new List<object> {NoneIdentifier};
             list.AddRange(App.Instance.Registries.Registry<PluginStreamConsumer>().Registered

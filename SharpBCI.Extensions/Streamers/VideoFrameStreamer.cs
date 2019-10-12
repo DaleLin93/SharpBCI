@@ -22,9 +22,9 @@ namespace SharpBCI.Extensions.Streamers
         public sealed class Factory : IStreamerFactory
         {
 
-            public Type ValueType => typeof(Timestamped<IVideoFrame>);
+            public Type StreamingType => typeof(Timestamped<IVideoFrame>);
 
-            public IStreamer Create(IDevice device, IClock clock) => new VideoFrameStreamer((IVideoSource)device, clock);
+            public IStreamer Create(IDevice device, IClock clock) => device == null ? null : new VideoFrameStreamer((IVideoSource)device, clock);
 
         }
 

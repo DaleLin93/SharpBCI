@@ -226,7 +226,6 @@ namespace SharpBCI
                 Plugin.InitPluginParadigm(null, typeof(TextDisplayParadigm)));
 
             Registries.Registry<PluginDevice>().RegisterAll(
-                Plugin.InitPluginDevice(null, typeof(EmptyMarkerSource)),
                 Plugin.InitPluginDevice(null, typeof(KeyboardTrigger)),
                 Plugin.InitPluginDevice(null, typeof(HeartbeatGenerator)),
                 Plugin.InitPluginDevice(null, typeof(SerialPortMarkerSource)),

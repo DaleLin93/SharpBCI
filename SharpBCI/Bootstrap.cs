@@ -81,7 +81,7 @@ namespace SharpBCI
             var deviceConsumerLists = new Dictionary<DeviceType, IList<Tuple<PluginStreamConsumer, IReadonlyContext>>>();
             foreach (var deviceType in deviceTypes)
             {
-                if (!deviceMap.TryGetValue(deviceType.Name, out var deviceParams) || deviceParams.Device.Id == null) continue;
+                if (!deviceMap.TryGetValue(deviceType.Name, out var deviceParams)) continue;
                 var list = new List<Tuple<PluginStreamConsumer, IReadonlyContext>>();
                 deviceConsumerLists[deviceType] = list;
                 foreach (var consumerConf in deviceParams.Consumers)
@@ -200,7 +200,7 @@ namespace SharpBCI
             var streamers = new StreamerCollection();
             foreach (var deviceType in deviceTypes)
             {
-                if (!devices.TryGetValue(deviceType, out var instance) || instance == null) continue;
+                if (!devices.TryGetValue(deviceType, out var instance)) instance = null;
                 var streamer = deviceType.StreamerFactory?.Create(instance, clock);
                 if (streamer != null) streamers.Add(deviceStreamers[deviceType] = streamer);
             }

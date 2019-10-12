@@ -23,9 +23,9 @@ namespace SharpBCI.Extensions.Streamers
         public sealed class Factory : IStreamerFactory
         {
 
-            public Type ValueType => typeof(Timestamped<ISample>);
+            public Type StreamingType => typeof(Timestamped<ISample>);
 
-            public IStreamer Create(IDevice device, IClock clock) => new BiosignalStreamer((IBiosignalSource)device, clock);
+            public IStreamer Create(IDevice device, IClock clock) => device == null ? null : new BiosignalStreamer((IBiosignalSource)device, clock);
 
         }
 

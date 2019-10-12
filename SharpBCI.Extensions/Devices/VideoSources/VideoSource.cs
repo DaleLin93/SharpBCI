@@ -6,7 +6,6 @@ using JetBrains.Annotations;
 using MarukoLib.IO;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Streamers;
-using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Devices.VideoSources
 {

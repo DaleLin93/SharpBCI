@@ -1,7 +1,6 @@
 ﻿using JetBrains.Annotations;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Streamers;
-using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Devices.MarkerSources
 {
@@ -30,7 +29,7 @@ namespace SharpBCI.Extensions.Devices.MarkerSources
 
     }
 
-    [DeviceType("Marker Source", IsRequired = true,
+    [DeviceType("Marker Source", 
         StreamerFactory = typeof(MarkerStreamer.Factory),
         DataVisualizer = typeof(MarkerSourceDataVisualizer))]
     public interface IMarkerSource : IDevice

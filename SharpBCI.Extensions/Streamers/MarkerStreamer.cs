@@ -22,23 +22,24 @@ namespace SharpBCI.Extensions.Streamers
         public sealed class Factory : IStreamerFactory
         {
 
-            public Type ValueType => typeof(Timestamped<IMarker>);
+            public Type StreamingType => typeof(Timestamped<IMarker>);
 
             public IStreamer Create(IDevice device, IClock clock) => new MarkerStreamer((IMarkerSource)device, clock);
 
         }
 
-        public readonly IMarkerSource MarkerSource;
+        [CanBeNull] public readonly IMarkerSource MarkerSource;
 
-        public MarkerStreamer(IMarkerSource markerSource, IClock clock) : base(nameof(MarkerStreamer), clock)
+        public MarkerStreamer([CanBeNull] IMarkerSource markerSource, [NotNull] IClock clock) : base(nameof(MarkerStreamer), clock)
         {
             MarkerSource = markerSource;
-            Started += (sender, e) => MarkerSource.Open();
-            Stopped += (sender, e) => MarkerSource.Shutdown();
+            Started += (sender, e) => MarkerSource?.Open();
+            Stopped += (sender, e) => MarkerSource?.Shutdown();
         }
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        public MarkerStreamer(IMarkerSource markerSource, IClock clock, IStreamConsumer<Timestamped<IMarker>> consumer) : this(markerSource, clock) => Attach(consumer);
+        public MarkerStreamer([CanBeNull] IMarkerSource markerSource, [NotNull] IClock clock, [NotNull] IStreamConsumer<Timestamped<IMarker>> consumer)
+            : this(markerSource, clock) => Attach(consumer);
 
         public long Mark(string label, int marker)
         {
@@ -47,7 +48,7 @@ namespace SharpBCI.Extensions.Streamers
             return obj.Timestamp;
         }
 
-        protected override Timestamped<IMarker> Acquire() => WithTimestamp(MarkerSource.Read() ?? throw new EndOfStreamException());
+        protected override Timestamped<IMarker> Acquire() => WithTimestamp(MarkerSource?.Read() ?? throw new EndOfStreamException());
 
     }
 

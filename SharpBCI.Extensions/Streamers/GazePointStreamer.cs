@@ -22,9 +22,9 @@ namespace SharpBCI.Extensions.Streamers
         public sealed class Factory : IStreamerFactory
         {
 
-            public Type ValueType => typeof(Timestamped<IGazePoint>);
+            public Type StreamingType => typeof(Timestamped<IGazePoint>);
 
-            public IStreamer Create(IDevice device, IClock clock) => new GazePointStreamer((IEyeTracker)device, clock);
+            public IStreamer Create(IDevice device, IClock clock) => device == null ? null : new GazePointStreamer((IEyeTracker)device, clock);
 
         }
 
