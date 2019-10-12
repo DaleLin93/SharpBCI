@@ -69,20 +69,20 @@ namespace SharpBCI.Extensions.StageProviders
         {
             lock (_consumeLock)
             {
-                while (true)
+                for (;;)
                 {
                     if (IsBroken)
                         lock (_stages)
                             if (_stages.IsEmpty())
                                 return null;
-                    if (_stageSemaphore.WaitOne(_waitPeriod))
-                        lock (_stages)
-                        {
-                            var stage = _stages.First.Value;
-                            _stages.RemoveFirst();
-                            OnStagePolled(stage);
-                            return stage;
-                        }
+                    if (!_stageSemaphore.WaitOne(_waitPeriod)) continue;
+                    lock (_stages)
+                    {
+                        var stage = _stages.First.Value;
+                        _stages.RemoveFirst();
+                        OnStagePolled(stage);
+                        return stage;
+                    }
                 }
             }
         }

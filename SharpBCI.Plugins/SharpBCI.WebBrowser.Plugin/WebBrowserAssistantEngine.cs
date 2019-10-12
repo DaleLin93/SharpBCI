@@ -205,7 +205,7 @@ namespace SharpBCI.Paradigms.WebBrowser
         [SuppressMessage("ReSharper", "FunctionNeverReturns")]
         private void RunTrials()
         {
-            while (true)
+            for (;;)
             {
                 _dwellTrialController.Reset();
                 _trialStartEvent.Reset();

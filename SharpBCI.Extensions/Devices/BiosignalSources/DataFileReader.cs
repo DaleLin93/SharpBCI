@@ -90,7 +90,7 @@ namespace SharpBCI.Extensions.Devices.BiosignalSources
 
         public override ISample Read()
         {
-            while (true)
+            for (;;)
                 lock (_lock)
                 {
                     if (_sampleOffset >= _samples.Length) return null;

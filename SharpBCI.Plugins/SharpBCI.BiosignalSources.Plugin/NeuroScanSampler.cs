@@ -234,7 +234,7 @@ namespace SharpBCI.BiosignalSources
 
         private static IEnumerable<ISample> ReadBlock(Stream stream, SettingsPacket settings, byte[] buffer, long timeout)
         {
-            while (true)
+            for (;;)
             {
                 var header = ReadMessageHeader(stream, buffer, 0, timeout);
                 if (!PacketType.Data.IsTypeMatch(header.Type))
@@ -299,7 +299,7 @@ namespace SharpBCI.BiosignalSources
         public override ISample Read()
         {
             lock (_lock)
-                while (true)
+                for (;;)
                 {
                     if (_enumerator?.MoveNext() ?? false)
                         return _enumerator.Current;

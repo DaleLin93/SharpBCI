@@ -462,7 +462,7 @@ namespace SharpBCI.Paradigms.WebBrowser
         {
             var startTime = _clock.Time;
             IEnumerable<double[]> samples;
-            while (true)
+            for (;;)
             {
                 lock (_samples)
                     if (_samples.Count >= WindowSize)

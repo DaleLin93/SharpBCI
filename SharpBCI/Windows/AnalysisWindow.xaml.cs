@@ -343,7 +343,7 @@ namespace SharpBCI.Windows
             {
                 string line = null;
                 Pair<MarkerRecord> range = null;
-                while (true)
+                for (;;)
                 {
                     if (line == null)
                     {

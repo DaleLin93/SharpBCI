@@ -149,7 +149,7 @@ namespace SharpBCI.Core.Staging
         {
             get
             {
-                while (true)
+                for (;;)
                 {
                     if (_provider != null && !ReferenceEquals(_provider, EmptyStageProvider.Instance)) return _provider;
                     if (_nextProviderIndex >= _providers.Count) return null;
@@ -183,7 +183,7 @@ namespace SharpBCI.Core.Staging
 
         public Stage Next()
         {
-            while (true)
+            for (;;)
             {
                 var p = CurrentProvider;
                 if (p == null) return null;
@@ -200,7 +200,7 @@ namespace SharpBCI.Core.Staging
 
         public static IEnumerable<Stage> AsEnumerable(this IStageProvider stageProvider)
         {
-            while (true)
+            for (;;)
             {
                 var next = stageProvider.Next();
                 if (next == null) yield break;
@@ -219,7 +219,7 @@ namespace SharpBCI.Core.Staging
             var stages = new LinkedList<Stage>();
             foreach (var stageProvider in providers)
             {
-                while (true)
+                for (;;)
                 {
                     var stage = stageProvider.Next();
                     if (stage == null)

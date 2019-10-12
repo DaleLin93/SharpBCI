@@ -39,7 +39,7 @@ namespace SharpBCI.Extensions.Devices.EyeTrackers
 
         public override IGazePoint Read()
         {
-            while (true)
+            for (;;)
                 lock (_lock)
                 {
                     _frequencyBarrier.WaitOne();

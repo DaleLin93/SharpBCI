@@ -28,7 +28,7 @@ namespace SharpBCI.Extensions.StageProviders
 
         public Stage Next()
         {
-            while (true)
+            for (;;)
             {
                 if (_stages == null)
                 {

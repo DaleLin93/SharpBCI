@@ -142,7 +142,7 @@ namespace SharpBCI.Paradigms.MI
             var num = 0;
             var inPin = Tools.GetInPin(grabFilter, 0);
             IPin outPin;
-            while (true)
+            for (;;)
             {
                 outPin = Tools.GetOutPin(_sourceFilter, num);
                 if (outPin != null)

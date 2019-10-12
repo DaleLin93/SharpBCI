@@ -78,7 +78,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
         protected bool TryGetSamples(out IEnumerable<double[]> samples)
         {
             var startTime = Clock.Time;
-            while (true)
+            for (;;)
             {
                 lock (_samples)
                     if (_samples.Count >= WindowSize)

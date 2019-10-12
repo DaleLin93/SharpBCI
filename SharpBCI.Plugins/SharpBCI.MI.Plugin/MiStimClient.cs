@@ -159,7 +159,7 @@ namespace SharpBCI.Paradigms.MI
             var headerBuf = new byte[4];
             try
             {
-                while (true)
+                for (;;)
                 {
                     lock (_tcpLock)
                         if (!_tcpClient.Connected)

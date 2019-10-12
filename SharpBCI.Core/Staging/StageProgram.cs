@@ -263,7 +263,7 @@ namespace SharpBCI.Core.Staging
                 Stage stage = null;
                 try
                 {
-                    while (true) /* Loop only for skip */
+                    for (;;) /* Loop only for skip */
                     {
                         stage = _stageProvider.Next();
                         now = ProgramTime;

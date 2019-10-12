@@ -141,7 +141,7 @@ namespace SharpBCI
             {
                 string ToStringFunc(object obj)
                 {
-                    while (true)
+                    for (;;)
                     {
                         if (!(obj is Array array)) return obj?.ToString();
                         if (array.Length > 1) return $"[{array.Cast<object>().Join(",", ToStringFunc)}]";
@@ -195,7 +195,7 @@ namespace SharpBCI
                 offset = newOffset;
             }
            
-            while (true)
+            for (;;)
             {
                 var open = template.IndexOf("{{", offset, StringComparison.Ordinal);
                 if (open == -1) break;

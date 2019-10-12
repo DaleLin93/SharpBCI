@@ -254,7 +254,7 @@ namespace SharpBCI.Core.IO
         {
             try
             {
-                while (true)
+                for (;;)
                 {
                     if (!_semaphore.WaitOne(500))
                         if (_state == StreamerState.Stopped)

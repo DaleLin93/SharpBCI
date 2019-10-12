@@ -78,7 +78,7 @@ namespace SharpBCI.Extensions.Devices.EyeTrackers
 
         public override IGazePoint Read()
         {
-            while (true)
+            for (;;)
                 lock (_lock)
                 {
                     if (_sampleOffset >= _samples.Length) return null;

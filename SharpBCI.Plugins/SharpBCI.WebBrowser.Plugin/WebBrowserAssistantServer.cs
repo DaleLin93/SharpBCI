@@ -239,7 +239,7 @@ namespace SharpBCI.Paradigms.WebBrowser
             Logger.Info("ConnectionListeningTask - listening started", "uri", listeningUriPrefix);
             try
             {
-                while (true)
+                for (;;)
                     OnConnectionEstablished(listener.GetContextAsync().Await());
             }
             finally
@@ -253,7 +253,7 @@ namespace SharpBCI.Paradigms.WebBrowser
             lock (_clients) _clients.AddLast(client);
             try
             {
-                while (true) HandleReceivedMessage(client, RetrieveMessage(client).Await());
+                for (;;) HandleReceivedMessage(client, RetrieveMessage(client).Await());
             }
             catch (Exception e)
             {
