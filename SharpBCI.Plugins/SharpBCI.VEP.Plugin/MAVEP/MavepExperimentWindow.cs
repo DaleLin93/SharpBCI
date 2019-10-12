@@ -15,7 +15,7 @@ using D2D1 = SharpDX.Direct2D1;
 namespace SharpBCI.Paradigms.VEP.MAVEP
 {
 
-    internal class MavepExperimentWindow : Direct2DForm
+    internal class MavepExperimentWindow : SimpleD2DForm
     {
 
         private readonly Session _session;
@@ -87,10 +87,13 @@ namespace SharpBCI.Paradigms.VEP.MAVEP
                 TextAlignment = DW.TextAlignment.Center,
                 ParagraphAlignment = DW.ParagraphAlignment.Center
             };
+            UpdateFixation();
+        }
 
-            var clientSize = ClientSize;
-            var fixationSize = _paradigm.Config.Gui.FixationPoint.Size;
-            _fixationPoint = new D2D1.Ellipse(new RawVector2(clientSize.Width / 2F, clientSize.Height / 2F), fixationSize, fixationSize);
+        protected override void ResizeRenderTarget()
+        {
+            base.ResizeRenderTarget();
+            UpdateFixation();
         }
 
         protected override void DisposeDirectXResources()
@@ -122,6 +125,13 @@ namespace SharpBCI.Paradigms.VEP.MAVEP
                 renderTarget.DrawText(_displayText, _textFormat, new RawRectangleF(0, 0, Width, Height),
                     SolidColorBrush, D2D1.DrawTextOptions.None);
             }
+        }
+
+        private void UpdateFixation()
+        {
+            var clientSize = ClientSize;
+            var fixationSize = _paradigm.Config.Gui.FixationPoint.Size;
+            _fixationPoint = new D2D1.Ellipse(new RawVector2(clientSize.Width / 2F, clientSize.Height / 2F), fixationSize, fixationSize);
         }
 
         private void GenerateStimuli()
@@ -201,7 +211,6 @@ namespace SharpBCI.Paradigms.VEP.MAVEP
         [SuppressMessage("ReSharper", "InconsistentlySynchronizedField")]
         private void Stop(bool userInterrupted = false)
         {
-            SwapChain.IsFullScreen = false;
             Dispose();
             Close();
             _stageProgram.Stop();

@@ -18,12 +18,11 @@ using DXGI = SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using SharpDX.Windows;
 using KeyEventArgs = System.Windows.Forms.KeyEventArgs;
-using RenderForm = SharpDX.Windows.RenderForm;
 
 namespace SharpBCI.Paradigms.VEP.SSVEP
 {
 
-    internal class SsvepExperimentWindow : RenderForm, IDisposable
+    internal class SsvepExperimentWindow : SimpleD2DForm, IDisposable
     {
 
         private interface IStimulationPresenter
@@ -322,17 +321,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         private readonly Color _blockFixationPointColor;
 
         /* D3D Resources */
-
-        private D3D11.Device _d3DDevice;
-
-        private D2D1.Factory _d2DFactory;
-
-        private D2D1.WindowRenderTarget _renderTarget;
-
-        private D2D1.SolidColorBrush _solidColorBrush;
-
-        private SharpDX.DirectWrite.Factory _dwFactory;
-
+                    
         private SharpDX.DirectWrite.TextFormat _textFormat;
 
         public SsvepExperimentWindow(Session session)
@@ -349,7 +338,6 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             Load += Window_OnLoaded;
             KeyUp += Window_OnKeyUp;
-            Resize += Window_OnResize;
             this.HideCursorInside();
 
             _session = session;
@@ -397,67 +385,76 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         }
 
         private static double ConvertCosineValueToGrayScale(double cosVal) => (-cosVal + 1) / 2;
-
-        public new void Show()
+        
+        protected override void Draw(D2D1.RenderTarget renderTarget)
         {
-            ((Control) this).Show();
-            RenderLoop.Run(this, OnRender);
-        }
+            renderTarget.Clear(_backgroundColor);
 
-        public new void Dispose()
-        {
-            _presenter.Destroy();
-            DisposeDirectXResources();
-            base.Dispose();
-        }
-
-        private void UpdateResources()
-        {
-            if (_renderTarget == null) return;
-            var clientSize = ClientSize;
-            _renderTarget.Resize(new Size2(clientSize.Width, clientSize.Height));
-            var guiScale = (float)GraphicsUtils.Scale;
-            var borderWidth = Math.Max(0, (float)_paradigm.Config.Gui.BlockBorder.Width * guiScale);
-            var fixationPointSize = _paradigm.Config.Gui.BlockFixationPoint.Size * guiScale;
-            var blockSize = UpdateBlocks(borderWidth, fixationPointSize);
-            _presenter.Initialize(_renderTarget, new RawVector2(blockSize.X - borderWidth * 2, blockSize.Y - borderWidth * 2), _blocks);
-        }
-
-        private void InitializeDirectXResources()
-        {
-            var clientSize = ClientSize;
-
-            _d3DDevice = new D3D11.Device(SharpDX.Direct3D.DriverType.Hardware, D3D11.DeviceCreationFlags.BgraSupport, SharpDX.Direct3D.FeatureLevel.Level_10_0);
-
-            _d2DFactory = new D2D1.Factory();
-
-            _renderTarget = new D2D1.WindowRenderTarget(_d2DFactory,
-                new D2D1.RenderTargetProperties(new D2D1.PixelFormat(DXGI.Format.Unknown, D2D1.AlphaMode.Ignore)),
-                new D2D1.HwndRenderTargetProperties
+            if (_paradigmStarted) // Draw blocks
+            {
+                var secsPassed = (CurrentTime - _stageUpdatedAt) / 1000.0;
+                foreach (var block in _blocks)
                 {
-                    Hwnd = Handle,
-                    PixelSize = new Size2(clientSize.Width, clientSize.Height),
-                    PresentOptions = D2D1.PresentOptions.Immediately, 
-                });
+                    if (block.BorderRect != null)
+                    {
+                        SolidColorBrush.Color = _blockBorderColor;
+                        renderTarget.FillRectangle(block.BorderRect.Value, SolidColorBrush);
+                    }
+                    if (!_trialStarted || block.Pattern == null)
+                    {
+                        SolidColorBrush.Color = _blockNormalColor;
+                        renderTarget.FillRectangle(block.ContentRect, SolidColorBrush);
+                    }
+                    else
+                        _presenter.Present(renderTarget, block, secsPassed);
 
-            _solidColorBrush = new D2D1.SolidColorBrush(_renderTarget, Color.White);
+                    if (block.CenterPointEllipse != null)
+                    {
+                        SolidColorBrush.Color = _blockFixationPointColor;
+                        renderTarget.FillEllipse(block.CenterPointEllipse.Value, SolidColorBrush);
+                    }
+                }
+            }
+            else if (!(_displayText?.IsBlank() ?? true)) // Draw text
+            {
+                SolidColorBrush.Color = _fontColor;
+                renderTarget.DrawText(_displayText, _textFormat, new RawRectangleF(0, 0, Width, Height),
+                    SolidColorBrush, D2D1.DrawTextOptions.None);
+            }
+        }
 
-            _dwFactory = new SharpDX.DirectWrite.Factory(SharpDX.DirectWrite.FactoryType.Shared);
-            _textFormat = new SharpDX.DirectWrite.TextFormat(_dwFactory, "Arial", SharpDX.DirectWrite.FontWeight.Bold,
+        protected override void InitializeDirectXResources()
+        {
+            base.InitializeDirectXResources();
+            _textFormat = new SharpDX.DirectWrite.TextFormat(DwFactory, "Arial", SharpDX.DirectWrite.FontWeight.Bold,
                 SharpDX.DirectWrite.FontStyle.Normal, SharpDX.DirectWrite.FontStretch.Normal, 84 * (float)GraphicsUtils.Scale)
             {
                 TextAlignment = SharpDX.DirectWrite.TextAlignment.Center,
                 ParagraphAlignment = SharpDX.DirectWrite.ParagraphAlignment.Center
             };
+            UpdateResources();
         }
 
-        private void DisposeDirectXResources()
+        protected override void ResizeRenderTarget()
         {
+            base.ResizeRenderTarget();
+            UpdateResources();
+        }
+
+        protected override void DisposeDirectXResources()
+        {
+            _presenter.Destroy();
             _textFormat.Dispose();
-            _dwFactory.Dispose();
-            _renderTarget.Dispose();
-            _d2DFactory.Dispose();
-            _d3DDevice.Dispose();
+            base.DisposeDirectXResources();
+        }
+
+        private void UpdateResources()
+        {
+            var guiScale = (float)GraphicsUtils.Scale;
+            var borderWidth = Math.Max(0, (float)_paradigm.Config.Gui.BlockBorder.Width * guiScale);
+            var fixationPointSize = _paradigm.Config.Gui.BlockFixationPoint.Size * guiScale;
+            var blockSize = UpdateBlocks(borderWidth, fixationPointSize);
+            _presenter.Initialize(RenderTarget, new RawVector2(blockSize.X - borderWidth * 2, blockSize.Y - borderWidth * 2), _blocks);
         }
 
         private RawVector2 UpdateBlocks(float borderWidth, float fixationPointSize)
@@ -523,53 +520,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             return blockSize;
         }
 
-        private void OnRender()
-        {
-            if (_renderTarget?.IsDisposed ?? true) return;
-
-            _renderTarget.BeginDraw();
-            _renderTarget.Clear(_backgroundColor);
-
-            if (_paradigmStarted) // Draw blocks
-            {
-                var secsPassed = (CurrentTime - _stageUpdatedAt) / 1000.0;
-                foreach (var block in _blocks)
-                {
-                    if (block.BorderRect != null)
-                    {
-                        _solidColorBrush.Color = _blockBorderColor;
-                        _renderTarget.FillRectangle(block.BorderRect.Value, _solidColorBrush);
-                    }
-                    if (!_trialStarted || block.Pattern == null)
-                    {
-                        _solidColorBrush.Color = _blockNormalColor;
-                        _renderTarget.FillRectangle(block.ContentRect, _solidColorBrush);
-                    }
-                    else
-                        _presenter.Present(_renderTarget, block, secsPassed);
-
-                    if (block.CenterPointEllipse != null)
-                    {
-                        _solidColorBrush.Color = _blockFixationPointColor;
-                        _renderTarget.FillEllipse(block.CenterPointEllipse.Value, _solidColorBrush);
-                    }
-                }
-            }
-            else if (!(_displayText?.IsBlank() ?? true)) // Draw text
-            {
-                _solidColorBrush.Color = _fontColor;
-                _renderTarget.DrawText(_displayText, _textFormat, new RawRectangleF(0, 0, Width, Height),
-                    _solidColorBrush, D2D1.DrawTextOptions.None);
-            }
-
-            _renderTarget.EndDraw();
-        }
-
         private void Window_OnLoaded(object sender, EventArgs e)
         {
-            InitializeDirectXResources();
-            UpdateResources();
-
             _session.Start();
             _stageProgram.Start();
         }
@@ -585,9 +537,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             _markable?.Mark(MarkerDefinitions.UserExitMarker);
             Stop(true);
         }
-
-        private void Window_OnResize(object sender, EventArgs e) => UpdateResources();
-
+        
         private void StageProgram_StageChanged(object sender, StageChangedEventArgs e)
         {
             /* Get next stage, exit on null (END REACHED) */

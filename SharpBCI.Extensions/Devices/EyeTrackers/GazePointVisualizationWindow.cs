@@ -14,7 +14,7 @@ using Color = SharpDX.Color;
 namespace SharpBCI.Extensions.Devices.EyeTrackers
 {
 
-    internal class GazePointVisualizationWindow : Direct2DForm, IStreamConsumer<Timestamped<IGazePoint>>
+    internal class GazePointVisualizationWindow : SimpleD2DForm, IStreamConsumer<Timestamped<IGazePoint>>
     {
 
         private readonly GazePointStreamer _streamer;

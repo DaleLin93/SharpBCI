@@ -244,7 +244,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         public SsvepParadigm(Configuration configuration) : base(ParadigmName) => Config = configuration;
 
-        public override void Run(Session session) => new SsvepExperimentWindow(session).Show();
+        public override void Run(Session session) => new SsvepExperimentWindow(session).ShowAndRunRenderLoop();
 
         public IStageProvider[] GetStageProviders(EventWaitHandle eventWaitHandle) => new IStageProvider[]
         {

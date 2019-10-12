@@ -16,7 +16,7 @@ using Color = SharpDX.Color;
 namespace SharpBCI.Extensions.Devices.BiosignalSources
 {
 
-    internal class BiosignalVisualizationWindow : Direct2DForm, IStreamConsumer<Timestamped<ISample>>
+    internal class BiosignalVisualizationWindow : SimpleD2DForm, IStreamConsumer<Timestamped<ISample>>
     {
 
         private readonly BiosignalStreamer _streamer;

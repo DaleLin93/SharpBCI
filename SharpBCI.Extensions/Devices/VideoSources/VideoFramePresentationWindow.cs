@@ -12,7 +12,7 @@ using Color = SharpDX.Color;
 namespace SharpBCI.Extensions.Devices.VideoSources
 {
 
-    internal class VideoFramePresentationWindow : Direct2DForm, IStreamConsumer<Timestamped<IVideoFrame>>
+    internal class VideoFramePresentationWindow : SimpleD2DForm, IStreamConsumer<Timestamped<IVideoFrame>>
     {
 
         private readonly VideoFrameStreamer _streamer;
