@@ -174,6 +174,7 @@ namespace SharpBCI.Extensions.Presenters
             {typeof(System.Drawing.Color), ColorPresenter.Instance},
             {typeof(DateTime), DateTimePresenter.Instance},
             {typeof(Uri), UriPresenter.Instance},
+            {typeof(MarkerDefinition), MarkerDefinitionPresenter.Instance},
             {typeof(Position1D), PositionPresenter.Instance},
             {typeof(PositionH1D), PositionPresenter.Instance},
             {typeof(PositionV1D), PositionPresenter.Instance},

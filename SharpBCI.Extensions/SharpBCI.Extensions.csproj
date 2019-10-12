@@ -133,6 +133,7 @@
     <Compile Include="MarkerDefinitions.cs" />
     <Compile Include="Presenters\DateTimePresenter.cs" />
     <Compile Include="Presenters\RangePresenter.cs" />
+    <Compile Include="Presenters\MarkerDefinitionPresenter.cs" />
     <Compile Include="Presenters\SliderNumberPresenter.cs" />
     <Compile Include="StageProviders\BaselineStageProvider.cs" />
     <Compile Include="StageProviders\CountdownStageProvider.cs" />

@@ -88,7 +88,6 @@ namespace SharpBCI.Extensions.Presenters
 
         }
 
-        // ReSharper disable once ConvertToConstant.Local
         private static readonly string NullValue = "<NULL>";
 
         public static readonly NamedProperty<bool> UseRadioGroupProperty = new NamedProperty<bool>("UseRadioGroup", false);

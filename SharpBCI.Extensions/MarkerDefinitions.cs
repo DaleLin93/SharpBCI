@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Reflection;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
+using Newtonsoft.Json;
 
 namespace SharpBCI.Extensions
 {
@@ -11,14 +12,28 @@ namespace SharpBCI.Extensions
     public struct MarkerDefinition : IRegistrable
     {
 
-        internal MarkerDefinition(string name, uint color)
+        private const string CodeKey = nameof(Code);
+
+        private const string NameKey = nameof(Name);
+
+        private const string ColorKey = nameof(Color);
+
+        [JsonConstructor]
+        internal MarkerDefinition([JsonProperty(CodeKey)] int code, 
+            [JsonProperty(NameKey)] string name, [JsonProperty(ColorKey)] uint color)
         {
+            Code = code;
             Name = name;
             Color = color;
         }
 
+        [JsonProperty(CodeKey)]
+        public int Code { get; }
+
+        [JsonProperty(NameKey)]
         public string Name { get; }
 
+        [JsonProperty(ColorKey)]
         public uint Color { get; }
 
         public override string ToString() => Name;
@@ -131,14 +146,14 @@ namespace SharpBCI.Extensions
             var dict = new Dictionary<int, MarkerDefinition>();
             foreach (var field in type.GetRuntimeFields())
             {
-                var attribute = field.GetCustomAttribute<MarkerDefinitionAttribute>();
-                if (attribute == null) continue;
+                var attr = field.GetCustomAttribute<MarkerDefinitionAttribute>();
+                if (attr == null) continue;
                 var marker = (int)field.GetValue(null);
-                var markerName = $"{attribute.GroupName}:{attribute.Name ?? field.Name.TrimEnd("Marker")}";
-                if (marker < CustomMarkerBase && !attribute.GroupName.StartsWith($"{GlobalGroupName}:"))
-                    throw new ProgrammingException($"Marker of {type.FullName}.{markerName} is reserved(less than {CustomMarkerBase})");
-                if (dict.ContainsKey(marker)) throw new ProgrammingException($"Duplicated marker in type: {type.FullName}, {dict[marker]} and {markerName}");
-                dict[marker] = new MarkerDefinition(markerName, attribute.Color);
+                var name = $"{attr.GroupName}:{attr.Name ?? field.Name.TrimEnd("Marker")}";
+                if (marker < CustomMarkerBase && !attr.GroupName.StartsWith($"{GlobalGroupName}:"))
+                    throw new ProgrammingException($"Marker of {type.FullName}.{name} is reserved(less than {CustomMarkerBase})");
+                if (dict.ContainsKey(marker)) throw new ProgrammingException($"Duplicated marker in type: {type.FullName}, {dict[marker]} and {name}");
+                dict[marker] = new MarkerDefinition(marker, name, attr.Color);
             }
             return dict;
         }
