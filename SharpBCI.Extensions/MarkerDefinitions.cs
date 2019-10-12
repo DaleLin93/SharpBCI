@@ -90,12 +90,14 @@ namespace SharpBCI.Extensions
 
         public const int CustomMarkerBase = 100;
 
-        #region Baseline Part
+        #region Etctera Part
+
+        [MarkerDefinition(GlobalGroupName)] public const int HeartbeatMarker = GlobalMarkerBase + 0;
 
         [MarkerDefinition(GlobalGroupName + ":baseline")] public const int BaselineStartMarker = GlobalMarkerBase + 1;
 
         [MarkerDefinition(GlobalGroupName + ":baseline")] public const int BaselineEndMarker = GlobalMarkerBase + 2;
-
+        
         #endregion
 
         #region Session Part
@@ -150,7 +152,7 @@ namespace SharpBCI.Extensions
                 if (attr == null) continue;
                 var marker = (int)field.GetValue(null);
                 var name = $"{attr.GroupName}:{attr.Name ?? field.Name.TrimEnd("Marker")}";
-                if (marker < CustomMarkerBase && !attr.GroupName.StartsWith($"{GlobalGroupName}:"))
+                if (marker < CustomMarkerBase && !attr.GroupName.StartsWith(GlobalGroupName))
                     throw new ProgrammingException($"Marker of {type.FullName}.{name} is reserved(less than {CustomMarkerBase})");
                 if (dict.ContainsKey(marker)) throw new ProgrammingException($"Duplicated marker in type: {type.FullName}, {dict[marker]} and {name}");
                 dict[marker] = new MarkerDefinition(marker, name, attr.Color);
