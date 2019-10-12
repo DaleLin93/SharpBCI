@@ -58,7 +58,7 @@ After the completion of a session, you can see some files that have the same fil
 
 ### How to Create Your Own Paradigm
 
-You can implement a experiment easily by defining your own [Paradigm](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Core/Experiment/Paradigm.cs) with desired paramters and corresponding [ExperimentFactory](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Extensions/Experiments/ExperimentFactory.cs).
+You can implement a paradigm easily by defining your own [Paradigm](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Core/Experiment/Paradigm.cs) with desired paramters and corresponding [ExperimentFactory](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Extensions/Experiments/ParadigmFactory.cs).
 
 ![Demo Paradigm](https://github.com/DaleLin93/SharpBCI/blob/master/SharpBCI.Plugins/SharpBCI.Demo.Plugin/Configuration%20Preview.jpg)
 
@@ -78,3 +78,5 @@ See [Demo Plugin](https://github.com/DaleLin93/SharpBCI/tree/master/SharpBCI.Plu
  + ***Video Source***
      + *Screen Capturer* (PC screenshot)
      + *Web Camera* (via DirectShow)
+ + ***EGI Supports***
+     + *Net Station ECI Tagging* (via TCP/IP to Net Station)
