@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Windows.Controls;
 using MarukoLib.IO;
 using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
@@ -14,6 +15,7 @@ using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Devices.MarkerSources;
+using SharpBCI.Extensions.Presenters;
 using SharpBCI.Extensions.Streamers;
 
 namespace SharpBCI.EGI
@@ -28,17 +30,52 @@ namespace SharpBCI.EGI
 
         public const string ConsumerName = "Net Station ECI Tagging";
 
+        [ParameterizedObject(typeof(ControlSignalsFactory))]
+        public struct TrPulseControlSignals : IParameterizedObject
+        {
+
+            private class ControlSignalsFactory : ParameterizedObjectFactory<TrPulseControlSignals>
+            {
+
+                private static readonly Parameter<MarkerDefinition?> StartSignal = Parameter<MarkerDefinition?>.CreateBuilder("Start Signal")
+                    .SetMetadata(MarkerDefinitionPresenter.NullPlaceholderTextProperty, "Start at the beginning of paradigm")
+                    .Build();
+
+                private static readonly Parameter<MarkerDefinition?> StopSignal = Parameter<MarkerDefinition?>.CreateBuilder("Stop Signal")
+                    .SetMetadata(MarkerDefinitionPresenter.NullPlaceholderTextProperty, "Stop at the end of paradigm")
+                    .Build();
+
+                public override TrPulseControlSignals Create(IParameterDescriptor parameter, IReadonlyContext context)
+                    => new TrPulseControlSignals(StartSignal.Get(context), StopSignal.Get(context));
+
+                public override IReadonlyContext Parse(IParameterDescriptor parameter, TrPulseControlSignals controlSignals) => new Context
+                {
+                    [StartSignal] = controlSignals.StartSignal,
+                    [StopSignal] = controlSignals.StopSignal
+                };
+
+            }
+
+            public readonly MarkerDefinition? StartSignal, StopSignal;
+
+            public TrPulseControlSignals(MarkerDefinition? startSignal, MarkerDefinition? stopSignal)
+            {
+                StartSignal = startSignal;
+                StopSignal = stopSignal;
+            }
+
+        }
+
         public struct TrPulseGenParams
         {
 
-            public readonly MarkerDefinition? StartSignal, EndSignal;
+            public readonly TrPulseControlSignals ControlSignals;
 
             public readonly TimeSpan Interval;
 
-            public TrPulseGenParams(MarkerDefinition? startSignal, MarkerDefinition? endSignal, TimeSpan interval)
+            public TrPulseGenParams(TrPulseControlSignals controlSignals, TimeSpan interval)
             {
-                StartSignal = startSignal;
-                EndSignal = endSignal;
+                ControlSignals = controlSignals;
                 Interval = interval;
             }
 
@@ -46,6 +83,7 @@ namespace SharpBCI.EGI
 
         public class Factory : StreamConsumerFactory<Timestamped<IMarker>>
         {
+
 
             public static readonly Parameter<string> IpAddressParam = new Parameter<string>("IP Address", defaultValue: "127.0.0.1");
 
@@ -55,32 +93,26 @@ namespace SharpBCI.EGI
 
             public static readonly Parameter<ushort> SyncRetryCountParam = new Parameter<ushort>("Sync Retry Count", 1000);
 
-            public static readonly Parameter<bool> GenerateTrPulseParam = new Parameter<bool>("Generate TR Pulse", false);
+            public static readonly Parameter<bool> GenerateTrPulseParam = new Parameter<bool>("Generate TR Pulse");
 
-            public static readonly Parameter<MarkerDefinition?> TrPulseStartSignalParam = new Parameter<MarkerDefinition?>("TR Pulse Start Signal", defaultValue: null);
-
-            public static readonly Parameter<MarkerDefinition?> TrPulseEndSignalParam = new Parameter<MarkerDefinition?>("TR Pulse End Signal", defaultValue: null);
+            public static readonly Parameter<TrPulseControlSignals> TrPulseControlSignalsParam = Parameter<TrPulseControlSignals>.CreateBuilder("TR Pulse Control Signals")
+                .SetMetadata(ParameterizedObjectPresenter.LayoutOrientationVisibilityProperty, Orientation.Vertical)
+                .Build();
 
             public static readonly Parameter<TimeInterval> TrPulseIntervalParam = new Parameter<TimeInterval>("TR Pulse Interval", defaultValue: new TimeInterval(2, TimeUnit.Second));
 
-            public Factory() : base(IpAddressParam, PortParam, SyncLimitParam, SyncRetryCountParam, 
-                GenerateTrPulseParam, TrPulseStartSignalParam, TrPulseEndSignalParam, TrPulseIntervalParam) { }
+            public Factory() : base(IpAddressParam, PortParam, SyncLimitParam, SyncRetryCountParam, GenerateTrPulseParam, TrPulseControlSignalsParam, TrPulseIntervalParam) { }
 
             public override bool IsVisible(IReadonlyContext context, IDescriptor descriptor)
-            {
-                if (ReferenceEquals(descriptor, TrPulseStartSignalParam) 
-                    || ReferenceEquals(descriptor, TrPulseEndSignalParam) 
-                    || ReferenceEquals(descriptor, TrPulseIntervalParam)) 
-                    return GenerateTrPulseParam.Get(context);
+            { 
+                if (ReferenceEquals(descriptor, TrPulseControlSignalsParam) || ReferenceEquals(descriptor, TrPulseIntervalParam)) return GenerateTrPulseParam.Get(context);
                 return base.IsVisible(context, descriptor);
             }
 
             public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
             {
                 TrPulseGenParams? trParams = null;
-                if (GenerateTrPulseParam.Get(context))
-                    trParams = new TrPulseGenParams(TrPulseStartSignalParam.Get(context),
-                        TrPulseEndSignalParam.Get(context), TrPulseIntervalParam.Get(context).TimeSpan);
+                if (GenerateTrPulseParam.Get(context)) trParams = new TrPulseGenParams(TrPulseControlSignalsParam.Get(context), TrPulseIntervalParam.Get(context).TimeSpan);
                 return new NetStationEciTagging(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context),
                     TimeSpan.FromMilliseconds(SyncLimitParam.Get(context)), SyncRetryCountParam.Get(context), trParams);
             }
@@ -339,10 +371,11 @@ namespace SharpBCI.EGI
             else 
                 SendEvent(label, marker.Code);
             if (TrPulseParams == null) return;
-            var startCode = TrPulseParams?.StartSignal?.Code;
-            var endCode = TrPulseParams?.EndSignal?.Code;
+            var controlSignals = TrPulseParams.Value.ControlSignals;
+            var startCode = controlSignals.StartSignal?.Code;
+            var stopCode = controlSignals.StopSignal?.Code;
             if (startCode.HasValue && startCode.Value == marker.Code) _trPulseEvent?.Set();
-            if (endCode.HasValue && endCode.Value == marker.Code) _trPulseEvent?.Reset();
+            if (stopCode.HasValue && stopCode.Value == marker.Code) _trPulseEvent?.Reset();
         }
 
         public void Dispose() => Stop();
@@ -352,7 +385,7 @@ namespace SharpBCI.EGI
             _syncBaseTime = Synchronize();
             if (TrPulseParams.HasValue)
             {
-                if (TrPulseParams.Value.StartSignal.HasValue)
+                if (TrPulseParams.Value.ControlSignals.StartSignal.HasValue)
                     _trPulseEvent?.Reset();
                 else 
                     _trPulseEvent?.Set();
