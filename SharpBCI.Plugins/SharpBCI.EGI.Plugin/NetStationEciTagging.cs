@@ -84,7 +84,6 @@ namespace SharpBCI.EGI
         public class Factory : StreamConsumerFactory<Timestamped<IMarker>>
         {
 
-
             public static readonly Parameter<string> IpAddressParam = new Parameter<string>("IP Address", defaultValue: "127.0.0.1");
 
             public static readonly Parameter<int> PortParam = new Parameter<int>("Port", 55513);

@@ -86,8 +86,35 @@ namespace SharpBCI.Windows
             _gazePointRecords = LoadGazePointRecords(dataFilePrefix);
             _markerRecords = LoadMarkerRecords(dataFilePrefix);
 
-            ModulePluginComboBox.ItemsSource = App.Instance.Registries.Registry<Plugin>().Registered
-                .Where(p => p.CustomMarkers.Count > 0).ToArray();
+            var moduleComboBoxItems = new LinkedList<object>();
+            foreach (var plugin in App.Instance.Registries.Registry<Plugin>().Registered.Where(p => p.CustomMarkers.Count > 0))
+            {
+                var moduleItemContainer = new Grid();
+                moduleItemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
+                moduleItemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
+                var nameTextBlock = new TextBlock
+                {
+                    Margin = new Thickness {Left = 5},
+                    Text = plugin.Name,
+                    Foreground = Brushes.Black,
+                    FontWeight = FontWeights.Bold
+                };
+                var codeTextBlock = new TextBlock
+                {
+                    Margin = new Thickness {Left = 8},
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Text = $"({plugin.CustomMarkers.Count})",
+                    Foreground = Brushes.SlateGray,
+                    FontWeight = FontWeights.Light,
+                    FontSize = 8
+                };
+                moduleItemContainer.Children.Add(nameTextBlock);
+                moduleItemContainer.Children.Add(codeTextBlock);
+                Grid.SetColumn(nameTextBlock, 0);
+                Grid.SetColumn(codeTextBlock, 1);
+                moduleComboBoxItems.AddLast(moduleItemContainer);
+            }
+            ModulePluginComboBox.ItemsSource = moduleComboBoxItems;
             if (ModulePluginComboBox.ItemsSource.Count() > 0) ModulePluginComboBox.SelectedIndex = 0;
         }
 
@@ -265,7 +292,7 @@ namespace SharpBCI.Windows
         private void UpdateMarkers()
         {
             var markerRecordItems = new List<MarkerRecordItem>(_markerRecords.Count);
-            var markers = (ModulePluginComboBox.SelectedItem as Plugin)?.Markers;
+            var markers = ((ModulePluginComboBox.SelectedItem as FrameworkElement)?.Tag as Plugin)?.Markers;
             MarkerRecord previous = null;
             foreach (var record in _markerRecords)
             {
