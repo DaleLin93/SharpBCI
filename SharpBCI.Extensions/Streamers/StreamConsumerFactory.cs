@@ -67,6 +67,8 @@ namespace SharpBCI.Extensions.Streamers
 
         public Type AcceptType => typeof(T);
 
+        public virtual double DesiredWidth => double.NaN;
+
         public virtual bool CanReset(IParameterDescriptor parameter) => true;
 
         public bool CanCollapse(IGroupDescriptor @group, int depth) => true;

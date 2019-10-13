@@ -145,6 +145,8 @@ namespace SharpBCI.Extensions
 
         public virtual IReadOnlyCollection<ISummary> Summaries => EmptyArray<ISummary>.Instance;
 
+        public virtual double DesiredWidth => double.NaN;
+
         public virtual bool CanReset(IParameterDescriptor parameter) => true;
 
         public virtual bool CanCollapse(IGroupDescriptor group, int depth) => true;

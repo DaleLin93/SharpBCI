@@ -40,6 +40,8 @@ namespace SharpBCI.Extensions.Devices
 
         public virtual IReadOnlyCollection<IParameterDescriptor> Parameters { get; }
 
+        public virtual double DesiredWidth => double.NaN;
+
         public virtual bool CanReset(IParameterDescriptor parameter) => true;
 
         public virtual bool CanCollapse(IGroupDescriptor group, int depth) => true;

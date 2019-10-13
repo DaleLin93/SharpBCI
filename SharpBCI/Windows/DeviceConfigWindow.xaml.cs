@@ -208,7 +208,10 @@ namespace SharpBCI.Windows
         {
             if (!IsVisible || !_needResizeWindow || !IsLoaded) return;
             var contentHeight = StackPanel.Children.OfType<FrameworkElement>().Sum(el => el.ActualHeight);
-            this.UpdateWindowHeight(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight), _loadCompleted);
+            var minWidth = _consumerViewModels.Select(vm => vm.Current?.Factory as IPresentAdapter)
+                .Concat(new[] {_deviceViewModel.Current?.Factory as IPresentAdapter}).Filter(Predicates.NotNull)
+                .GetPreferredMinWidth();
+            this.UpdateWindowSize(contentHeight + 50 + (ActualHeight - ScrollView.ActualHeight), minWidth, _loadCompleted);
             _needResizeWindow = false;
         }
 

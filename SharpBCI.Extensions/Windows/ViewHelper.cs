@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -35,32 +36,50 @@ namespace SharpBCI.Extensions.Windows
             TextAlignment = alignment
             };
 
-        public static void UpdateWindowHeight(this Window window, double newHeight, bool animation = true)
+        public static void UpdateWindowSize(this Window window, double newHeight, double minWidth, bool animation = true)
         {
+            var disableAnimation = animation && SystemVariables.DisableUiAnimation.Get(SystemVariables.Context);
             var point = window.PointToScreen(new Point(window.ActualWidth / 2, window.ActualHeight / 2));
             var screen = System.Windows.Forms.Screen.FromPoint(point.RoundToSdPoint());
             var scaleFactor = GraphicsUtils.Scale;
+            var maxWidth = screen.WorkingArea.Width / scaleFactor;
             var maxHeight = screen.WorkingArea.Height / scaleFactor;
+            minWidth = Math.Min(maxWidth, minWidth);
             newHeight = Math.Min(maxHeight, newHeight);
-            var height = window.Height;
-            var disableAnimation = animation && SystemVariables.DisableUiAnimation.Get(SystemVariables.Context);
-            if (Math.Abs(newHeight - height) > 1.0)
+            var winWidth = window.Width;
+            var winHeight = window.Height;
+            var winRightEx = window.Left + minWidth + (window.ActualWidth - window.Width) - screen.WorkingArea.Right / scaleFactor;
+            var winBottomEx = window.Top + newHeight + (window.ActualHeight - window.Height) - screen.WorkingArea.Bottom / scaleFactor;
+            if (minWidth - winWidth > 1.0)
+            {
+                if (disableAnimation)
+                    window.Width = minWidth;
+                else
+                    window.BeginAnimation(FrameworkElement.WidthProperty, CreateDoubleAnimation(winWidth, minWidth), HandoffBehavior.SnapshotAndReplace);
+            }
+            if (Math.Abs(newHeight - winHeight) > 1.0)
             {
                 if (disableAnimation)
                     window.Height = newHeight;
                 else
-                    window.BeginAnimation(FrameworkElement.HeightProperty, CreateDoubleAnimation(height, newHeight),
-                        HandoffBehavior.SnapshotAndReplace);
+                    window.BeginAnimation(FrameworkElement.HeightProperty, CreateDoubleAnimation(winHeight, newHeight), HandoffBehavior.SnapshotAndReplace);
             }
-            var offset = screen.WorkingArea.Bottom / scaleFactor - (window.Top + newHeight + (window.ActualHeight - window.Height));
-            if (offset < 0)
+            if (winRightEx > 0)
             {
-                var newTop = window.Top + offset;
+                var newLeft = window.Left - winRightEx;
+                if (disableAnimation)
+                    window.Left = newLeft;
+                else
+                    window.BeginAnimation(Window.LeftProperty, CreateDoubleAnimation(window.Left, Math.Max(0, newLeft)), HandoffBehavior.SnapshotAndReplace);
+            }
+            // ReSharper disable once InvertIf
+            if (winBottomEx > 0)
+            {
+                var newTop = window.Top - winBottomEx;
                 if (disableAnimation)
                     window.Top = newTop;
                 else
-                    window.BeginAnimation(Window.TopProperty, CreateDoubleAnimation(window.Top, Math.Max(0, newTop)),
-                        HandoffBehavior.SnapshotAndReplace);
+                    window.BeginAnimation(Window.TopProperty, CreateDoubleAnimation(window.Top, Math.Max(0, newTop)), HandoffBehavior.SnapshotAndReplace);
             }
         }
 

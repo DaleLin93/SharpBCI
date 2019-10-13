@@ -1,10 +1,17 @@
-﻿using MarukoLib.Lang;
-using SharpBCI.Core.Experiment;
+﻿using System.Collections.Generic;
+using MarukoLib.Lang;
 
 namespace SharpBCI.Extensions.Windows
 {
 
-    public interface IParameterPresentAdapter
+    public interface IPresentAdapter
+    {
+
+        double DesiredWidth { get; }
+
+    }
+
+    public interface IParameterPresentAdapter : IPresentAdapter
     {
 
         bool CanReset(IParameterDescriptor parameter);
@@ -17,10 +24,28 @@ namespace SharpBCI.Extensions.Windows
 
     }
 
-    public interface ISummaryPresentAdapter
+    public interface ISummaryPresentAdapter : IPresentAdapter
     {
 
         bool IsVisible(IReadonlyContext context, ISummary summary);
+
+    }
+
+    public static class PresentAdapterExt
+    {
+
+        public static double GetPreferredMinWidth(this IEnumerable<IPresentAdapter> presentAdapters)
+        {
+            double? max = null;
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var adapter in presentAdapters)
+            {
+                var w = adapter.DesiredWidth;
+                if (!double.IsNaN(w) && (max == null || max.Value < w))
+                    max = w;
+            }
+            return max ?? double.NaN;
+        }
 
     }
 
