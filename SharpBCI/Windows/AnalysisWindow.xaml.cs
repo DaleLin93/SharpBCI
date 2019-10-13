@@ -273,7 +273,7 @@ namespace SharpBCI.Windows
                 {
                     Marker = record.Marker,
                     Timestamp = record.Timestamp,
-                    Definition = markers == null ? null : markers.TryGetValue(record.Marker, out var definition) ? definition.Name : null,
+                    Definition = markers == null ? null : markers.TryGetValue(record.Marker, out var definition) ? definition.FullName : null,
                     DeltaT = previous == null ? 0 : record.Timestamp - previous.Timestamp
                 };
                 previous = record;

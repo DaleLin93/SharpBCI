@@ -9,20 +9,28 @@ using Newtonsoft.Json;
 namespace SharpBCI.Extensions
 {
 
+    [JsonObject(MemberSerialization.OptIn)]
     public struct MarkerDefinition : IRegistrable
     {
 
         private const string CodeKey = nameof(Code);
+
+        private const string OwnerKey = nameof(Owner);
+
+        private const string NamespaceKey = nameof(Namespace);
 
         private const string NameKey = nameof(Name);
 
         private const string ColorKey = nameof(Color);
 
         [JsonConstructor]
-        internal MarkerDefinition([JsonProperty(CodeKey)] int code, 
-            [JsonProperty(NameKey)] string name, [JsonProperty(ColorKey)] uint color)
+        internal MarkerDefinition([JsonProperty(CodeKey)] int code, [JsonProperty(OwnerKey)] string owner,
+            [JsonProperty(NamespaceKey)] string @namespace, [JsonProperty(NameKey)] string name, 
+            [JsonProperty(ColorKey)] uint color)
         {
             Code = code;
+            Owner = owner;
+            Namespace = @namespace;
             Name = name;
             Color = color;
         }
@@ -30,15 +38,23 @@ namespace SharpBCI.Extensions
         [JsonProperty(CodeKey)]
         public int Code { get; }
 
+        [JsonProperty(OwnerKey)]
+        public string Owner { get; }
+
+        [JsonProperty(NamespaceKey)]
+        public string Namespace { get; }
+
         [JsonProperty(NameKey)]
         public string Name { get; }
 
         [JsonProperty(ColorKey)]
         public uint Color { get; }
 
-        public override string ToString() => Name;
+        public string FullName => $"{Namespace}:{Name}";
 
-        string IRegistrable.Identifier => Name;
+        public override string ToString() => FullName;
+
+        string IRegistrable.Identifier => FullName;
 
     }
 
@@ -151,11 +167,13 @@ namespace SharpBCI.Extensions
                 var attr = field.GetCustomAttribute<MarkerDefinitionAttribute>();
                 if (attr == null) continue;
                 var marker = (int)field.GetValue(null);
-                var name = $"{attr.GroupName}:{attr.Name ?? field.Name.TrimEnd("Marker")}";
-                if (marker < CustomMarkerBase && !attr.GroupName.StartsWith(GlobalGroupName))
-                    throw new ProgrammingException($"Marker of {type.FullName}.{name} is reserved(less than {CustomMarkerBase})");
-                if (dict.ContainsKey(marker)) throw new ProgrammingException($"Duplicated marker in type: {type.FullName}, {dict[marker]} and {name}");
-                dict[marker] = new MarkerDefinition(marker, name, attr.Color);
+                var typeFullName = type.FullName;
+                var groupName = attr.GroupName.TrimEnd(':');
+                var name = attr.Name ?? field.Name.TrimEnd("Marker");
+                if (marker < CustomMarkerBase && !groupName.StartsWith($"{GlobalGroupName}:") && !groupName.Equals(GlobalGroupName))
+                    throw new ProgrammingException($"Marker of {typeFullName}.{groupName}:{name} is reserved(less than {CustomMarkerBase})");
+                if (dict.ContainsKey(marker)) throw new ProgrammingException($"Duplicated marker in type: {typeFullName}, {dict[marker]} and {name}");
+                dict[marker] = new MarkerDefinition(marker, typeFullName, groupName, name, attr.Color);
             }
             return dict;
         }
