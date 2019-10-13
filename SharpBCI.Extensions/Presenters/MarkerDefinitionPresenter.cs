@@ -38,6 +38,8 @@ namespace SharpBCI.Extensions.Presenters
             }
         }
 
+        public static readonly NamedProperty<string> NullPlaceholderTextProperty = new NamedProperty<string>("NullPlaceholderText", "NULL");
+
         public static readonly NamedProperty<IEnumerable<MarkerDefinition>> MarkerDefinitionsProperty = new NamedProperty<IEnumerable<MarkerDefinition>>("MarkerDefinitions");
 
         public static readonly NamedProperty<string> MarkerPrefixFilterProperty = new NamedProperty<string>("MarkerPrefixFilter");
@@ -70,7 +72,7 @@ namespace SharpBCI.Extensions.Presenters
 
             /* Generate combo box items */
             var comboBoxItems = new LinkedList<object>();
-            if (allowsNull) comboBoxItems.AddLast(ViewHelper.CreateDefaultComboBoxItem("NULL", TextAlignment.Center));
+            if (allowsNull) comboBoxItems.AddLast(ViewHelper.CreateDefaultComboBoxItem(NullPlaceholderTextProperty.Get(param.Metadata), TextAlignment.Center));
             var brushCache = new Dictionary<uint, Brush>();
             foreach (var markerDefinition in markerDefinitions)
             {
