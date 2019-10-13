@@ -3,9 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using MarukoLib.Lang;
 using MarukoLib.UI;
+using SharpBCI.Extensions.Windows;
 
 namespace SharpBCI.Extensions.Presenters
 {
@@ -18,29 +21,22 @@ namespace SharpBCI.Extensions.Presenters
 
             private readonly IParameterDescriptor _parameter;
 
-            private readonly Func<object, string> _toStringFunc;
-
             private readonly ComboBox _comboBox;
 
-            public ComboBoxAccessor(IParameterDescriptor parameter, Func<object, string> toStringFunc, ComboBox comboBox)
+            public ComboBoxAccessor(IParameterDescriptor parameter, ComboBox comboBox)
             {
                 _parameter = parameter;
-                _toStringFunc = toStringFunc;
                 _comboBox = comboBox;
             }
 
-            public object GetValue()
+            public object GetValue() => _parameter.IsValidOrThrow((_comboBox.SelectedValue as FrameworkElement)?.Tag as MarkerDefinition?);
+
+            public void SetValue(object value)
             {
-                var value = ToStringOverridenWrapper.TryUnwrap(_comboBox.SelectedValue);
-                if (ReferenceEquals(NullValue, value)) value = null;
-                return _parameter.IsValidOrThrow(value);
+                _comboBox.FindAndSelectFirstByTag(value as MarkerDefinition?, 0);
+                _comboBox.UpdateLayout();
             }
-
-            public void SetValue(object value) => _comboBox.FindAndSelect(_toStringFunc(value), 0);
-
         }
-
-        private static readonly string NullValue = "<NULL>";
 
         public static readonly NamedProperty<IEnumerable<MarkerDefinition>> MarkerDefinitionsProperty = new NamedProperty<IEnumerable<MarkerDefinition>>("MarkerDefinitions");
 
@@ -53,8 +49,17 @@ namespace SharpBCI.Extensions.Presenters
         public static ContextProperty<Func<IParameterDescriptor, IEnumerable>> SelectableValuesFuncProperty = 
             new ContextProperty<Func<IParameterDescriptor, IEnumerable>>();
 
+        private static void ResizeBoxItem(ItemsControl itemsControl)
+        {
+            var width = itemsControl.ActualWidth - itemsControl.Padding.Left - itemsControl.Padding.Right - 10 /* Assumed toggle button width */;
+            foreach (var item in itemsControl.ItemsSource)
+                if (item is FrameworkElement element)
+                    element.Width = width;
+        }
+
         public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
+            /* Read values */
             var allowsNull = param.IsNullable;
             var markerDefinitions = MarkerDefinitionsProperty.TryGet(param.Metadata, out var propValue) 
                 ? propValue : MarkerDefinitions.MarkerRegistry.Registered;
@@ -62,17 +67,61 @@ namespace SharpBCI.Extensions.Presenters
                 markerDefinitions = markerDefinitions.Where(md => md.Name.StartsWith(markerPrefixFilter));
             if (MarkerRegexFilterProperty.TryGet(param.Metadata, out var markerRegexFilter) && markerRegexFilter != null)
                 markerDefinitions = markerDefinitions.Where(md => markerRegexFilter.IsMatch(md.Name));
-            var selectableValues = allowsNull ? new object[] { NullValue }.Concat(markerDefinitions.Cast<object>()) : (IEnumerable)markerDefinitions;
-            static string ToStringFunc(object obj)
+
+            /* Generate combo box items */
+            var comboBoxItems = new LinkedList<object>();
+            if (allowsNull) comboBoxItems.AddLast(ViewHelper.CreateDefaultComboBoxItem("NULL", TextAlignment.Center));
+            var brushCache = new Dictionary<uint, Brush>();
+            foreach (var markerDefinition in markerDefinitions)
             {
-                if (obj == null) return NullValue;
-                if (obj is MarkerDefinition markerDefinition) return $"{markerDefinition.Name} (#{markerDefinition.Code})";
-                return obj?.ToString();
+                if (!brushCache.TryGetValue(markerDefinition.Color, out var brush)) 
+                    brushCache[markerDefinition.Color] = brush = new SolidColorBrush(markerDefinition.Color.ToSwmColor());
+                var itemContainer = new Grid {Tag = markerDefinition};
+                itemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
+                itemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
+                itemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
+                var namespaceTextBlock = new TextBlock
+                {
+                    Text = markerDefinition.Namespace,
+                    Foreground = Brushes.DarkSlateGray,
+                    FontStyle = FontStyles.Italic
+                };
+                var nameTextBlock = new TextBlock
+                {
+                    Margin = new Thickness { Left = 5},
+                    Text = markerDefinition.Name,
+                    Foreground = brush,
+                    FontWeight = FontWeights.Bold
+                };
+                var codeTextBlock = new TextBlock
+                {
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Text = $"#{markerDefinition.Code}",
+                    Foreground = Brushes.SlateGray,
+                    FontWeight = FontWeights.Light,
+                    FontSize = 8
+                };
+                itemContainer.Children.Add(namespaceTextBlock);
+                itemContainer.Children.Add(nameTextBlock);
+                itemContainer.Children.Add(codeTextBlock);
+                Grid.SetColumn(namespaceTextBlock, 0);
+                Grid.SetColumn(nameTextBlock, 1); 
+                Grid.SetColumn(codeTextBlock, 2); 
+                comboBoxItems.AddLast(itemContainer);
             }
-            var comboBox = new ComboBox();
-            comboBox.SelectionChanged += (sender, args) => updateCallback();
-            comboBox.ItemsSource = ToStringOverridenWrapper.Of(selectableValues, ToStringFunc);
-            return new PresentedParameter(param, comboBox, new ComboBoxAccessor(param, ToStringFunc, comboBox), comboBox);
+
+            var comboBox = new ComboBox
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                ItemsSource = comboBoxItems,
+                SelectedIndex = -1
+            };
+            comboBox.SizeChanged += (s, _) => ResizeBoxItem((ComboBox) s);
+            comboBox.SelectionChanged += (s, _) => updateCallback();
+            return new PresentedParameter(param, comboBox, new ComboBoxAccessor(param, comboBox), comboBox);
         }
 
     }
