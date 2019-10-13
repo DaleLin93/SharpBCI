@@ -46,7 +46,7 @@ namespace SharpBCI.Plugins
         private Plugin(Assembly assembly)
         {
             Assembly = assembly ?? throw new ArgumentNullException(nameof(assembly));
-            Name = Path.GetFileName(Assembly.Location).Trim(PluginFileNamePrefix, PluginFileNameSuffix, StringComparison.OrdinalIgnoreCase);
+            Name = Path.GetFileName(Assembly.Location).Trim(PluginFileNamePrefix, PluginFileNameSuffix, false, StringComparison.OrdinalIgnoreCase);
             Identifier = Assembly.FullName;
 
             LoadMarkers();

@@ -194,7 +194,7 @@ namespace SharpBCI.Paradigms.WebBrowser
                 new Thread(() => ClientListeningTask(new Client(endPoint, context.AcceptWebSocketAsync(null).Await(), priority)))
                     { Name = $"Web Browser Assistant Socket {endPoint}", IsBackground = true, Priority = ThreadPriority.BelowNormal }.Start();
             }
-            else if (uri.LocalPath.TryTrim("/static/", null, out var filePath, StringComparison.Ordinal))
+            else if (uri.LocalPath.TryTrim("/static/", null, out var filePath))
             {
                 filePath = filePath.Replace('/', '\\');
                 filePath = Path.Combine(_paradigm.Config.User.WebRootDir, filePath);
