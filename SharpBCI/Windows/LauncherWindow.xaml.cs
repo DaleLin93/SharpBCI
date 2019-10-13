@@ -216,7 +216,7 @@ namespace SharpBCI.Windows
         {
             _subjectTextBox.Text = config.Subject ?? _subjectTextBox.Text;
             _sessionDescriptorTextBox.Text = config.SessionDescriptor ?? _sessionDescriptorTextBox.Text;
-            if (_paradigmComboBox.FindAndSelect(config.Paradigm.Id, null))
+            if (_paradigmComboBox.FindAndSelectFirstByString(config.Paradigm.Id, null))
                 ParadigmParamPanel.Context = _currentParadigm.DeserializeParams(config.Paradigm.Params);
             _deviceConfigPanel.DeviceConfig = config.Devices;
         }
@@ -227,7 +227,7 @@ namespace SharpBCI.Windows
 
             _subjectTextBox.Text = _config.Subject ?? _subjectTextBox.Text;
             _sessionDescriptorTextBox.Text = _config.SessionName ?? _sessionDescriptorTextBox.Text;
-            _paradigmComboBox.FindAndSelect(_config.SelectedParadigm, 0);
+            _paradigmComboBox.FindAndSelectFirstByString(_config.SelectedParadigm, 0);
 
             DeserializeParadigmConfig();
             DeserializeDevicesConfig();
@@ -538,7 +538,7 @@ namespace SharpBCI.Windows
                             var paradigmAttribute = paradigm.ParadigmAttribute;
                             var menuItemHeader = $"{paradigmAttribute.Name} ({paradigmAttribute.FullVersionName}) - {paradigm.ParadigmClass.FullName}";
                             var paradigmMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
-                            paradigmMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelect(paradigmAttribute.Name, null);
+                            paradigmMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelectFirstByString(paradigmAttribute.Name, null);
                             children.AddLast(paradigmMenuItem);
                         }
                     children.AddLast(new Separator());
@@ -551,7 +551,7 @@ namespace SharpBCI.Windows
                             var consumerAttribute = streamConsumer.ConsumerAttribute;
                             var menuItemHeader = $"{consumerAttribute.Name} ({consumerAttribute.FullVersionName}) - {streamConsumer.ConsumerClass.FullName}";
                             var consumerMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
-                            consumerMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelect(consumerAttribute.Name, null);
+                            consumerMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelectFirstByString(consumerAttribute.Name, null);
                             children.AddLast(consumerMenuItem);
                         }
                     children.AddLast(new Separator());

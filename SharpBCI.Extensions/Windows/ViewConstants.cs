@@ -19,6 +19,8 @@ namespace SharpBCI.Extensions.Windows
 
         public const int Intend = 15;
 
+        public const string NotSelectedComboBoxItemText = "<NOT SELECTED>";
+
         public const string SharedResourceDictionaryUri = "pack://application:,,,/SharpBCI.Extensions;component/Resources/SharedResourceDictionary.xaml";
 
         public const string AlertImageUri = "pack://application:,,,/SharpBCI.Extensions;component/Resources/Alert.png";

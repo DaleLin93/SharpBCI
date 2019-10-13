@@ -40,7 +40,7 @@ namespace SharpBCI.Extensions.Presenters
                 return _parameter.IsValidOrThrow(value);
             }
 
-            public void SetValue(object value) => _comboBox.FindAndSelect(_toStringFunc(value), 0);
+            public void SetValue(object value) => _comboBox.FindAndSelectFirstByString(_toStringFunc(value), 0);
 
         }
 

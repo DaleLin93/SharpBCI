@@ -193,20 +193,16 @@ namespace SharpBCI.Extensions.Windows
             foreach (var pViewModel in _paramViewModels.Values)
             {
                 var visible = adapter.IsVisible(context, pViewModel.ParameterDescriptor);
-                if (visible != pViewModel.IsVisible)
-                {
-                    pViewModel.SetVisible(visible, (pViewModel.Group?.IsVisible ?? true) && !initializing);
-                    visibilityChanged = true;
-                }
+                if (visible == pViewModel.IsVisible) continue;
+                pViewModel.SetVisible(visible, (pViewModel.Group?.IsVisible ?? true) && !initializing);
+                visibilityChanged = true;
             }
             foreach (var gViewModel in _groupViewModels.Values)
             {
                 var visible = adapter.IsVisible(context, gViewModel.Group);
-                if (visible != gViewModel.IsVisible)
-                {
-                    gViewModel.SetVisible(visible, !initializing);
-                    visibilityChanged = true;
-                }
+                if (visible == gViewModel.IsVisible) continue;
+                gViewModel.SetVisible(visible, !initializing);
+                visibilityChanged = true;
             }
             return visibilityChanged;
         }

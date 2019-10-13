@@ -59,11 +59,13 @@ namespace SharpBCI.Windows
             public ConsumerConfigViewModel(IEnumerable consumers) : base("Consumer", "Consumer Selection", consumers) { }
         }
 
-        public const string NoneIdentifier = "<NONE>";
-
         public event EventHandler<DeviceChangedEventArgs> DeviceChanged;
 
         public event EventHandler<ConsumerChangedEventArgs> ConsumerChanged;
+
+        private readonly ReferenceCounter _deviceParamsUpdateLock = new ReferenceCounter();
+
+        private readonly ReferenceCounter _consumerParamsUpdateLock = new ReferenceCounter();
 
         private readonly DeviceType _deviceType;
 
@@ -92,7 +94,8 @@ namespace SharpBCI.Windows
 
             Loaded += (sender, e) =>
             {
-                _deviceViewModel.ComboBox.FindAndSelect(device?.Identifier, 0);
+                using (_consumerParamsUpdateLock.Ref())
+                    _deviceViewModel.ComboBox.FindAndSelectFirstByString(device?.Identifier, 0);
                 _deviceViewModel.ParamPanel.Context = deviceParams ?? EmptyContext.Instance;
 
                 if (consumers != null)
@@ -100,7 +103,8 @@ namespace SharpBCI.Windows
                     {
                         if (string.IsNullOrWhiteSpace(consumer.Item1?.Identifier)) continue;
                         var viewModel = AddConsumerConfig();
-                        viewModel.ComboBox.FindAndSelect(consumer.Item1.Identifier, 0);
+                        using (_consumerParamsUpdateLock.Ref())
+                            viewModel.ComboBox.FindAndSelectFirstByString(consumer.Item1.Identifier, 0);
                         viewModel.ParamPanel.Context = consumer.Item2 ?? EmptyContext.Instance;
                     }
 
@@ -131,7 +135,7 @@ namespace SharpBCI.Windows
         private static IList GetDeviceList(DeviceType deviceType)
         {
             var list = new List<object>();
-            if (!deviceType.IsRequired) list.Add(NoneIdentifier);
+            if (!deviceType.IsRequired) list.Add(ViewHelper.CreateDefaultComboBoxItem());
             list.AddRange(App.Instance.Registries.Registry<PluginDevice>().Registered.Where(pd => pd.DeviceType == deviceType));
             return list;
         }
@@ -139,8 +143,8 @@ namespace SharpBCI.Windows
         private static IList GetConsumerList(DeviceType deviceType)
         {
             var streamerValueType = deviceType.StreamerFactory?.StreamingType;
-            if (streamerValueType == null) return new object[] { NoneIdentifier };
-            var list = new List<object> {NoneIdentifier};
+            var list = new List<object> {ViewHelper.CreateDefaultComboBoxItem()};
+            if (streamerValueType == null) return list;
             list.AddRange(App.Instance.Registries.Registry<PluginStreamConsumer>().Registered
                 .Where(pc => pc.Factory.GetAcceptType(pc.ConsumerClass).IsAssignableFrom(streamerValueType)));
             return list;
@@ -227,11 +231,11 @@ namespace SharpBCI.Windows
             var comboBox = (ComboBox)sender;
             var viewModel = (DeviceConfigViewModel)comboBox.Tag;
             var device = comboBox.SelectedItem as PluginDevice;
+            InitializeDeviceConfigurationPanel(device);
 
+            if (_deviceParamsUpdateLock.IsReferred) return;
             var eventArgs = new DeviceChangedEventArgs(_deviceType, viewModel.Current, device, viewModel.ParamPanel.Context);
             DeviceChanged?.Invoke(this, eventArgs);
-
-            InitializeDeviceConfigurationPanel(device);
             viewModel.ParamPanel.Context = eventArgs.NewDeviceParams ?? EmptyContext.Instance;
         }
 
@@ -240,11 +244,11 @@ namespace SharpBCI.Windows
             var comboBox = (ComboBox) sender;
             var viewModel = (ConsumerConfigViewModel) comboBox.Tag;
             var streamConsumer = comboBox.SelectedItem as PluginStreamConsumer;
+            InitializeConsumerConfigurationPanel(viewModel, streamConsumer);
 
+            if (_consumerParamsUpdateLock.IsReferred) return;
             var eventArgs = new ConsumerChangedEventArgs(_deviceType, viewModel.Current, streamConsumer, viewModel.ParamPanel.Context);
             ConsumerChanged?.Invoke(this, eventArgs);
-
-            InitializeConsumerConfigurationPanel(viewModel, streamConsumer);
             viewModel.ParamPanel.Context = eventArgs.NewConsumerParams ?? EmptyContext.Instance;
         }
 

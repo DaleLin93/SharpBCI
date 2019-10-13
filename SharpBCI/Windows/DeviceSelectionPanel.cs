@@ -61,8 +61,6 @@ namespace SharpBCI.Windows
     public class DeviceSelectionPanel : StackPanel
     {
 
-        public const string NoneIdentifier = "<NONE>";
-
         public const int DeviceRowHeight = ViewConstants.DefaultRowHeight;
 
         internal class DeviceTypeViewModel
@@ -84,7 +82,7 @@ namespace SharpBCI.Windows
 
             [NotNull] public readonly Button ConfigButton, PreviewButton;
 
-            private Constructable<PluginStreamConsumer>[] _currentConsumers = null;
+            [CanBeNull] private Constructable<PluginStreamConsumer>[] _currentConsumers;
 
             internal DeviceTypeViewModel(DeviceType deviceType)
             {
@@ -242,7 +240,7 @@ namespace SharpBCI.Windows
             set
             {
                 var controlGroup = _deviceControlGroups[deviceType];
-                if (controlGroup.DeviceComboBox.FindAndSelect(value.Device.Id ?? NoneIdentifier, null))
+                if (controlGroup.DeviceComboBox.FindAndSelectFirstByString(value.Device.Id, 0))
                 {
                     var cDevice = controlGroup.CurrentDevice;
                     cDevice.Params = cDevice.Target?.DeserializeParams(value.Device.Params) ?? (IReadonlyContext)EmptyContext.Instance;
@@ -251,7 +249,7 @@ namespace SharpBCI.Windows
                 var consumers = new LinkedList<Constructable<PluginStreamConsumer>>();
                 foreach (var consumerEntity in value.Consumers?.Where(p => p.Id != null).ToArray() ?? EmptyArray<ParameterizedEntity>.Instance)
                 {
-                    if(!consumerRegistry.LookUp(consumerEntity.Id ?? NoneIdentifier, out var streamConsumer)) continue;
+                    if(!consumerRegistry.LookUp(consumerEntity.Id, out var streamConsumer)) continue;
                     consumers.AddLast(new Constructable<PluginStreamConsumer>
                     {
                         Target = streamConsumer,
@@ -310,7 +308,7 @@ namespace SharpBCI.Windows
         }
 
         public bool FindAndSelectDevice(DeviceType type, string itemStr, int? defaultIndex = null) =>
-            _deviceControlGroups[type].DeviceComboBox.FindAndSelect(itemStr, defaultIndex);
+            _deviceControlGroups[type].DeviceComboBox.FindAndSelectFirstByString(itemStr, defaultIndex);
 
         public void UpdateDevices()
         {
@@ -320,7 +318,7 @@ namespace SharpBCI.Windows
                 var list = new LinkedList<object>();
                 foreach (var device in devices.Where(d => d.DeviceType == deviceType))
                     list.AddLast(device);
-                if (!deviceType.IsRequired) list.AddFirst(NoneIdentifier);
+                if (!deviceType.IsRequired) list.AddFirst(ViewHelper.CreateDefaultComboBoxItem());
                 _deviceControlGroups[deviceType].DeviceComboBox.ItemsSource = list;
                 _deviceControlGroups[deviceType].DeviceComboBox.SelectedIndex = 0;
             }
@@ -349,10 +347,10 @@ namespace SharpBCI.Windows
             deviceConfigWindow.ConsumerChanged += (s0, e0) => ConsumerChanged?.Invoke(this, e0);
             if (!deviceConfigWindow.ShowDialog(out var device, out var consumers)) return;
             if (controlGroup.CurrentDevice.Target != device.Item1)
-                using (_ = _deviceParamsUpdateLock.Ref()) 
+                using (_deviceParamsUpdateLock.Ref()) 
                 {
                     controlGroup.CurrentDevice.Target = device.Item1;
-                    controlGroup.DeviceComboBox.FindAndSelect(device.Item1?.Identifier, 0);
+                    controlGroup.DeviceComboBox.FindAndSelectFirstByString(device.Item1?.Identifier, 0);
                 }
             controlGroup.CurrentDevice.Params = device.Item2;
             controlGroup.CurrentConsumers = consumers.Select(Constructable<PluginStreamConsumer>.Of).ToArray();

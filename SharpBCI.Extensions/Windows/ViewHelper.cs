@@ -2,6 +2,7 @@
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
@@ -15,13 +16,24 @@ namespace SharpBCI.Extensions.Windows
     {
 
         public static readonly ResourceDictionary Resources = new ResourceDictionary {Source = new Uri(ViewConstants.SharedResourceDictionaryUri)};
-
+        
         public static object GetResource(string name)
         {
             var res = Resources[name];
             if (res == DependencyProperty.UnsetValue) throw new ProgrammingException($"Resource not found by name: '{name}'");
             return res;
         }
+
+        public static TextBlock CreateDefaultComboBoxItem(string text = ViewConstants.NotSelectedComboBoxItemText,
+            TextAlignment alignment = TextAlignment.Left) => new TextBlock
+        {
+            Text = text,
+            FontStyle = FontStyles.Italic,
+            Foreground = Brushes.DimGray,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextAlignment = alignment
+            };
 
         public static void UpdateWindowHeight(this Window window, double newHeight, bool animation = true)
         {
