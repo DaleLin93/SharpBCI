@@ -92,10 +92,15 @@ namespace SharpBCI.Extensions.Presenters
         }
 
         /// <summary>
+        /// Default Value: Horizontal
+        /// </summary>
+        public static readonly NamedProperty<Orientation> LayoutOrientationVisibilityProperty = new NamedProperty<Orientation>("LayoutOrientation", Orientation.Horizontal);
+
+        /// <summary>
         /// Default Value: true
         /// </summary>
         public static readonly NamedProperty<bool> ParamLabelVisibilityProperty = new NamedProperty<bool>("ParamLabelVisibility", true);
-        
+
         /// <summary>
         /// Default Value: 1*
         /// </summary>
@@ -127,11 +132,9 @@ namespace SharpBCI.Extensions.Presenters
                 var subParams = factory.GetParameters(param);
                 var context = factory.Parse(param, accessor.Value);
                 var configWindow = new ParameterizedConfigWindow(param.Name ?? "Parameter", subParams, context) {Width = 400};
-                if (configWindow.ShowDialog(out var @params))
-                {
-                    accessor.Value = factory.Create(param, @params);
-                    updateCallback();
-                }
+                if (!configWindow.ShowDialog(out var @params)) return;
+                accessor.Value = factory.Create(param, @params);
+                updateCallback();
             };
 
             return new PresentedParameter(param, grid, accessor, button);
@@ -144,47 +147,92 @@ namespace SharpBCI.Extensions.Presenters
             var subParameterCount = subParameters.Length;
             var presentedSubParams = new PresentedParameter[subParameterCount];
 
-            var grid = new Grid();
+            UIElement container;
             if (subParameterCount == 0)
-                grid.Children.Add(new TextBlock {Text = "<EMPTY>", Foreground = Brushes.DimGray});
+            {
+                var grid = new Grid();
+                grid.Children.Add(new TextBlock { Text = "<EMPTY>", Foreground = Brushes.DimGray });
+                container = grid;
+            }
             else
             {
                 var labelVisible = ParamLabelVisibilityProperty.Get(param.Metadata);
-                if (labelVisible) grid.RowDefinitions.Add(new RowDefinition {Height = GridLength.Auto});
-                grid.RowDefinitions.Add(new RowDefinition {Height = GridLength.Auto});
+                var nameTextBlocks = labelVisible ? new TextBlock[subParameterCount] : null;
                 for (var i = 0; i < subParameterCount; i++)
                 {
-                    if (i != 0) grid.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength});
-                    grid.ColumnDefinitions.Add(new ColumnDefinition());
-                }
-                for (var i = 0; i < subParameterCount; i++)
-                {
-                    var columnIndex = i * 2;
                     var subParam = subParameters[i];
-                    if (labelVisible)
+                    presentedSubParams[i] = subParam.GetPresenter().Present(subParam, updateCallback);
+                    if (!labelVisible) continue;
+                    var nameTextBlock = ViewHelper.CreateParamNameTextBlock(subParam);
+                    nameTextBlock.FontSize = 8;
+                    nameTextBlock.TextWrapping = TextWrapping.NoWrap;
+                    nameTextBlock.TextAlignment = TextAlignment.Left;
+                    nameTextBlocks[i] = nameTextBlock;
+                }
+
+                var orientation = LayoutOrientationVisibilityProperty.Get(param.Metadata);
+                switch (orientation)
+                {
+                    case Orientation.Horizontal:
                     {
-                        var nameTextBlock = ViewHelper.CreateParamNameTextBlock(subParam);
-                        nameTextBlock.FontSize = 8;
-                        nameTextBlock.TextWrapping = TextWrapping.NoWrap;
-                        nameTextBlock.TextAlignment = TextAlignment.Left;
-                        grid.Children.Add(nameTextBlock);
-                        Grid.SetRow(nameTextBlock, 0);
-                        Grid.SetColumn(nameTextBlock, columnIndex);
+                        var grid = new Grid();
+                        if (labelVisible) grid.RowDefinitions.Add(new RowDefinition {Height = GridLength.Auto});
+                        grid.RowDefinitions.Add(new RowDefinition {Height = GridLength.Auto});
+                        grid.ColumnDefinitions.Add(new ColumnDefinition()); // first content column (at least one element is ensured).
+                        for (var i = 1; i < subParameterCount; i++)
+                        {
+                            grid.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength});
+                            grid.ColumnDefinitions.Add(new ColumnDefinition());
+                        }
+                        for (var i = 0; i < subParameterCount; i++)
+                        {
+                            var columnIndex = i * 2;
+                            var subParam = subParameters[i];
+                            var presentedSubParam = presentedSubParams[i];
+                            if (labelVisible)
+                            {
+                                var nameTextBlock = nameTextBlocks[i];
+                                grid.Children.Add(nameTextBlock);
+                                Grid.SetRow(nameTextBlock, 0);
+                                Grid.SetColumn(nameTextBlock, columnIndex);
+                            }
+
+                            grid.Children.Add(presentedSubParam.Element);
+                            if (labelVisible) Grid.SetRow(presentedSubParam.Element, 1);
+                            Grid.SetColumn(presentedSubParam.Element, columnIndex);
+
+                            GridLength columnWidth;
+                            if (ColumnWidthProperty.TryGet(subParam.Metadata, out var propertyValue))
+                                columnWidth = propertyValue;
+                            else if (presentedSubParam.Element.GetType() == typeof(CheckBox))
+                                columnWidth = GridLength.Auto;
+                            else columnWidth = ColumnWidthProperty.DefaultValue;
+                            grid.ColumnDefinitions[columnIndex].Width = columnWidth;
+                        }
+                        container = grid;
+                        break;
                     }
-
-                    var presentedSubParam = presentedSubParams[i] = subParam.GetPresenter().Present(subParam, updateCallback);
-                    grid.Children.Add(presentedSubParam.Element);
-                    if(labelVisible) Grid.SetRow(presentedSubParam.Element, 1);
-                    Grid.SetColumn(presentedSubParam.Element, columnIndex);
-
-                    GridLength columnWidth;
-                    if (ColumnWidthProperty.TryGet(subParam.Metadata, out var propertyValue)) columnWidth = propertyValue;
-                    else if (presentedSubParam.Element.GetType() == typeof(CheckBox)) columnWidth = GridLength.Auto;
-                    else columnWidth = ColumnWidthProperty.DefaultValue;
-                    grid.ColumnDefinitions[columnIndex].Width = columnWidth;
+                    case Orientation.Vertical:
+                    {
+                        var stackPanel = new StackPanel();
+                        for (var i = 0; i < subParameterCount; i++)
+                        {
+                            var presentedSubParam = presentedSubParams[i];
+                            if (labelVisible)
+                            {
+                                var nameTextBlock = nameTextBlocks[i];
+                                stackPanel.Children.Add(nameTextBlock);
+                            }
+                            stackPanel.Children.Add(presentedSubParam.Element);
+                        }
+                        container = stackPanel;
+                        break;
+                    }
+                    default:
+                        throw new NotSupportedException(orientation.ToString());
                 }
             }
-            return new PresentedParameter(param, grid, new InlineAdapter(param, factory, presentedSubParams));
+            return new PresentedParameter(param, container, new InlineAdapter(param, factory, presentedSubParams));
         }
     }
 }
