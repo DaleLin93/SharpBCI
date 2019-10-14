@@ -88,7 +88,7 @@ namespace SharpBCI.Extensions.Presenters
 
         }
 
-        private static readonly string NullValue = "<NULL>";
+        private const string NullValue = "<NULL>";
 
         public static readonly NamedProperty<bool> UseRadioGroupProperty = new NamedProperty<bool>("UseRadioGroup", false);
 

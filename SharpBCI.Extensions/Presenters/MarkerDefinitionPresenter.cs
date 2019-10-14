@@ -16,27 +16,155 @@ namespace SharpBCI.Extensions.Presenters
     public class MarkerDefinitionPresenter : IPresenter
     {
 
-        private class ComboBoxAccessor : IPresentedParameterAccessor
+        private class ComboBoxAdapter : IPresentedParameterAdapter
         {
 
             private readonly IParameterDescriptor _parameter;
 
+            private readonly Type _actualValueType;
+
             private readonly ComboBox _comboBox;
 
-            public ComboBoxAccessor(IParameterDescriptor parameter, ComboBox comboBox)
+            private readonly Action _updateAction;
+
+            private readonly ReferenceCounter _textCallbackLock;
+
+            private TextBox _textBox;
+
+            private Border _textBoxBorder;
+
+            public ComboBoxAdapter(IParameterDescriptor parameter, Type actualValueType, ComboBox comboBox, Action updateAction)
             {
                 _parameter = parameter;
+                _actualValueType = actualValueType;
                 _comboBox = comboBox;
+                _updateAction = updateAction;
+                if (comboBox.IsEditable)
+                {
+                    _textCallbackLock = new ReferenceCounter();
+                    comboBox.Loaded += ComboBox_OnLoaded;
+                    comboBox.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent, new TextChangedEventHandler(ComboBoxTextBox_TextChanged));
+                }
+                else
+                {
+                    _textCallbackLock = null;
+                    comboBox.SizeChanged += ComboBox_OnSizeChanged;
+                }
+                comboBox.SelectionChanged += ComboBoxComboBoxOnSelectionChanged;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow((_comboBox.SelectedValue as FrameworkElement)?.Tag as MarkerDefinition?);
+            public object GetValue()
+            {
+                object finalValue;
+                if (_comboBox.IsEditable)
+                    finalValue = string.IsNullOrEmpty(_comboBox.Text) ? (int?) null : int.Parse(_comboBox.Text);
+                else
+                {
+                    var markerDef = (_comboBox.SelectedValue as FrameworkElement)?.Tag as MarkerDefinition?;
+                    if (_actualValueType == typeof(int))
+                        finalValue = markerDef?.Code;
+                    else if (_actualValueType == typeof(MarkerDefinition))
+                        finalValue = markerDef;
+                    else
+                        throw new NotSupportedException(_actualValueType.FullName);
+                }
+                return _parameter.IsValidOrThrow(finalValue);
+            }
 
             public void SetValue(object value)
             {
-                _comboBox.FindAndSelectFirstByTag(value as MarkerDefinition?, 0);
-                _comboBox.UpdateLayout();
+                if (_comboBox.IsEditable)
+                    switch (value)
+                    {
+                        case int code:
+                            _comboBox.Text = code.ToString();
+                            break;
+                        case MarkerDefinition markerDefinition:
+                            _comboBox.Text = markerDefinition.Code.ToString();
+                            break;
+                        default:
+                            _comboBox.Text = "";
+                            break;
+                    }
+                else
+                {
+                    var success = false;
+                    switch (value)
+                    {
+                        case int code:
+                            success = _comboBox.FindAndSelectFirst(item =>
+                            {
+                                if (!(item is FrameworkElement el) || !(el.Tag is MarkerDefinition def)) return false;
+                                return def.Code == code;
+                            });
+                            break;
+                        case MarkerDefinition markerDefinition:
+                            success = _comboBox.FindAndSelectFirstByTag(markerDefinition);
+                            break;
+                    }
+                    if (!success)
+                        _comboBox.SelectedIndex = 0;
+                    _comboBox.UpdateLayout();
+                }
             }
+
+            public void SetEnabled(bool value) => _comboBox.IsEnabled = value;
+
+            public void SetValid(bool value)
+            {
+                var brush = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
+                if (_comboBox.IsEditable)
+                {
+                    if (_textBoxBorder != null)
+                        _textBoxBorder.Background = brush;
+                }
+                else
+                    _comboBox.Background = brush;
+            }
+
+            private void ComboBox_OnLoaded(object sender, RoutedEventArgs args)
+            {
+                var comboBox = (ComboBox)sender;
+                comboBox.Loaded -= ComboBox_OnLoaded;
+                if ((_textBox = (TextBox)comboBox.Template.FindName("PART_EditableTextBox", comboBox)) == null) return;
+                _textBox.Background = Brushes.Transparent;
+                (_textBoxBorder = (Border)_textBox.Parent).Background = Brushes.Transparent;
+            }
+
+            private static void ComboBox_OnSizeChanged(object sender, SizeChangedEventArgs args) => ResizeBoxItem((ComboBox)sender);
+
+            private void ComboBoxComboBoxOnSelectionChanged(object sender, SelectionChangedEventArgs args)
+            {
+                if (_textBox != null)
+                {
+                    var comboBox = (ComboBox) sender;
+                    if (comboBox.SelectedItem != null && !(comboBox.SelectedItem is MarkerDefinitionItem))
+                        using (_textCallbackLock.Ref())
+                            _textBox.Text = "";
+                }
+                _updateAction();
+            }
+
+            private void ComboBoxTextBox_TextChanged(object sender, TextChangedEventArgs args)
+            {
+                if (!_textCallbackLock.IsReferred)
+                    _updateAction();
+            }
+
         }
+
+        private class MarkerDefinitionItem : Grid
+        {
+
+            public readonly MarkerDefinition Marker;
+
+            public MarkerDefinitionItem(MarkerDefinition marker) => Tag = Marker = marker;
+
+            public override string ToString() => $"{Marker.Code}";
+
+        }
+
+        public static readonly NamedProperty<bool> CustomizeMarkerCodeProperty = new NamedProperty<bool>("CustomizeMarkerCode", false);
 
         public static readonly NamedProperty<string> NullPlaceholderTextProperty = new NamedProperty<string>("NullPlaceholderText", "NULL");
 
@@ -51,6 +179,10 @@ namespace SharpBCI.Extensions.Presenters
         public static ContextProperty<Func<IParameterDescriptor, IEnumerable>> SelectableValuesFuncProperty = 
             new ContextProperty<Func<IParameterDescriptor, IEnumerable>>();
 
+        private static readonly ISet<Type> SupportedTypes = new HashSet<Type>(new[] {typeof(int), typeof(MarkerDefinition)});
+
+        private static readonly Type CustomizeMarkerCodeSupportedType = typeof(int);
+
         private static void ResizeBoxItem(ItemsControl itemsControl)
         {
             var width = itemsControl.ActualWidth - itemsControl.Padding.Left - itemsControl.Padding.Right - 10 /* Assumed toggle button width */;
@@ -62,6 +194,11 @@ namespace SharpBCI.Extensions.Presenters
         public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             /* Read values */
+            var valueType = param.ValueType;
+            var actualType = valueType.IsNullableType(out var underlyingType) ? underlyingType : valueType;
+            if (!SupportedTypes.Contains(actualType)) throw new NotSupportedException(actualType.FullName);
+            var customizeMarkerCode = CustomizeMarkerCodeProperty.Get(param.Metadata);
+            if (customizeMarkerCode && CustomizeMarkerCodeSupportedType != actualType) throw new NotSupportedException(actualType.FullName);
             var allowsNull = param.IsNullable;
             var markerDefinitions = MarkerDefinitionsProperty.TryGet(param.Metadata, out var propValue) 
                 ? propValue : MarkerDefinitions.MarkerRegistry.Registered;
@@ -78,7 +215,7 @@ namespace SharpBCI.Extensions.Presenters
             {
                 if (!brushCache.TryGetValue(markerDefinition.Color, out var brush)) 
                     brushCache[markerDefinition.Color] = brush = new SolidColorBrush(markerDefinition.Color.ToSwmColor());
-                var itemContainer = new Grid {Tag = markerDefinition};
+                var itemContainer = new MarkerDefinitionItem(markerDefinition);
                 itemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
                 itemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
                 itemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
@@ -111,7 +248,6 @@ namespace SharpBCI.Extensions.Presenters
                 Grid.SetColumn(codeTextBlock, 2); 
                 comboBoxItems.AddLast(itemContainer);
             }
-
             var comboBox = new ComboBox
             {
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -119,11 +255,10 @@ namespace SharpBCI.Extensions.Presenters
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 ItemsSource = comboBoxItems,
-                SelectedIndex = -1
+                SelectedIndex = -1,
+                IsEditable = customizeMarkerCode
             };
-            comboBox.SizeChanged += (s, _) => ResizeBoxItem((ComboBox) s);
-            comboBox.SelectionChanged += (s, _) => updateCallback();
-            return new PresentedParameter(param, comboBox, new ComboBoxAccessor(param, comboBox), comboBox);
+            return new PresentedParameter(param, comboBox, new ComboBoxAdapter(param, actualType, comboBox, updateCallback));
         }
 
     }

@@ -1,6 +1,7 @@
 ﻿using MarukoLib.Lang;
 using MarukoLib.Lang.Concurrent;
 using SharpBCI.Extensions.Data;
+using SharpBCI.Extensions.Presenters;
 
 namespace SharpBCI.Extensions.Devices.MarkerSources
 {
@@ -13,7 +14,10 @@ namespace SharpBCI.Extensions.Devices.MarkerSources
 
         public static readonly Parameter<string> LabelParam = new Parameter<string>("Label", defaultValue: "Heartbeat");
 
-        public static readonly Parameter<int> CodeParam = new Parameter<int>("Code", -1);
+        public static readonly Parameter<int> CodeParam = Parameter<int>.CreateBuilder("Code", MarkerDefinitions.HeartbeatMarker)
+            .SetMetadata(Presenters.Presenters.PresenterProperty, MarkerDefinitionPresenter.Instance)
+            .SetMetadata(MarkerDefinitionPresenter.CustomizeMarkerCodeProperty, true)
+            .Build();
 
         public static readonly Parameter<TimeInterval> IntervalParam = new Parameter<TimeInterval>("Interval", new TimeInterval(1, TimeUnit.Second));
 
