@@ -1,4 +1,13 @@
-﻿using System;
+﻿using MarukoLib.IO;
+using MarukoLib.Lang;
+using SharpBCI.Core.Experiment;
+using SharpBCI.Core.IO;
+using SharpBCI.Extensions;
+using SharpBCI.Extensions.Data;
+using SharpBCI.Extensions.Devices.MarkerSources;
+using SharpBCI.Extensions.Presenters;
+using SharpBCI.Extensions.Streamers;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -8,15 +17,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Windows.Controls;
-using MarukoLib.IO;
-using MarukoLib.Lang;
-using SharpBCI.Core.Experiment;
-using SharpBCI.Core.IO;
-using SharpBCI.Extensions;
-using SharpBCI.Extensions.Data;
-using SharpBCI.Extensions.Devices.MarkerSources;
-using SharpBCI.Extensions.Presenters;
-using SharpBCI.Extensions.Streamers;
 
 namespace SharpBCI.EGI
 {
@@ -92,6 +92,8 @@ namespace SharpBCI.EGI
 
             public static readonly Parameter<ushort> SyncRetryCountParam = new Parameter<ushort>("Sync Retry Count", 1000);
 
+            public static readonly Parameter<bool> AfterSyncTimeCorrectionParam = new Parameter<bool>("After-Sync Time Correction", true);
+
             public static readonly Parameter<bool> GenerateTrPulseParam = new Parameter<bool>("Generate TR Pulse");
 
             public static readonly Parameter<TrPulseControlSignals> TrPulseControlSignalsParam = Parameter<TrPulseControlSignals>.CreateBuilder("TR Pulse Control Signals")
@@ -128,17 +130,18 @@ namespace SharpBCI.EGI
 
         private Thread _trPulseThread;
 
-        public NetStationEciTagging(int port, TimeSpan syncLimit, ushort syncRetryCount, TrPulseGenParams? trPulseParams = null) 
-            : this(IPAddress.Loopback, port, syncLimit, syncRetryCount, trPulseParams) { }
+        public NetStationEciTagging(int port, TimeSpan syncLimit, ushort syncRetryCount, bool afterSyncTimeCorrection, TrPulseGenParams? trPulseParams = null) 
+            : this(IPAddress.Loopback, port, syncLimit, syncRetryCount, afterSyncTimeCorrection, trPulseParams) { }
 
-        public NetStationEciTagging(IPAddress address, int port, TimeSpan syncLimit, ushort syncRetryCount, TrPulseGenParams? trPulseParams = null)
-            : this(new IPEndPoint(address, port), syncLimit, syncRetryCount, trPulseParams) { }
+        public NetStationEciTagging(IPAddress address, int port, TimeSpan syncLimit, ushort syncRetryCount, bool afterSyncTimeCorrection, TrPulseGenParams? trPulseParams = null)
+            : this(new IPEndPoint(address, port), syncLimit, syncRetryCount, afterSyncTimeCorrection, trPulseParams) { }
 
-        public NetStationEciTagging(IPEndPoint endPoint, TimeSpan syncLimit, ushort syncRetryCount, TrPulseGenParams? trPulseParams = null)
+        public NetStationEciTagging(IPEndPoint endPoint, TimeSpan syncLimit, ushort syncRetryCount, bool afterSyncTimeCorrection, TrPulseGenParams? trPulseParams = null)
         {
             EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
             SyncLimit = syncLimit;
             SyncRetryCount = syncRetryCount;
+            AfterSyncTimeCorrection = afterSyncTimeCorrection;
             TrPulseParams = trPulseParams;
             _tcpClient = Connect(endPoint);
             _stream = _tcpClient.GetStream();
@@ -147,14 +150,6 @@ namespace SharpBCI.EGI
         }
 
         ~NetStationEciTagging() => Stop();
-
-        public IPEndPoint EndPoint { get; }
-
-        public TimeSpan SyncLimit { get; }
-
-        public ushort SyncRetryCount { get; }
-
-        public TrPulseGenParams? TrPulseParams { get; }
 
         private static TcpClient Connect(IPEndPoint endPoint)
         {
@@ -262,12 +257,31 @@ namespace SharpBCI.EGI
             }
         }
 
-        public long Synchronize()
+        public IPEndPoint EndPoint { get; }
+
+        public TimeSpan SyncLimit { get; }
+
+        public ushort SyncRetryCount { get; }
+
+        public bool AfterSyncTimeCorrection { get; }
+
+        public TrPulseGenParams? TrPulseParams { get; }
+
+        /// <summary>
+        /// Remote time - Local time
+        /// </summary>
+        public double TimeDrift { get; set; }
+
+        public long Synchronize(out double drift)
         {
+            const int minRespTimeRecordCount = 4;
+            const int maxRespTimeRecordCount = 15;
             // TODO: sync with session clock
             var start = DateTimeUtils.CurrentTimeMillis;
             var retry = 0;
-            long diff;
+            long respTime;
+            long respTimeSum = 0;
+            var respTimes = new Queue<long>();
             lock (_tcpClient)
                 do
                 {
@@ -275,18 +289,24 @@ namespace SharpBCI.EGI
                     _stream.WriteByte((byte) 'A');
                     _stream.Flush();
                     _stream.ReadByte();
+                    var respTimeMean = respTimes.Count > minRespTimeRecordCount ? respTimeSum / (double) respTimes.Count : 0;
                     var syncTime = DateTimeUtils.CurrentTimeMillis - start;
+                    var correctedSyncTime = (int) Math.Round(syncTime + respTimeMean / 2);
                     _stream.WriteByte((byte) 'T');
-                    bytes.WriteInt32AsNetworkOrder((int) syncTime);
+                    bytes.WriteInt32AsNetworkOrder(correctedSyncTime);
                     _stream.Write(bytes, 0, sizeof(int));
                     _stream.Flush();
                     _stream.ReadByte();
                     var ackTime = DateTimeUtils.CurrentTimeMillis - start;
-                    diff = (ackTime - syncTime) / 2;
-                    if (diff <= SyncLimit.TotalMilliseconds) return start;
+                    respTime = ackTime - syncTime;
+                    respTimes.Enqueue(respTime);
+                    respTimeSum += respTime;
+                    if (respTimes.Count > maxRespTimeRecordCount) respTimeSum -= respTimes.Dequeue();
+                    drift = (respTimeMean - respTime) / 2;
+                    if (drift <= SyncLimit.TotalMilliseconds) return start;
                     retry++;
                 } while (retry <= SyncRetryCount);
-            throw new IOException($"Synchronization did not succeed within {SyncLimit.TotalMilliseconds:N1} ms\n Synchronization accuracy is {diff} ms");
+            throw new IOException($"Synchronization did not succeed within {SyncLimit.TotalMilliseconds:N1} ms\n Synchronization accuracy is {respTime} ms");
         }
 
         public void SendTrEvt(bool waitForAck = false) => SendEvent("TREV", 0, waitForAck);
@@ -312,6 +332,8 @@ namespace SharpBCI.EGI
                 keyLength += data.Length + 10;
                 keyDataList.AddLast(new Tuple<string, string, byte[]>(key.Key, type, data));
             }
+
+            if (AfterSyncTimeCorrection) startTime = (int) Math.Round(startTime + TimeDrift);
 
             lock (_tcpClient)
             {
@@ -381,7 +403,8 @@ namespace SharpBCI.EGI
 
         private void Start()
         {
-            _syncBaseTime = Synchronize();
+            _syncBaseTime = Synchronize(out var timeDrift);
+            TimeDrift = timeDrift;
             if (TrPulseParams.HasValue)
             {
                 if (TrPulseParams.Value.ControlSignals.StartSignal.HasValue)
