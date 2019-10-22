@@ -115,7 +115,7 @@ namespace SharpBCI.EGI
                 TrPulseGenParams? trParams = null;
                 if (GenerateTrPulseParam.Get(context)) trParams = new TrPulseGenParams(TrPulseControlSignalsParam.Get(context), TrPulseIntervalParam.Get(context).TimeSpan);
                 return new NetStationEciTagging(IPAddress.Parse(IpAddressParam.Get(context)), PortParam.Get(context),
-                    TimeSpan.FromMilliseconds(SyncLimitParam.Get(context)), SyncRetryCountParam.Get(context), trParams);
+                    TimeSpan.FromMilliseconds(SyncLimitParam.Get(context)), SyncRetryCountParam.Get(context), AfterSyncTimeCorrectionParam.Get(context), trParams);
             }
 
         }
