@@ -27,6 +27,8 @@ using SharpBCI.Extensions.Paradigms.TextDisplay;
 using SharpBCI.Extensions.Paradigms.Countdown;
 using SharpBCI.Extensions.Windows;
 using MarukoLib.UI;
+using SharpBCI.Extensions.IO.Consumers;
+using SharpBCI.Extensions.IO.Consumers.GazePoint;
 using SharpBCI.Extensions.IO.Consumers.Marker;
 using SharpBCI.Extensions.IO.Consumers.Sample;
 using SharpBCI.Extensions.IO.Consumers.VideoFrame;
@@ -239,6 +241,7 @@ namespace SharpBCI
 
             Registries.Registry<PluginStreamConsumer>().RegisterAll(
                 Plugin.InitPluginStreamConsumer(null, typeof(MarkerAsciiFileWriter)),
+                Plugin.InitPluginStreamConsumer(null, typeof(MarkerParallelPortWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(BiosignalAsciiFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(BiosignalBinaryFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(GazePointAsciiFileWriter)),
