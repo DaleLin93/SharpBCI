@@ -110,16 +110,44 @@
     <Compile Include="Data\TrialPreference.cs" />
     <Compile Include="Data\Rectangle.cs" />
     <Compile Include="Data\Path.cs" />
-    <Compile Include="Devices\DeviceFactory.cs" />
-    <Compile Include="Devices\MarkerSources\HeartbeatGenerator.cs" />
-    <Compile Include="Devices\MarkerSources\KeyboardTrigger.cs" />
-    <Compile Include="Devices\MarkerSources\SerialPortMarkerSource.cs" />
-    <Compile Include="Devices\VideoSources\ScreenCapturer.cs" />
-    <Compile Include="Devices\MarkerSources\MarkerSource.cs" />
-    <Compile Include="Devices\VideoSources\VideoSource.cs" />
-    <Compile Include="Devices\EyeTrackers\GazeFileReader.cs" />
-    <Compile Include="Devices\Device.cs" />
-    <Compile Include="Devices\EyeTrackers\CursorTracker.cs" />
+    <Compile Include="IO\Consumers\GazePoint\GazePointAsciiFileWriter.cs" />
+    <Compile Include="IO\Consumers\GazePoint\GazePointBinaryFileWriter.cs" />
+    <Compile Include="IO\Consumers\MarkerParallelPortWriter.cs" />
+    <Compile Include="IO\Consumers\Marker\MarkerAsciiFileWriter.cs" />
+    <Compile Include="IO\Consumers\Sample\BiosignalAsciiFileWriter.cs" />
+    <Compile Include="IO\Consumers\Sample\BiosignalBinaryFileWriter.cs" />
+    <Compile Include="IO\Consumers\VideoFrame\VideoFramesFileWriter.cs" />
+    <Compile Include="IO\Devices\BiosignalSources\BiosignalSource.cs" />
+    <Compile Include="IO\Devices\BiosignalSources\BiosignalStreamer.cs" />
+    <Compile Include="IO\Devices\BiosignalSources\BiosignalVisualizationWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="IO\Devices\BiosignalSources\DataFileReader.cs" />
+    <Compile Include="IO\Devices\BiosignalSources\GenericOscillator.cs" />
+    <Compile Include="IO\Devices\Device.cs" />
+    <Compile Include="IO\Devices\DeviceFactory.cs" />
+    <Compile Include="IO\Devices\EyeTrackers\CursorTracker.cs" />
+    <Compile Include="IO\Devices\EyeTrackers\EyeTracker.cs" />
+    <Compile Include="IO\Devices\EyeTrackers\GazeFileReader.cs" />
+    <Compile Include="IO\Devices\EyeTrackers\GazePointStreamer.cs" />
+    <Compile Include="IO\Devices\EyeTrackers\GazePointVisualizationWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="IO\Devices\MarkerSources\HeartbeatGenerator.cs" />
+    <Compile Include="IO\Devices\MarkerSources\KeyboardTrigger.cs" />
+    <Compile Include="IO\Devices\MarkerSources\MarkerDisplayWindow.xaml.cs">
+      <DependentUpon>MarkerDisplayWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="IO\Devices\MarkerSources\MarkerSource.cs" />
+    <Compile Include="IO\Devices\MarkerSources\MarkerStreamer.cs" />
+    <Compile Include="IO\Devices\MarkerSources\SerialPortMarkerSource.cs" />
+    <Compile Include="IO\Devices\VideoSources\ScreenCaptureSource.cs" />
+    <Compile Include="IO\Devices\VideoSources\VideoFramePresentationWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="IO\Devices\VideoSources\VideoFrameStreamer.cs" />
+    <Compile Include="IO\Devices\VideoSources\VideoSource.cs" />
+    <Compile Include="IO\StreamConsumerFactory.cs" />
     <Compile Include="Paradigms\TextDisplay\TextDisplayParadigm.cs" />
     <Compile Include="Paradigms\TextDisplay\TextDisplayExperimentWindow.xaml.cs">
       <DependentUpon>TextDisplayExperimentWindow.xaml</DependentUpon>
@@ -143,15 +171,12 @@
     <Compile Include="StageProviders\PreparationStageProvider.cs" />
     <Compile Include="StageProviders\RepeatingStageProvider.cs" />
     <Compile Include="StageProviders\SegmentedStageProvider.cs" />
-    <Compile Include="Streamers\StreamConsumerFactory.cs" />
-    <Compile Include="Streamers\VideoFrameStreamer.cs" />
     <Compile Include="Summary.cs" />
     <Compile Include="SystemVariables.cs" />
     <Compile Include="Paradigms\Rest\RestParadigm.cs" />
     <Compile Include="Paradigms\Rest\RestExperimentWindow.xaml.cs">
       <DependentUpon>RestExperimentWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Devices\EyeTrackers\EyeTracker.cs" />
     <Compile Include="PersistenceHelper.cs" />
     <Compile Include="Parameter.cs" />
     <Compile Include="Patterns\SquarePattern.cs" />
@@ -178,25 +203,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Devices\BiosignalSources\DataFileReader.cs" />
-    <Compile Include="Devices\BiosignalSources\GenericOscillator.cs" />
-    <Compile Include="Devices\BiosignalSources\BiosignalSource.cs" />
-    <Compile Include="Streamers\GazePointStreamer.cs" />
-    <Compile Include="Streamers\MarkerStreamer.cs" />
-    <Compile Include="Streamers\BiosignalStreamer.cs" />
     <Compile Include="TypeConverters.cs" />
-    <Compile Include="Devices\BiosignalSources\BiosignalVisualizationWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Devices\EyeTrackers\GazePointVisualizationWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Devices\MarkerSources\MarkerDisplayWindow.xaml.cs">
-      <DependentUpon>MarkerDisplayWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Devices\VideoSources\VideoFramePresentationWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Windows\ViewConstants.cs" />
     <Compile Include="Windows\ContextChangedEventArgs.cs" />
     <Compile Include="Windows\LayoutChangedEventArgs.cs" />
@@ -262,6 +269,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="IO\Devices\MarkerSources\MarkerDisplayWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Paradigms\TextDisplay\TextDisplayExperimentWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -275,10 +286,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Resources\SharedResourceDictionary.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Devices\MarkerSources\MarkerDisplayWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

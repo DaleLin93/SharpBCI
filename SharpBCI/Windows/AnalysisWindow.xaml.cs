@@ -17,6 +17,7 @@ using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.IO.Consumers.Marker;
 using SharpBCI.Extensions.IO.Consumers.Sample;
 using SharpBCI.Plugins;
+using SharpBCI.Extensions.IO.Consumers.GazePoint;
 
 namespace SharpBCI.Windows
 {
