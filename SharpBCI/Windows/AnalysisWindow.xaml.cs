@@ -14,9 +14,8 @@ using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using MarukoLib.UI;
 using SharpBCI.Extensions.Data;
-using SharpBCI.Extensions.IO.Devices.BiosignalSources;
-using SharpBCI.Extensions.IO.Devices.EyeTrackers;
-using SharpBCI.Extensions.IO.Devices.MarkerSources;
+using SharpBCI.Extensions.IO.Consumers.Marker;
+using SharpBCI.Extensions.IO.Consumers.Sample;
 using SharpBCI.Plugins;
 
 namespace SharpBCI.Windows

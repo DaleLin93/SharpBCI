@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using MarukoLib.IO;
 using MarukoLib.Lang;
+using SharpBCI.Extensions.IO.Consumers.Sample;
 using SharpBCI.Extensions.Presenters;
 using Path = SharpBCI.Extensions.Data.Path;
 

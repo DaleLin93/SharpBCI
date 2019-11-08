@@ -6,6 +6,7 @@ using System.Windows;
 using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Extensions.Data;
+using SharpBCI.Extensions.IO.Consumers.VideoFrame;
 using SharpBCI.Extensions.IO.Devices.VideoSources;
 
 namespace SharpBCI.Windows
