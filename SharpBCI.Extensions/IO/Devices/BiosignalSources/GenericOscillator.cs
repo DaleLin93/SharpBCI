@@ -1,7 +1,7 @@
 ﻿using System;
 using MarukoLib.Lang;
 
-namespace SharpBCI.Extensions.Devices.BiosignalSources
+namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]

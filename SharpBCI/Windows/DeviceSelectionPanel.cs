@@ -1,6 +1,6 @@
 ﻿using MarukoLib.Lang;
 using MarukoLib.UI;
-using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.IO.Devices;
 using SharpBCI.Plugins;
 using System;
 using System.Collections.Generic;

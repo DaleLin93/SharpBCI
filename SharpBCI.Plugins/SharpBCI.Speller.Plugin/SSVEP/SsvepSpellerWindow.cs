@@ -14,8 +14,8 @@ using D2D1 = SharpDX.Direct2D1;
 using SharpDX;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Patterns;
-using SharpBCI.Extensions.Streamers;
 using SharpBCI.Core.IO;
+using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 
 namespace SharpBCI.Paradigms.Speller.SSVEP
 {

@@ -12,18 +12,17 @@ using System.Text;
 using MarukoLib.IO;
 using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions.Paradigms.Rest;
-using SharpBCI.Extensions.Streamers;
 using SharpBCI.Plugins;
 using File = System.IO.File;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Apps;
-using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Devices.BiosignalSources;
-using SharpBCI.Extensions.Devices.EyeTrackers;
-using SharpBCI.Extensions.Devices.MarkerSources;
-using SharpBCI.Extensions.Devices.VideoSources;
+using SharpBCI.Extensions.IO.Devices;
+using SharpBCI.Extensions.IO.Devices.BiosignalSources;
+using SharpBCI.Extensions.IO.Devices.EyeTrackers;
+using SharpBCI.Extensions.IO.Devices.MarkerSources;
+using SharpBCI.Extensions.IO.Devices.VideoSources;
 using SharpBCI.Extensions.Paradigms.TextDisplay;
 using SharpBCI.Extensions.Paradigms.Countdown;
 using SharpBCI.Extensions.Windows;
@@ -233,7 +232,7 @@ namespace SharpBCI
                 Plugin.InitPluginDevice(null, typeof(GazeFileReader)),
                 Plugin.InitPluginDevice(null, typeof(GenericOscillator)),
                 Plugin.InitPluginDevice(null, typeof(DataFileReader)),
-                Plugin.InitPluginDevice(null, typeof(ScreenCapturer)));
+                Plugin.InitPluginDevice(null, typeof(ScreenCaptureSource)));
 
             Registries.Registry<PluginStreamConsumer>().RegisterAll(
                 Plugin.InitPluginStreamConsumer(null, typeof(MarkerAsciiFileWriter)),

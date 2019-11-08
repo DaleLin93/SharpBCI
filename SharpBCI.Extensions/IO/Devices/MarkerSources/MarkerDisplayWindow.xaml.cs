@@ -5,10 +5,9 @@ using System.Windows.Input;
 using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Core.IO;
-using SharpBCI.Extensions.Streamers;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
-namespace SharpBCI.Extensions.Devices.MarkerSources
+namespace SharpBCI.Extensions.IO.Devices.MarkerSources
 {
 
 

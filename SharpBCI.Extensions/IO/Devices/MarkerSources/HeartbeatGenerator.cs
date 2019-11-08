@@ -3,7 +3,7 @@ using MarukoLib.Lang.Concurrent;
 using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Presenters;
 
-namespace SharpBCI.Extensions.Devices.MarkerSources
+namespace SharpBCI.Extensions.IO.Devices.MarkerSources
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]

@@ -23,11 +23,10 @@ using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
-using SharpBCI.Extensions.Streamers;
 using Application = System.Windows.Application;
 using Image = System.Windows.Controls.Image;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
-using SharpBCI.Extensions.Devices.EyeTrackers;
+using SharpBCI.Extensions.IO.Devices.EyeTrackers;
 using Brushes = System.Windows.Media.Brushes;
 using Point = System.Windows.Point;
 

@@ -1,7 +1,6 @@
 ﻿using MarukoLib.Lang;
-using SharpBCI.Extensions.Streamers;
 
-namespace SharpBCI.Extensions.Devices.EyeTrackers
+namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
 {
 
     public interface IGazePoint

@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Windows;
 
-namespace SharpBCI.Extensions.Devices
+namespace SharpBCI.Extensions.IO.Devices
 {
 
     /// <summary>

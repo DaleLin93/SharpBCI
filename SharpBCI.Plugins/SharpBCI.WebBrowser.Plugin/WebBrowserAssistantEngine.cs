@@ -9,9 +9,9 @@ using MarukoLib.Logging;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
-using SharpBCI.Extensions.Devices.EyeTrackers;
+using SharpBCI.Extensions.IO.Devices.BiosignalSources;
+using SharpBCI.Extensions.IO.Devices.EyeTrackers;
 using SharpBCI.Extensions.Patterns;
-using SharpBCI.Extensions.Streamers;
 
 namespace SharpBCI.Paradigms.WebBrowser
 {

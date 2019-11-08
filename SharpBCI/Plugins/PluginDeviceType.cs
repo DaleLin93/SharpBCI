@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 using MarukoLib.Lang;
-using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.IO.Devices;
 
 namespace SharpBCI.Plugins
 {

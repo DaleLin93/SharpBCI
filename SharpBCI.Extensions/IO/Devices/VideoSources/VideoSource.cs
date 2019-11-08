@@ -5,9 +5,8 @@ using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using MarukoLib.IO;
 using MarukoLib.Lang;
-using SharpBCI.Extensions.Streamers;
 
-namespace SharpBCI.Extensions.Devices.VideoSources
+namespace SharpBCI.Extensions.IO.Devices.VideoSources
 {
 
     public interface IVideoFrame

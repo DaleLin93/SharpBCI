@@ -6,7 +6,7 @@ using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions.Windows;
 
-namespace SharpBCI.Extensions.Streamers
+namespace SharpBCI.Extensions.IO
 {
 
     /// <summary>

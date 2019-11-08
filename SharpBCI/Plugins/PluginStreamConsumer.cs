@@ -5,7 +5,7 @@ using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
-using SharpBCI.Extensions.Streamers;
+using SharpBCI.Extensions.IO;
 
 namespace SharpBCI.Plugins
 {

@@ -5,10 +5,9 @@ using System.Linq;
 using MarukoLib.IO;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Presenters;
-using SharpBCI.Extensions.Streamers;
 using Path = SharpBCI.Extensions.Data.Path;
 
-namespace SharpBCI.Extensions.Devices.BiosignalSources
+namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]

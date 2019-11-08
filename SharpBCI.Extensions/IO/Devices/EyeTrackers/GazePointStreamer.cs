@@ -6,10 +6,8 @@ using MarukoLib.IO;
 using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
-using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Devices.EyeTrackers;
 
-namespace SharpBCI.Extensions.Streamers
+namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
 {
 
     /// <summary>

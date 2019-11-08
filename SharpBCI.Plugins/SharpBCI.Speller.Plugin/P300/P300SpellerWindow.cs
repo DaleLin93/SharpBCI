@@ -9,8 +9,8 @@ using D2D1 = SharpDX.Direct2D1;
 using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
-using SharpBCI.Extensions.Streamers;
 using SharpBCI.Core.IO;
+using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 
 namespace SharpBCI.Paradigms.Speller.P300
 {

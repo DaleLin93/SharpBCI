@@ -4,7 +4,7 @@ using System.Threading;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 
-namespace SharpBCI.Extensions.Devices.MarkerSources
+namespace SharpBCI.Extensions.IO.Devices.MarkerSources
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]

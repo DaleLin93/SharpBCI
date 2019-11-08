@@ -9,7 +9,7 @@ using MarukoLib.Lang.Exceptions;
 using MarukoLib.Persistence;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
-using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.IO.Devices;
 using SharpBCI.Plugins;
 using SharpBCI.Windows;
 

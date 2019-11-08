@@ -10,8 +10,8 @@ using System.Threading;
 using MarukoLib.IO;
 using MarukoLib.Lang;
 using SharpBCI.Extensions;
-using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Devices.BiosignalSources;
+using SharpBCI.Extensions.IO.Devices;
+using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 
 namespace SharpBCI.BiosignalSources
 {

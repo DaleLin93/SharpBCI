@@ -6,8 +6,8 @@ using System.Threading;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions;
-using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Devices.BiosignalSources;
+using SharpBCI.Extensions.IO.Devices;
+using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 
 namespace SharpBCI.BiosignalSources
 {

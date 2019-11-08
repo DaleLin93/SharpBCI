@@ -10,7 +10,7 @@ using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Extensions;
-using SharpBCI.Extensions.Devices;
+using SharpBCI.Extensions.IO.Devices;
 using SharpBCI.Extensions.Windows;
 using SharpBCI.Plugins;
 

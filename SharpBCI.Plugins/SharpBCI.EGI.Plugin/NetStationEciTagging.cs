@@ -4,9 +4,8 @@ using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
-using SharpBCI.Extensions.Devices.MarkerSources;
+using SharpBCI.Extensions.IO.Devices.MarkerSources;
 using SharpBCI.Extensions.Presenters;
-using SharpBCI.Extensions.Streamers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,6 +16,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Windows.Controls;
+using SharpBCI.Extensions.IO;
 
 namespace SharpBCI.EGI
 {

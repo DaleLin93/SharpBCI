@@ -6,16 +6,16 @@ using JetBrains.Annotations;
 using MarukoLib.Image;
 using MarukoLib.Lang;
 
-namespace SharpBCI.Extensions.Devices.VideoSources
+namespace SharpBCI.Extensions.IO.Devices.VideoSources
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]
-    public class ScreenCapturer : VideoSource
+    public class ScreenCaptureSource : VideoSource
     {
 
-        public const string DeviceName = "Screen Capturer";
+        public const string DeviceName = "Screen Capture";
 
-        public class Factory : DeviceFactory<ScreenCapturer, IVideoSource>
+        public class Factory : DeviceFactory<ScreenCaptureSource, IVideoSource>
         {
 
             public static readonly Parameter<byte> MaxFpsParam = new Parameter<byte>("Max FPS", 25);
@@ -28,8 +28,8 @@ namespace SharpBCI.Extensions.Devices.VideoSources
 
             public Factory() : base(MaxFpsParam, ScreenParam, WidthParam, HeightParam) { }
 
-            public override ScreenCapturer Create(IReadonlyContext context) => 
-                new ScreenCapturer(MaxFpsParam.Get(context), ScreenParam.Get(context), WidthParam.Get(context), HeightParam.Get(context));
+            public override ScreenCaptureSource Create(IReadonlyContext context) => 
+                new ScreenCaptureSource(MaxFpsParam.Get(context), ScreenParam.Get(context), WidthParam.Get(context), HeightParam.Get(context));
 
         }
 
@@ -49,7 +49,7 @@ namespace SharpBCI.Extensions.Devices.VideoSources
 
         private Bitmap _capturedBitmap, _scaledBitmap;
 
-        public ScreenCapturer(byte maxFps, int screenIndex, int width, int height) 
+        public ScreenCaptureSource(byte maxFps, int screenIndex, int width, int height) 
         {
             _screenIndex = screenIndex;
             _targetWidth = width;

@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 using MarukoLib.Lang;
 using SharpBCI.Core.IO;
 
-namespace SharpBCI.Extensions.Devices
+namespace SharpBCI.Extensions.IO.Devices
 {
 
     public interface IStreamerFactory

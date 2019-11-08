@@ -2,8 +2,8 @@
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions;
-using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Devices.EyeTrackers;
+using SharpBCI.Extensions.IO.Devices;
+using SharpBCI.Extensions.IO.Devices.EyeTrackers;
 using Tobii.Interaction;
 using Tobii.Interaction.Client;
 

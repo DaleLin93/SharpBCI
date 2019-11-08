@@ -3,7 +3,7 @@ using System.Windows.Forms;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Concurrent;
 
-namespace SharpBCI.Extensions.Devices.EyeTrackers
+namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
 {
 
     [Device(DeviceName, typeof(Factory), "1.0")]

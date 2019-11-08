@@ -7,13 +7,12 @@ using MarukoLib.DirectX;
 using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Core.IO;
-using SharpBCI.Extensions.Streamers;
 using SharpDX.Mathematics.Interop;
 using DW = SharpDX.DirectWrite;
 using D2D1 = SharpDX.Direct2D1;
 using Color = SharpDX.Color;
 
-namespace SharpBCI.Extensions.Devices.BiosignalSources
+namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
 {
 
     internal class BiosignalVisualizationWindow : SimpleD2DForm, IStreamConsumer<Timestamped<ISample>>

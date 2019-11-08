@@ -1,7 +1,6 @@
 ﻿using MarukoLib.Lang;
-using SharpBCI.Extensions.Streamers;
 
-namespace SharpBCI.Extensions.Devices.BiosignalSources
+namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
 {
 
     public interface ISample

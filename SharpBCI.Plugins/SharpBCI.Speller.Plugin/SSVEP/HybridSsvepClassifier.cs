@@ -15,7 +15,7 @@ using MarukoLib.Logging;
 using MarukoLib.Threading;
 using MathNet.Numerics.IntegralTransforms;
 using SharpBCI.Core.IO;
-using SharpBCI.Extensions.Devices.BiosignalSources;
+using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 using SharpBCI.Extensions.Patterns;
 using Normal = MathNet.Numerics.Distributions.Normal;
 

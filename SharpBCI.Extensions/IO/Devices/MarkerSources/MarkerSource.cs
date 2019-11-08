@@ -1,8 +1,7 @@
 ﻿using JetBrains.Annotations;
 using MarukoLib.Lang;
-using SharpBCI.Extensions.Streamers;
 
-namespace SharpBCI.Extensions.Devices.MarkerSources
+namespace SharpBCI.Extensions.IO.Devices.MarkerSources
 {
 
     public interface IMarker

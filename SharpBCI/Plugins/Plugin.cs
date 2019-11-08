@@ -10,8 +10,8 @@ using MarukoLib.Logging;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
-using SharpBCI.Extensions.Devices;
-using SharpBCI.Extensions.Streamers;
+using SharpBCI.Extensions.IO;
+using SharpBCI.Extensions.IO.Devices;
 
 namespace SharpBCI.Plugins
 {
