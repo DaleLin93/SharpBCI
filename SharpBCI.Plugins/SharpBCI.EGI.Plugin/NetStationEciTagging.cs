@@ -174,13 +174,13 @@ namespace SharpBCI.EGI
                     default:
                         throw new NotSupportedException($"Unknown symbol: '{resp}'");
                 }
+                return tcpClient;
             }
             catch (Exception)
             {
                 tcpClient?.Close();
                 throw;
             }
-            return tcpClient;
         }
 
         [SuppressMessage("ReSharper", "StringLiteralTypo")]
@@ -418,20 +418,21 @@ namespace SharpBCI.EGI
 
         private void Stop()
         {
+            if (_tcpClient == null) return;
             lock (_tcpClient)
-                if (_tcpClient.Connected)
-                {
-                    _trPulseThread?.Abort();
-                    _trPulseThread = null;
-                    _stream.WriteByte((byte)'E'); // stop recording
-                    _stream.Flush();
-                    _stream.ReadByte();
-                    Thread.Sleep(500);
-                    _stream.WriteByte((byte)'X'); // close
-                    _stream.Flush();
-                    _stream.ReadByte();
-                    _tcpClient.Close();
-                }
+            {
+                if (!_tcpClient.Connected) return;
+                _trPulseThread?.Abort();
+                _trPulseThread = null;
+                _stream.WriteByte((byte) 'E'); // stop recording
+                _stream.Flush();
+                _stream.ReadByte();
+                Thread.Sleep(500);
+                _stream.WriteByte((byte) 'X'); // close
+                _stream.Flush();
+                _stream.ReadByte();
+                _tcpClient.Close();
+            }
         }
 
         private void TrPulseWorker()

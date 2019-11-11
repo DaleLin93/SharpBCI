@@ -11,7 +11,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using JetBrains.Annotations;
 using MarukoLib.Interop;
@@ -229,7 +228,7 @@ namespace SharpBCI.Windows
             _sessionDescriptorTextBox.Text = _config.SessionName ?? _sessionDescriptorTextBox.Text;
             _paradigmComboBox.FindAndSelectFirstByString(_config.SelectedParadigm, 0);
 
-            DeserializeParadigmConfig();
+            // DeserializeParadigmConfig();
             DeserializeDevicesConfig();
         }
 
@@ -329,7 +328,7 @@ namespace SharpBCI.Windows
             ScrollView.ScrollToTop();
 
             _currentParadigm = paradigm;
-            OnParadigmParamsUpdated();
+            // OnParadigmParamsUpdated();
             _needResizeWindow = true;
         }
         

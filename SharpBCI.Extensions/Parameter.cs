@@ -205,7 +205,7 @@ namespace SharpBCI.Extensions
 
         public override IReadonlyContext Metadata { get; }
 
-        public override bool IsValid(object value) => true;
+        public override bool IsValid(object val) => IsNullable && val == null || ValueType.IsInstanceOfType(val);
 
     }
 

@@ -206,44 +206,40 @@ namespace SharpBCI.Extensions.Presenters
 
             Action updateButtonState = null;
 
+            void Update()
+            {
+                updateButtonState?.Invoke();
+                updateCallback.Invoke();
+            }
+
             void AddRow()
             {
                 if (elementList.Count >= maximumElementCount) return;
                 var presentedParameter = elementPresenter.Present(elementParameter, updateCallback);
 
-                if (!isFixed)
+                /* Row grid container, with actual presented parameter and minus button */
+                var grid = new Grid {Margin = new Thickness {Top = 2, Bottom = 2}};
+                var tuple = new Tuple<PresentedParameter, UIElement>(presentedParameter, grid);
+
+                grid.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
+                grid.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength});
+                grid.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
+
+                grid.Children.Add(presentedParameter.Element);
+                Grid.SetColumn(presentedParameter.Element, 0);
+                
+                var minusButton = new MinusButton(15, 15, () =>
                 {
-                    /* Row grid container, with actual presented parameter and minus button */
-                    var grid = new Grid {Margin = new Thickness {Top = 2, Bottom = 2}};
-                    var tuple = new Tuple<PresentedParameter, UIElement>(presentedParameter, grid);
+                    elementList.Remove(tuple);
+                    listPanel.Children.Remove(grid);
+                    Update();
+                });
+                grid.Children.Add(minusButton);
+                Grid.SetColumn(minusButton, 2);
 
-                    grid.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
-                    grid.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength});
-                    grid.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
-
-                    grid.Children.Add(presentedParameter.Element);
-                    Grid.SetColumn(presentedParameter.Element, 0);
-                    
-                    var minusButton = new MinusButton(15, 15, () =>
-                    {
-                        elementList.Remove(tuple);
-                        listPanel.Children.Remove(grid);
-                        updateButtonState?.Invoke();
-                    });
-                    grid.Children.Add(minusButton);
-                    Grid.SetColumn(minusButton, 2);
-
-                    elementList.Add(tuple);
-                    listPanel.Children.Add(grid);
-
-                    updateButtonState?.Invoke();
-                }
-                else
-                {
-                    var tuple = new Tuple<PresentedParameter, UIElement>(presentedParameter, presentedParameter.Element);
-                    listPanel.Children.Add(presentedParameter.Element);
-                    elementList.Add(tuple);
-                }
+                elementList.Add(tuple);
+                listPanel.Children.Add(grid);
+                Update();
             }
             void RemoveLastRow()
             {
@@ -251,7 +247,7 @@ namespace SharpBCI.Extensions.Presenters
                 var tuple = elementList[index];
                 elementList.Remove(tuple);
                 listPanel.Children.Remove(tuple.Item2);
-                updateButtonState?.Invoke();
+                Update();
             }
             if (!isFixed)
             {
@@ -261,7 +257,14 @@ namespace SharpBCI.Extensions.Presenters
             }
             else
             {
-                while (elementList.Count < fixedCount) AddRow();
+                while (elementList.Count < fixedCount)
+                {
+                    var presentedParameter = elementPresenter.Present(elementParameter, updateCallback);
+                    var tuple = new Tuple<PresentedParameter, UIElement>(presentedParameter, presentedParameter.Element);
+                    listPanel.Children.Add(presentedParameter.Element);
+                    elementList.Add(tuple);
+                }
+                updateCallback.Invoke();
             }
             return new PresentedParameter(param, container, new Adapter(param, elementType, isDistinct, isFixed, 
                 maximumElementCount, container, elementList, AddRow, RemoveLastRow));

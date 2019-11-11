@@ -23,7 +23,7 @@ namespace SharpBCI.Extensions.Presenters
 
             private readonly Rectangle[] _checkBoxes;
 
-            private int _selectedIndex;
+            private int _selectedIndex = -1;
 
             public Adapter(IParameterDescriptor parameter, IList enumValues, Rectangle[] checkBoxes)
             {
@@ -34,6 +34,7 @@ namespace SharpBCI.Extensions.Presenters
 
             public bool Select(int index)
             {
+                if (index < 0) index = -1;
                 if (_selectedIndex == index) return false;
                 for (var i = 0; i < _checkBoxes.Length; i++)
                     _checkBoxes[i].Fill = i == index ? Brushes.DimGray : Brushes.White;
@@ -41,7 +42,12 @@ namespace SharpBCI.Extensions.Presenters
                 return true;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(_enumValues[_selectedIndex]);
+            public object GetValue()
+            {
+                object value = null;
+                if (_selectedIndex >= 0) value = _enumValues[_selectedIndex];
+                return _parameter.IsValidOrThrow(value);
+            }
 
             public void SetValue(object value) => Select((int)value);
 

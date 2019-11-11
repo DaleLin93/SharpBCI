@@ -112,6 +112,7 @@ namespace SharpBCI.Extensions.Windows
             _groupViewModels.Clear();
             _paramViewModels.Clear();
 
+            var paramKeySet = new HashSet<string>();
             var stack = new Stack<GroupMeta>();
             stack.Push(new GroupMeta(null, this, (Descriptors ?? EmptyArray<IDescriptor>.Instance).GetEnumerator()));
             do
@@ -129,6 +130,7 @@ namespace SharpBCI.Extensions.Windows
                         continue;
                     case IParameterDescriptor paramItem:
                         if (_paramViewModels.ContainsKey(paramItem)) throw new UserException($"Parameter duplicated: {paramItem.Key}");
+                        if (!paramKeySet.Add(paramItem.Key)) throw new UserException($"Parameter key duplicated: {paramItem.Key}");
                         var presentedParameter = paramItem.GetPresenter().Present(paramItem, () => OnParamChanged(paramItem));
                         using (_updateLock.Ref()) // SetValue Default Value;
                             try { presentedParameter.SetValue(Context.TryGet(paramItem, out var val) ? val : paramItem.DefaultValue); } 

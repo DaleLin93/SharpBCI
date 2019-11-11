@@ -103,57 +103,56 @@ namespace SharpBCI
             var baseClock = Clock.SystemMillisClock;
             var streamers = CreateStreamerCollection(deviceTypes, deviceInstances, baseClock, out var deviceStreamers);
 
-            using (var disposablePool = new DisposablePool())
+            var disposablePool = new DisposablePool();
+            try
             {
-                try
+                streamers.Start();
+                monitorWindow?.Bind(streamers);
+
+                for (var i = 0; i < sessionNum; i++)
                 {
-                    streamers.Start();
-                    monitorWindow?.Bind(streamers);
+                    var session = sessions[i] = new Session(App.Instance.Dispatcher, subject, formattedSessionDescriptors[i], 
+                        baseClock, paradigmInstances[i], streamers, App.DataDir);
 
-                    for (var i = 0; i < sessionNum; i++)
-                    {
-                        var session = sessions[i] = new Session(App.Instance.Dispatcher, subject, formattedSessionDescriptors[i], 
-                            baseClock, paradigmInstances[i], streamers, App.DataDir);
+                    new SessionConfig { Paradigm = paradigms[i], Devices = devices }
+                        .JsonSerializeToFile(session.GetDataFileName(SessionConfig.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
 
-                        new SessionConfig { Paradigm = paradigms[i], Devices = devices }
-                            .JsonSerializeToFile(session.GetDataFileName(SessionConfig.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
+                    foreach (var entry in deviceConsumerLists)
+                        if (deviceStreamers.TryGetValue(entry.Key, out var deviceStreamer))
+                        {
+                            var consumerListOfDevice = entry.Value;
+                            var indexed = consumerListOfDevice.Count > 1;
+                            byte num = 1;
 
-                        foreach (var entry in deviceConsumerLists)
-                            if (deviceStreamers.TryGetValue(entry.Key, out var deviceStreamer))
+                            foreach (var consumerWithParams in consumerListOfDevice)
                             {
-                                var deviceConsumerList = entry.Value;
-                                var indexed = deviceConsumerList.Count > 1;
-                                byte num = 1;
-
-                                foreach (var tuple in deviceConsumerList)
-                                {
-                                    var consumer = tuple.Item1.NewInstance(session, tuple.Item2, indexed ? num++ : (byte?)null);
-                                    if (consumer is IDisposable disposable) disposablePool.Add(disposable);
-                                    deviceStreamer.Attach(consumer);
-                                    disposablePool.Add(new DelegatedDisposable(() => deviceStreamer.Detach(consumer)));
-                                }
+                                var consumer = consumerWithParams.Item1.NewInstance(session, consumerWithParams.Item2, indexed ? num++ : (byte?)null);
+                                disposablePool.AddIfDisposable(consumer);
+                                deviceStreamer.Attach(consumer);
+                                disposablePool.Add(new DelegatedDisposable(() => deviceStreamer.Detach(consumer)));
                             }
+                        }
 
-                        sessionListener?.BeforeStart(i, session);
-                        var result = session.Run();
-                        sessionListener?.AfterCompleted(i, session);
+                    sessionListener?.BeforeStart(i, session);
+                    var result = session.Run();
+                    sessionListener?.AfterCompleted(i, session);
 
-                        disposablePool.DisposeAll(); // Release resources.
+                    disposablePool.DisposeAll(); // Release resources.
 
-                        new SessionInfo(session).JsonSerializeToFile(session.GetDataFileName(SessionInfo.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
-                        result?.Save(session);
+                    new SessionInfo(session).JsonSerializeToFile(session.GetDataFileName(SessionInfo.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
+                    result?.Save(session);
 
-                        if (session.UserInterrupted && i < sessionNum - 1
-                            && MessageBox.Show("Continue following sessions?", "User Exit", MessageBoxButton.YesNo,
-                                MessageBoxImage.Question, MessageBoxResult.No, MessageBoxOptions.None) == MessageBoxResult.No)
-                            break;
-                    }
+                    if (session.UserInterrupted && i < sessionNum - 1
+                        && MessageBox.Show("Continue following sessions?", "User Exit", MessageBoxButton.YesNo,
+                            MessageBoxImage.Question, MessageBoxResult.No, MessageBoxOptions.None) == MessageBoxResult.No)
+                        break;
                 }
-                finally
-                {
-                    streamers.Stop();
-                    monitorWindow?.Release(); // Detach session from monitor.
-                }
+            }
+            finally
+            {
+                disposablePool.Dispose();
+                streamers.Stop();
+                monitorWindow?.Release(); // Detach session from monitor.
             }
             sessionListener?.AfterAllCompleted(sessions);
             foreach (var instance in deviceInstances.Values) instance.Dispose();
