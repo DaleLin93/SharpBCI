@@ -27,7 +27,6 @@ using SharpBCI.Extensions.Paradigms.TextDisplay;
 using SharpBCI.Extensions.Paradigms.Countdown;
 using SharpBCI.Extensions.Windows;
 using MarukoLib.UI;
-using SharpBCI.Extensions.IO.Consumers;
 using SharpBCI.Extensions.IO.Consumers.GazePoint;
 using SharpBCI.Extensions.IO.Consumers.Marker;
 using SharpBCI.Extensions.IO.Consumers.Sample;

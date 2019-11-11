@@ -3,13 +3,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using MarukoLib.Interop;
+using MarukoLib.IO;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Concurrent;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions.IO.Devices.MarkerSources;
+using SharpBCI.Extensions.Presenters;
 
-namespace SharpBCI.Extensions.IO.Consumers
+namespace SharpBCI.Extensions.IO.Consumers.Marker
 {
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -32,10 +34,16 @@ namespace SharpBCI.Extensions.IO.Consumers
 
             public static readonly Parameter<LogicalParallelPort> ParallelPortAddressParam = Parameter<LogicalParallelPort>.OfEnum("LPT", LogicalParallelPort.LPT1);
 
-            public Factory() : base(ParallelPortAddressParam) { }
+            public static readonly Parameter<bool> ReverseBitsParam = Parameter<bool>.CreateBuilder("Reverse Bits")
+                .SetDescription("Reverse the order of bits in a byte of marker.")
+                .SetMetadata(BooleanPresenter.CheckboxTextProperty, "Reverse the order of bits")
+                .SetDefaultValue(false)
+                .Build();
+
+            public Factory() : base(ParallelPortAddressParam, ReverseBitsParam) { }
 
             public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
-                => new MarkerParallelPortWriter(ParallelPortAddressParam.Get(context));
+                => new MarkerParallelPortWriter(ParallelPortAddressParam.Get(context), ReverseBitsParam.Get(context));
 
         }
 
@@ -43,19 +51,23 @@ namespace SharpBCI.Extensions.IO.Consumers
 
         private IntPtr _oneByteBuffer;
 
-        public MarkerParallelPortWriter(LogicalParallelPort lpt)
+        public MarkerParallelPortWriter(LogicalParallelPort lpt, bool reverseBits)
         {
             Port = lpt;
+            ReverseBits = reverseBits;
             _fileHandle = new AtomicPtr(Kernel32.CreateFile($"lpt{(byte)lpt}", FileAccess.ReadWrite, FileShare.None, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero));
             _oneByteBuffer = Marshal.AllocHGlobal(1);
         }
 
         public LogicalParallelPort Port { get; }
 
+        public bool ReverseBits { get; }
+
         public bool SendEvent(byte b)
         {
             var fd = _fileHandle.Value;
             if (fd == IntPtr.Zero) return false;
+            Marshal.WriteByte(_oneByteBuffer, ReverseBits ? b.ReverseBits() : b);
             return Kernel32.WriteFile(fd, _oneByteBuffer, 1, out var written, IntPtr.Zero) && written > 0;
         }
 
