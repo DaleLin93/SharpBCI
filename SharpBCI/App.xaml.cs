@@ -240,6 +240,7 @@ namespace SharpBCI
 
             Registries.Registry<PluginStreamConsumer>().RegisterAll(
                 Plugin.InitPluginStreamConsumer(null, typeof(MarkerAsciiFileWriter)),
+                Plugin.InitPluginStreamConsumer(null, typeof(MarkerParallelPortSetter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(MarkerParallelPortWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(BiosignalAsciiFileWriter)),
                 Plugin.InitPluginStreamConsumer(null, typeof(BiosignalBinaryFileWriter)),

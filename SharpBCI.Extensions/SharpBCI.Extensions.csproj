@@ -112,6 +112,7 @@
     <Compile Include="Data\Path.cs" />
     <Compile Include="IO\Consumers\GazePoint\GazePointAsciiFileWriter.cs" />
     <Compile Include="IO\Consumers\GazePoint\GazePointBinaryFileWriter.cs" />
+    <Compile Include="IO\Consumers\Marker\MarkerParallelPortSetter.cs" />
     <Compile Include="IO\Consumers\Marker\MarkerParallelPortWriter.cs" />
     <Compile Include="IO\Consumers\Marker\MarkerAsciiFileWriter.cs" />
     <Compile Include="IO\Consumers\Sample\BiosignalAsciiFileWriter.cs" />

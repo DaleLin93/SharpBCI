@@ -32,7 +32,13 @@ namespace SharpBCI.Extensions.IO.Consumers.Marker
         public class Factory : StreamConsumerFactory<Timestamped<IMarker>>
         {
 
-            public static readonly Parameter<LogicalParallelPort> ParallelPortAddressParam = Parameter<LogicalParallelPort>.OfEnum("LPT", LogicalParallelPort.LPT1);
+            public static readonly Parameter<LogicalParallelPort> LogicalParallelPortParam = Parameter<LogicalParallelPort>.OfEnum("LPT", LogicalParallelPort.LPT1);
+
+            public static readonly Parameter<bool> InvertBitsParam = Parameter<bool>.CreateBuilder("Invert Bits")
+                .SetDescription("Invert all of bits in a byte of marker.")
+                .SetMetadata(BooleanPresenter.CheckboxTextProperty, "Invert all of bits")
+                .SetDefaultValue(false)
+                .Build();
 
             public static readonly Parameter<bool> ReverseBitsParam = Parameter<bool>.CreateBuilder("Reverse Bits")
                 .SetDescription("Reverse the order of bits in a byte of marker.")
@@ -40,10 +46,10 @@ namespace SharpBCI.Extensions.IO.Consumers.Marker
                 .SetDefaultValue(false)
                 .Build();
 
-            public Factory() : base(ParallelPortAddressParam, ReverseBitsParam) { }
+            public Factory() : base(LogicalParallelPortParam, InvertBitsParam, ReverseBitsParam) { }
 
             public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
-                => new MarkerParallelPortWriter(ParallelPortAddressParam.Get(context), ReverseBitsParam.Get(context));
+                => new MarkerParallelPortWriter(LogicalParallelPortParam.Get(context), InvertBitsParam.Get(context), ReverseBitsParam.Get(context));
 
         }
 
@@ -51,9 +57,10 @@ namespace SharpBCI.Extensions.IO.Consumers.Marker
 
         private IntPtr _oneByteBuffer;
 
-        public MarkerParallelPortWriter(LogicalParallelPort lpt, bool reverseBits)
+        public MarkerParallelPortWriter(LogicalParallelPort lpt, bool invertBits, bool reverseBits)
         {
             Port = lpt;
+            InvertBits = invertBits;
             ReverseBits = reverseBits;
             _fileHandle = new AtomicPtr(Kernel32.CreateFile($"lpt{(byte)lpt}", FileAccess.ReadWrite, FileShare.None, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero));
             _oneByteBuffer = Marshal.AllocHGlobal(1);
@@ -61,13 +68,17 @@ namespace SharpBCI.Extensions.IO.Consumers.Marker
 
         public LogicalParallelPort Port { get; }
 
+        public bool InvertBits{ get; }
+
         public bool ReverseBits { get; }
 
         public bool SendEvent(byte b)
         {
             var fd = _fileHandle.Value;
             if (fd == IntPtr.Zero) return false;
-            Marshal.WriteByte(_oneByteBuffer, ReverseBits ? b.ReverseBits() : b);
+            b = InvertBits ? b.InvertBits() : b;
+            b = ReverseBits ? b.ReverseBits() : b;
+            Marshal.WriteByte(_oneByteBuffer, b);
             return Kernel32.WriteFile(fd, _oneByteBuffer, 1, out var written, IntPtr.Zero) && written > 0;
         }
 
