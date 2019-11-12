@@ -8,6 +8,7 @@ using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.IO.Devices;
 using SharpBCI.Extensions.IO.Devices.BiosignalSources;
+using SharpBCI.Extensions.Presenters;
 
 namespace SharpBCI.BiosignalSources
 {
@@ -23,6 +24,7 @@ namespace SharpBCI.BiosignalSources
 
             public static readonly Parameter<string> SerialPortParam = Parameter<string>.CreateBuilder("Serial Port")
                 .SetSelectableValues(SerialPort.GetPortNames)
+                .SetMetadata(SelectablePresenter.RefreshableProperty, true)
                 .Build();
 
             public Factory() : base(SerialPortParam) { }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
@@ -90,16 +91,28 @@ namespace SharpBCI.Extensions.Presenters
 
         private const string NullValue = "<NULL>";
 
+        /// <summary>
+        /// Add refresh button refresh selectable values at any time.
+        /// Only supported for presentation style of combo box.
+        /// Default value: <code>false</code>
+        /// </summary>
+        public static readonly NamedProperty<bool> RefreshableProperty = new NamedProperty<bool>("Refreshable", false);
+
+        /// <summary>
+        /// Use radio button group to select value instead of a combo box.
+        /// Default value: <code>false</code>
+        /// </summary>
         public static readonly NamedProperty<bool> UseRadioGroupProperty = new NamedProperty<bool>("UseRadioGroup", false);
 
-        public static readonly NamedProperty<Orientation> RadioGroupOrientationProperty = new NamedProperty<Orientation>("RadioGroupOrientation", Orientation.Horizontal);
+        public static readonly NamedProperty<Orientation> RadioGroupOrientationProperty = 
+            new NamedProperty<Orientation>("RadioGroupOrientation", Orientation.Horizontal);
+
+        public static readonly NamedProperty<Func<IParameterDescriptor, IEnumerable>> SelectableValuesFuncProperty = 
+            new NamedProperty<Func<IParameterDescriptor, IEnumerable>>("SelectableValuesFunc");
 
         public static readonly SelectablePresenter Instance = new SelectablePresenter();
 
-        public static ContextProperty<Func<IParameterDescriptor, IEnumerable>> SelectableValuesFuncProperty = 
-            new ContextProperty<Func<IParameterDescriptor, IEnumerable>>();
-
-        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
+        private static IEnumerable GetSelectableValues(IParameterDescriptor param)
         {
             IEnumerable items;
             if (SelectableValuesFuncProperty.TryGet(param.Metadata, out var selectableValuesFunc))
@@ -109,26 +122,65 @@ namespace SharpBCI.Extensions.Presenters
             else if (param.ValueType.IsEnum)
                 items = Enum.GetValues(param.ValueType);
             else if (param.ValueType.IsNullableType(out var underlyingType) && underlyingType.IsEnum)
-                items = new object[] {NullValue}.Concat(Enum.GetValues(underlyingType).OfType<object>());
+                items = new object[] { NullValue }.Concat(Enum.GetValues(underlyingType).OfType<object>());
             else
                 throw new ProgrammingException("Parameter.SelectableValues or SelectablePresenter.SelectableValuesFuncProperty must be assigned");
-            return UseRadioGroupProperty.Get(param.Metadata)
-                ? PresentRadioButtons(param, items, param.ConvertValueToString, updateCallback)
-                : PresentComboBox(param, items, param.ConvertValueToString, updateCallback);
+            return items;
         }
 
-        public PresentedParameter PresentComboBox(IParameterDescriptor param, IEnumerable items, Func<object, string> toStringFunc, Action updateCallback)
+        public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
+            return UseRadioGroupProperty.Get(param.Metadata)
+                ? PresentRadioButtons(param, param.ConvertValueToString, updateCallback)
+                : PresentComboBox(param, param.ConvertValueToString, updateCallback);
+        }
+
+        public PresentedParameter PresentComboBox(IParameterDescriptor param, Func<object, string> toStringFunc, Action updateCallback)
+        {
+            var refreshable = RefreshableProperty.Get(param.Metadata);
             var comboBox = new ComboBox();
             comboBox.SelectionChanged += (sender, args) => updateCallback();
-            comboBox.ItemsSource = ToStringOverridenWrapper.Of(items, toStringFunc);
-            return new PresentedParameter(param, comboBox, new ComboBoxAccessor(param, toStringFunc, comboBox), comboBox);
+            comboBox.ItemsSource = ToStringOverridenWrapper.Of(GetSelectableValues(param), toStringFunc);
+            var comboBoxAccessor = new ComboBoxAccessor(param, toStringFunc, comboBox);
+
+            if (!refreshable) return new PresentedParameter(param, comboBox, comboBoxAccessor, comboBox);
+
+            /* Create 3 columns grid for 'ComboBox-Spacing-RefreshButton' */
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
+            grid.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MinorSpacingGridLength});
+            grid.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
+
+            /* Add ComboBox at 1st column */
+            grid.Children.Add(comboBox);
+            Grid.SetColumn(comboBox, 0);
+
+            /* Add RefreshButton at 3rd column */
+            var refreshValuesBtn = new Button
+            {
+                ToolTip = "Refresh Values",
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Width = ViewConstants.DefaultRowHeight,
+                Content = new Image {Margin = new Thickness(2), Source = new BitmapImage(new Uri(ViewConstants.ResetImageUri, UriKind.Absolute))}
+            };
+            refreshValuesBtn.Click += (sender, args) =>
+            {
+                var selected = comboBox.SelectedItem;
+                comboBox.ItemsSource = ToStringOverridenWrapper.Of(GetSelectableValues(param), toStringFunc);
+                if (selected != null) comboBox.FindAndSelectFirstByString(toStringFunc(selected), null);
+                updateCallback();
+            };
+            grid.Children.Add(refreshValuesBtn);
+            Grid.SetColumn(refreshValuesBtn, 2);
+
+            return new PresentedParameter(param, grid, comboBoxAccessor, comboBox);
         }
 
-        public PresentedParameter PresentRadioButtons(IParameterDescriptor param, IEnumerable items, Func<object, string> toStringFunc, Action updateCallback)
+        public PresentedParameter PresentRadioButtons(IParameterDescriptor param, Func<object, string> toStringFunc, Action updateCallback)
         {
+            if (RefreshableProperty.Get(param.Metadata)) throw new ProgrammingException("refreshable feature not supported for radio button group style");
             var guid = Guid.NewGuid().ToString();
-            var radioButtons = (from object item in items
+            var radioButtons = (from object item in GetSelectableValues(param)
                 select new RadioButton
                 {
                     GroupName = guid,
