@@ -117,6 +117,8 @@ namespace SharpBCI.Extensions.Presenters
                 {
                     if (_textBoxBorder != null)
                         _textBoxBorder.Background = brush;
+                    else if (_textBox != null)
+                        _textBox.Background = brush;
                 }
                 else
                     _comboBox.Background = brush;
@@ -126,9 +128,10 @@ namespace SharpBCI.Extensions.Presenters
             {
                 var comboBox = (ComboBox)sender;
                 comboBox.Loaded -= ComboBox_OnLoaded;
-                if ((_textBox = (TextBox)comboBox.Template.FindName("PART_EditableTextBox", comboBox)) == null) return;
+                if ((_textBox = comboBox.Template.FindName("PART_EditableTextBox", comboBox) as TextBox) == null) return;
                 _textBox.Background = Brushes.Transparent;
-                (_textBoxBorder = (Border)_textBox.Parent).Background = Brushes.Transparent;
+                if ((_textBoxBorder = _textBox.Parent as Border) == null) return;
+                _textBoxBorder.Background = Brushes.Transparent;
             }
 
             private static void ComboBox_OnSizeChanged(object sender, SizeChangedEventArgs args) => ResizeBoxItem((ComboBox)sender);
