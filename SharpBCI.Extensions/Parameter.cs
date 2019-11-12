@@ -247,27 +247,6 @@ namespace SharpBCI.Extensions
         public sealed class Builder
         {
 
-            public sealed class MetadataBuilder
-            {
-
-                public readonly IContext Context;
-
-                public MetadataBuilder(IContext context) => Context = context;
-
-                public MetadataBuilder SetRawProperty(IContextProperty property, object value)
-                {
-                    Context.Set(property, value);
-                    return this;
-                }
-
-                public MetadataBuilder SetProperty<TP>(ContextProperty<TP> property, TP value)
-                {
-                    property.Set(Context, value);
-                    return this;
-                }
-
-            }
-
             public string Key;
 
             public string Name;
@@ -382,11 +361,12 @@ namespace SharpBCI.Extensions
                 return this;
             }
 
-            public Builder SetMetadata(Action<MetadataBuilder> action)
+            public Builder SetMetadata(Action<ContextBuilder> action)
             {
-                var metaBuilder = new MetadataBuilder(Metadata?.CastOrConvertToSubType(roCtx => new Context(roCtx)) ?? new Context());
+                var context = Metadata?.CastOrConvertToSubType(roCtx => new Context(roCtx)) ?? new Context();
+                var metaBuilder = new ContextBuilder((IReadonlyContext) context);
                 action(metaBuilder);
-                Metadata = metaBuilder.Context;
+                Metadata = metaBuilder.BuildReadonly();
                 return this;
             }
 
