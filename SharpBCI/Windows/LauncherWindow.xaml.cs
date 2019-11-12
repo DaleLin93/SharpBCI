@@ -226,9 +226,12 @@ namespace SharpBCI.Windows
 
             _subjectTextBox.Text = _config.Subject ?? _subjectTextBox.Text;
             _sessionDescriptorTextBox.Text = _config.SessionName ?? _sessionDescriptorTextBox.Text;
-            _paradigmComboBox.FindAndSelectFirstByString(_config.SelectedParadigm, 0);
 
-            // DeserializeParadigmConfig();
+            var oldIdx = _paradigmComboBox.SelectedIndex;
+            _paradigmComboBox.FindAndSelectFirstByString(_config.SelectedParadigm, 0);
+            var newIdx = _paradigmComboBox.SelectedIndex;
+
+            if (oldIdx == newIdx) DeserializeParadigmConfig();
             DeserializeDevicesConfig();
         }
 
