@@ -18,7 +18,7 @@ namespace SharpBCI.Extensions.Presenters
     public class SelectablePresenter : IPresenter
     {
 
-        private class ComboBoxAccessor : IPresentedParameterAccessor
+        private class ComboBoxAdapter : IPresentedParameterAdapter
         {
 
             private readonly IParameterDescriptor _parameter;
@@ -27,21 +27,76 @@ namespace SharpBCI.Extensions.Presenters
 
             private readonly ComboBox _comboBox;
 
-            public ComboBoxAccessor(IParameterDescriptor parameter, Func<object, string> toStringFunc, ComboBox comboBox)
+            private readonly Action _updateAction;
+
+            private readonly ReferenceCounter _textCallbackLock;
+
+            private TextBox _textBox;
+
+            private Border _textBoxBorder;
+
+            public ComboBoxAdapter(IParameterDescriptor parameter, Func<object, string> toStringFunc, ComboBox comboBox, Action updateAction)
             {
                 _parameter = parameter;
                 _toStringFunc = toStringFunc;
                 _comboBox = comboBox;
+                _updateAction = updateAction;
+                if (comboBox.IsEditable)
+                {
+                    _textCallbackLock = new ReferenceCounter();
+                    comboBox.Loaded += ComboBox_OnLoaded;
+                    comboBox.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent, new TextChangedEventHandler(ComboBoxTextBox_TextChanged));
+                }
+                else
+                    _textCallbackLock = null;
             }
 
             public object GetValue()
             {
-                var value = ToStringOverridenWrapper.TryUnwrap(_comboBox.SelectedValue);
+                var value = _comboBox.IsEditable ? _comboBox.Text : ToStringOverridenWrapper.TryUnwrap(_comboBox.SelectedValue);
                 if (ReferenceEquals(NullValue, value)) value = null;
                 return _parameter.IsValidOrThrow(value);
             }
 
-            public void SetValue(object value) => _comboBox.FindAndSelectFirstByString(_toStringFunc(value), 0);
+            public void SetValue(object value)
+            {
+                if (_comboBox.IsEditable)
+                    _comboBox.Text = value.ToString();
+                else
+                    _comboBox.FindAndSelectFirstByString(_toStringFunc(value), 0);
+            }
+
+            public void SetEnabled(bool value) => _comboBox.IsEnabled = value;
+
+            public void SetValid(bool value)
+            {
+                var brush = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
+                if (_comboBox.IsEditable)
+                {
+                    if (_textBoxBorder != null)
+                        _textBoxBorder.Background = brush;
+                    else if (_textBox != null)
+                        _textBox.Background = brush;
+                }
+                else
+                    _comboBox.Background = brush;
+            }
+
+            private void ComboBox_OnLoaded(object sender, RoutedEventArgs args)
+            {
+                var comboBox = (ComboBox)sender;
+                comboBox.Loaded -= ComboBox_OnLoaded;
+                if ((_textBox = comboBox.Template.FindName("PART_EditableTextBox", comboBox) as TextBox) == null) return;
+                _textBox.Background = Brushes.Transparent;
+                if ((_textBoxBorder = _textBox.Parent as Border) == null) return;
+                _textBoxBorder.Background = Brushes.Transparent;
+            }
+
+            private void ComboBoxTextBox_TextChanged(object sender, TextChangedEventArgs args)
+            {
+                if (!_textCallbackLock.IsReferred)
+                    _updateAction();
+            }
 
         }
 
@@ -99,6 +154,13 @@ namespace SharpBCI.Extensions.Presenters
         public static readonly NamedProperty<bool> RefreshableProperty = new NamedProperty<bool>("Refreshable", false);
 
         /// <summary>
+        /// Make combo box editable to customize value.
+        /// Only supported for presentation style of combo box and for string as value type (or string convertible).
+        /// Default value: <code>false</code>
+        /// </summary>
+        public static readonly NamedProperty<bool> CustomizableProperty = new NamedProperty<bool>("Customizable", false);
+
+        /// <summary>
         /// Use radio button group to select value instead of a combo box.
         /// Default value: <code>false</code>
         /// </summary>
@@ -122,7 +184,7 @@ namespace SharpBCI.Extensions.Presenters
             else if (param.ValueType.IsEnum)
                 items = Enum.GetValues(param.ValueType);
             else if (param.ValueType.IsNullableType(out var underlyingType) && underlyingType.IsEnum)
-                items = new object[] { NullValue }.Concat(Enum.GetValues(underlyingType).OfType<object>());
+                items = new object[] {NullValue}.Concat(Enum.GetValues(underlyingType).OfType<object>());
             else
                 throw new ProgrammingException("Parameter.SelectableValues or SelectablePresenter.SelectableValuesFuncProperty must be assigned");
             return items;
@@ -138,12 +200,15 @@ namespace SharpBCI.Extensions.Presenters
         public PresentedParameter PresentComboBox(IParameterDescriptor param, Func<object, string> toStringFunc, Action updateCallback)
         {
             var refreshable = RefreshableProperty.Get(param.Metadata);
+            var customizable = CustomizableProperty.Get(param.Metadata);
+            if (customizable && param.ValueType != typeof(string)) throw new ProgrammingException("customizable feature is only supported for string type");
             var comboBox = new ComboBox();
             comboBox.SelectionChanged += (sender, args) => updateCallback();
             comboBox.ItemsSource = ToStringOverridenWrapper.Of(GetSelectableValues(param), toStringFunc);
-            var comboBoxAccessor = new ComboBoxAccessor(param, toStringFunc, comboBox);
+            comboBox.IsEditable = customizable;
+            var comboBoxAdapter = new ComboBoxAdapter(param, toStringFunc, comboBox, updateCallback);
 
-            if (!refreshable) return new PresentedParameter(param, comboBox, comboBoxAccessor, comboBox);
+            if (!refreshable) return new PresentedParameter(param, comboBox, comboBoxAdapter);
 
             /* Create 3 columns grid for 'ComboBox-Spacing-RefreshButton' */
             var grid = new Grid();
@@ -167,18 +232,19 @@ namespace SharpBCI.Extensions.Presenters
             {
                 var selected = comboBox.SelectedItem;
                 comboBox.ItemsSource = ToStringOverridenWrapper.Of(GetSelectableValues(param), toStringFunc);
-                if (selected != null) comboBox.FindAndSelectFirstByString(toStringFunc(selected), null);
+                if (selected != null) comboBoxAdapter.SetValue(selected);
                 updateCallback();
             };
             grid.Children.Add(refreshValuesBtn);
             Grid.SetColumn(refreshValuesBtn, 2);
 
-            return new PresentedParameter(param, grid, comboBoxAccessor, comboBox);
+            return new PresentedParameter(param, grid, comboBoxAdapter);
         }
 
         public PresentedParameter PresentRadioButtons(IParameterDescriptor param, Func<object, string> toStringFunc, Action updateCallback)
         {
             if (RefreshableProperty.Get(param.Metadata)) throw new ProgrammingException("refreshable feature not supported for radio button group style");
+            if (CustomizableProperty.Get(param.Metadata)) throw new ProgrammingException("customizable feature not supported for radio button group style");
             var guid = Guid.NewGuid().ToString();
             var radioButtons = (from object item in GetSelectableValues(param)
                 select new RadioButton
