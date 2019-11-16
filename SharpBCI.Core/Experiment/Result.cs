@@ -57,7 +57,7 @@ namespace SharpBCI.Core.Experiment
 
         public virtual void Save(Session session)
         {
-            if (!SkipSaveProperty.GetOrDefault(session, false)) return;
+            if (SkipSaveProperty.GetOrDefault(session, false)) return;
             this.JsonSerializeToFile(session.GetDataFileName(FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
         }
 

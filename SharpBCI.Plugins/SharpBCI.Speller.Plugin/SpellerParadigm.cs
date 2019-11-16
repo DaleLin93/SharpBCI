@@ -10,7 +10,6 @@ using Newtonsoft.Json;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
-using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions.Patterns;
 using SharpBCI.Extensions.StageProviders;
 using SharpBCI.Paradigms.Speller.EyeTracking;
