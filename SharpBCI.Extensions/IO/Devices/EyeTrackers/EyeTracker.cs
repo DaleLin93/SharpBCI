@@ -56,7 +56,7 @@ namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
         public void Visualize(IDevice device)
         {
             var eyeTracker = (IEyeTracker)device;
-            new GazePointVisualizationWindow(new GazePointStreamer(eyeTracker, Clock.SystemMillisClock), 50).Show();
+            new GazePointVisualizationWindow(new GazePointStreamer(eyeTracker, Clock.SystemMillisClock), 50).ShowAndRunRenderLoop();
         }
 
     }

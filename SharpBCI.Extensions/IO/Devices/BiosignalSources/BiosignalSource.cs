@@ -87,7 +87,7 @@ namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
         {
             var biosignalSource = (IBiosignalSource) device;
             new BiosignalVisualizationWindow(new BiosignalStreamer(biosignalSource, Clock.SystemMillisClock), 
-                biosignalSource.ChannelNum, (long) (biosignalSource.Frequency * 5)).Show();
+                biosignalSource.ChannelNum, (long) (biosignalSource.Frequency * 5)).ShowAndRunRenderLoop();
         }
 
     }

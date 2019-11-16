@@ -46,10 +46,10 @@ namespace SharpBCI.Extensions.IO.Devices.VideoSources
             lock (this)
             lock (RenderContextLock)
             {
-//                if (_bitmap == null)
-//                    _bitmap = value.Value.Frame.ToD2D1Bitmap(RenderTarget);
-//                else
-//                    value.Value.Frame.CopyToD2D1Bitmap(_bitmap);
+                if (_bitmap == null)
+                    _bitmap = value.Value.ToBitmap().ToD2D1Bitmap(RenderTarget);
+                else
+                    value.Value.ToBitmap().CopyToD2D1Bitmap(_bitmap);
             }
         }
 

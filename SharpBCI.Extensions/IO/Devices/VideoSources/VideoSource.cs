@@ -197,7 +197,7 @@ namespace SharpBCI.Extensions.IO.Devices.VideoSources
         public void Visualize(IDevice device)
         {
             var videoSource = (IVideoSource)device;
-            new VideoFramePresentationWindow(new VideoFrameStreamer(videoSource, Clock.SystemMillisClock)).Show();
+            new VideoFramePresentationWindow(new VideoFrameStreamer(videoSource, Clock.SystemMillisClock)).ShowAndRunRenderLoop();
         }
 
     }
