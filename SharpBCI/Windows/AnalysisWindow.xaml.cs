@@ -91,7 +91,7 @@ namespace SharpBCI.Windows
             var moduleComboBoxItems = new LinkedList<object>();
             foreach (var plugin in App.Instance.Registries.Registry<Plugin>().Registered.Where(p => p.CustomMarkers.Count > 0))
             {
-                var moduleItemContainer = new Grid();
+                var moduleItemContainer = new Grid{Tag = plugin};
                 moduleItemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
                 moduleItemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
                 var nameTextBlock = new TextBlock
@@ -192,7 +192,7 @@ namespace SharpBCI.Windows
 
             var windowLength = _biosignalWindowSize;
             var sampleOffset = _biosignalWindowSize * _biosignalPage;
-            var sampleCount = Math.Min(_biosignalRecords.Count - sampleOffset, windowLength);
+            var sampleCount = Math.Max(Math.Min(_biosignalRecords.Count - sampleOffset, windowLength), 0);
             var channelNum = _biosignalRecords.Count <= 0 ? 0 : _biosignalRecords[0].Values.Length;
             var samples = new double[sampleCount, channelNum];
             for (var s = 0; s < sampleCount; s++)
@@ -253,6 +253,8 @@ namespace SharpBCI.Windows
             }
 
             BiosignalVisualElement.Children.Clear();
+            if (sampleCount <= 0) return;
+
             for (var ch = 0; ch < channelNum; ch++)
             {
                 var drawingVisual = new DrawingVisual();
@@ -272,9 +274,10 @@ namespace SharpBCI.Windows
                 BiosignalVisualElement.Children.Add(drawingVisual);
             }
 
+            
             var t0 = _biosignalRecords[sampleOffset].Timestamp;
             var t1 = _biosignalRecords[sampleOffset + sampleCount - 1].Timestamp;
-            var markers = (ModulePluginComboBox.SelectedItem as Plugin)?.Markers;
+            var markers = ((ModulePluginComboBox.SelectedItem as FrameworkElement)?.Tag as Plugin)?.Markers;
             var markerBrushes = new Dictionary<int, Brush>();
             if (markers != null)
                 foreach (var markerId in markers.Keys)
