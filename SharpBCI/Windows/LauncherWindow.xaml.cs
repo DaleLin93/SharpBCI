@@ -421,7 +421,7 @@ namespace SharpBCI.Windows
                         try { valid = factory.CheckValid(paradigm.ParadigmClass, context, pd); }
                         catch (Exception e) { Logger.Warn("ValidateParadigmParams", e, "parameter", pd.Key); }
                         var row = ParadigmParamPanel[pd]?.Container;
-                        if (row != null && (row.IsError = valid.IsFailed)) row.ErrorMessage = valid.Message.Trim();
+                        if (row != null && (row.IsError = valid.IsFailed)) row.ErrorMessage = valid.Message?.Trim();
                         return new ParamValidationResult(pd, valid);
                     })
                     .Where(result => result.Result.IsFailed)

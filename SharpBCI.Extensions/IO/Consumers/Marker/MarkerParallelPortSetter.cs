@@ -47,6 +47,7 @@ namespace SharpBCI.Extensions.IO.Consumers.Marker
             PortAddress = portAddress;
             InvertBits = invertBits;
             ReverseBits = reverseBits;
+            InpOut32.ExtractDllToWorkDir();
         }
 
         public short PortAddress { get; }
