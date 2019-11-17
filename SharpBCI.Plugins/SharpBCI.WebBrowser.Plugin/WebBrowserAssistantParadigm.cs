@@ -6,7 +6,6 @@ using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
-using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions.Presenters;
 using Rectangle = SharpBCI.Extensions.Data.Rectangle;
 

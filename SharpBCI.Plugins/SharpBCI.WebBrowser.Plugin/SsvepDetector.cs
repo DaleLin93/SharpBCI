@@ -294,7 +294,7 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private IPredictor _predictor;
 
-        private bool _actived = false;
+        private bool _active;
 
         private int _discardCount;
 
@@ -395,12 +395,12 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         public uint WindowSize { get; }
 
-        public bool Actived
+        public bool Active
         {
-            get => _actived;
+            get => _active;
             set
             {
-                if (value == _actived)
+                if (value == _active)
                     return;
                 if (value)
                 {
@@ -408,7 +408,7 @@ namespace SharpBCI.Paradigms.WebBrowser
                     lock (_samples)
                         _samples.Clear();
                 }
-                _actived = value;
+                _active = value;
             }
         }
 

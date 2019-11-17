@@ -19,12 +19,15 @@ namespace SharpBCI.Paradigms.WebBrowser
     internal class GazePointProvider : StreamConsumer<Timestamped<IGazePoint>>
     {
 
+        private static readonly Supplier<double> GraphicsScale = 
+            Suppliers.MemoizeWithExpiration(() => GraphicsUtils.Scale, TimeSpan.FromSeconds(5));
+
         public Point? CurrentPosition { get; private set; }
 
         public override void Accept(Timestamped<IGazePoint> value)
         {
             var gazePoint = value.Value;
-            var scale = GraphicsUtils.Scale;
+            var scale = GraphicsScale();
             CurrentPosition = new Point((int)Math.Round(gazePoint.X / scale), (int)Math.Round(gazePoint.Y / scale));
         }
 
@@ -177,7 +180,7 @@ namespace SharpBCI.Paradigms.WebBrowser
             _server.Start();
             _dwellTrialController.Start();
 
-            _ssvepDetector.Actived = true;
+            _ssvepDetector.Active = true;
 
             _biosignalStreamer.Attach(_ssvepDetector);
             _gazePointStreamer.Attach(_gazePointProvider);
@@ -187,7 +190,7 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         public void Stop()
         {
-            _ssvepDetector.Actived = false;
+            _ssvepDetector.Active = false;
 
             _biosignalStreamer.Detach(_ssvepDetector);
             _gazePointStreamer.Detach(_gazePointProvider);
@@ -260,7 +263,7 @@ namespace SharpBCI.Paradigms.WebBrowser
                     });
                     break;
                 case "Focus":
-                    client.IsActived = message.Focused ?? true;
+                    client.IsActive = message.Focused ?? true;
                     break;
                 default:
                     Logger.Warn("Handle - unknown message type", "messageType", message.Type);
