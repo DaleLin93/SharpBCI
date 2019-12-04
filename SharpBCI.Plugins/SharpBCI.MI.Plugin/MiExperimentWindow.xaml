@@ -13,7 +13,7 @@
             <TextBlock x:Name="CommDebugTextBlock" FontSize="9" TextAlignment="Center" VerticalAlignment="Top" Margin="0 5 0 0"
                        Foreground="White" Background="Transparent" Focusable="False" />
             <ProgressBar x:Name="ProgressBar" Margin="5,50,0,50" HorizontalAlignment="Left" Width="40" Minimum="0" Maximum="1" Value="0.1" Orientation="Vertical" Visibility="Hidden" />
-            <TextBlock x:Name="CueText" Text="5" FontSize="70" TextAlignment="Center" VerticalAlignment="Center"
+            <TextBlock x:Name="CueTextBlock" Text="5" FontSize="70" TextAlignment="Center" VerticalAlignment="Center"
                        Foreground="Red" Background="Transparent" Focusable="False" Visibility="Hidden" />
             <Grid x:Name="ImageContainer" Margin="50" />
             <Grid x:Name="VideoContainer" Margin="50" />
