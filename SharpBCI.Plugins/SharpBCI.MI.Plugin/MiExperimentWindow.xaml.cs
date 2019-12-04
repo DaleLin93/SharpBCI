@@ -486,6 +486,7 @@ namespace SharpBCI.Paradigms.MI
                 // ReSharper disable once PossibleNullReferenceException
                 _miStimClient.ProgressChanged += (sender, progress) => this.DispatcherInvoke(() => ProgressBar.Value = progress);
                 _miStimClient.FocusRequested += (sender, e) => EnterRequestForFocusMode();
+                _miStimClient.PlayChanged += OnPlayChanged;
             }
 
             /* Initialize GazeFocusDetector to enable 'request for focus' */
@@ -513,6 +514,8 @@ namespace SharpBCI.Paradigms.MI
             _stageProgram.StageChanged += StageProgram_StageChanged;
         }
 
+
+
         public IntPtr Handle => new WindowInteropHelper(this).Handle;
 
         internal void UpdateTargetCircle() => _gazeFocusDetector?.SetTargetCircle(new Point(ActualWidth / 2, ActualHeight / 2), FocusCircle.Width / 2);
@@ -526,6 +529,12 @@ namespace SharpBCI.Paradigms.MI
                 FocusCircle.Fill = Brushes.Red;
             });
             if (_gazeFocusDetector != null) _gazeFocusDetector.IsEnabled = true;
+        }
+
+        private void OnPlayChanged(object sender, bool IsStopCtrl)
+        {
+            if (IsStopCtrl) _activeVisualElement.Pause();
+            else _activeVisualElement.Play();
         }
 
         internal void OnFocused()

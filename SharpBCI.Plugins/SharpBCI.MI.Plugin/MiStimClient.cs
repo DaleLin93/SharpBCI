@@ -45,6 +45,8 @@ namespace SharpBCI.Paradigms.MI
 
             public float Progress;
 
+            public bool IsStopCtrl = false;
+
         }
 
         public class OutgoingMessage
@@ -64,6 +66,8 @@ namespace SharpBCI.Paradigms.MI
         internal event EventHandler FocusRequested;
 
         internal event EventHandler<float> ProgressChanged;
+
+        internal event EventHandler<bool> PlayChanged;
 
         internal event EventHandler<IncomingMessage> MessageReceived;
 
@@ -235,6 +239,9 @@ namespace SharpBCI.Paradigms.MI
                     break;
                 case "focus":
                     FocusRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                case "animation_ctrl":
+                    PlayChanged?.Invoke(this, message.IsStopCtrl);
                     break;
                 default:
                     Logger.Warn("HandleIncomingMessage - unsupported message", "type", message.Type);
