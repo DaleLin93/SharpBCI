@@ -328,11 +328,11 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         private static Disposable<ulong> AllocateAndComputeQr(double[] array, uint rows, uint cols)
         {
-            using (var coTaskArray = InteropArrays.Of(array))
+            using (var coTaskArray = CoTaskArrays.Of(array))
                 return AllocateAndComputeQr(coTaskArray, rows, cols);
         }
 
-        private static Disposable<ulong> AllocateAndComputeQr(InteropArray<double> array, uint rows, uint cols)
+        private static Disposable<ulong> AllocateAndComputeQr(CoTaskArray<double> array, uint rows, uint cols)
         {
             var matId = AllocateMatrix(array, rows, cols);
             ComputeCcaQr(matId.Value);
@@ -341,11 +341,11 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         private static Disposable<ulong> AllocateMatrix(double[] array, uint rows, uint cols)
         {
-            using (var coTaskArray = InteropArrays.Of(array))
+            using (var coTaskArray = CoTaskArrays.Of(array))
                 return AllocateMatrix(coTaskArray, rows, cols);
         }
 
-        private static Disposable<ulong> AllocateMatrix(InteropArray<double> array, uint rows, uint cols) =>
+        private static Disposable<ulong> AllocateMatrix(CoTaskArray<double> array, uint rows, uint cols) =>
             new Disposable<ulong>.Delegated(AllocMatrix(new CMat
             {
                 ptr = array.Ptr,
@@ -359,7 +359,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
             var output = new HarmonicGroup[targetFlashingSchemes.Count];
             var columnNum = harmonicsCount * 2;
             var harmonics = new double[columnNum * windowSize];
-            using (var coTaskArray = InteropArrays.Of(harmonics))
+            using (var coTaskArray = CoTaskArrays.Of(harmonics))
                 for (var f = 0; f < targetFlashingSchemes.Count; f++)
                 {
                     var scheme = targetFlashingSchemes[f];
@@ -504,7 +504,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                 {
                     Complex[] complexArray = null;
                     var filteredSignal = new double[array.Length];
-                    using (var coTaskArray = InteropArray<double>.Alloc(filteredSignal.Length))
+                    using (var coTaskArray = CoTaskArray<double>.Alloc(filteredSignal.Length))
                         for (var f = task.TaskIndex; f < _filterBank.Length; f += task.TotalTask)
                         {
                             var bandpassFilter = _filterBank[f];

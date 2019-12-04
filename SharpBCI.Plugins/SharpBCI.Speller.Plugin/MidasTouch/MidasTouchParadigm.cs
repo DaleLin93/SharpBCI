@@ -10,7 +10,6 @@ using SharpBCI.Core.Experiment;
 using SharpBCI.Core.Staging;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
-using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions.StageProviders;
 
 namespace SharpBCI.Paradigms.Speller.MidasTouch

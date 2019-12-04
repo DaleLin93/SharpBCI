@@ -1,6 +1,7 @@
 ﻿using MarukoLib.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -39,7 +40,7 @@ namespace SharpBCI.Paradigms.WebBrowser
 
             public int Priority { get; }
 
-            public bool IsActived { get; set; }
+            public bool IsActive { get; set; }
 
             public void Disconnect() => Context.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disconnect", CancellationToken.None);
 
@@ -95,7 +96,7 @@ namespace SharpBCI.Paradigms.WebBrowser
         }
 
         [CanBeNull]
-        public Client ActivedClient 
+        public Client ActiveClient 
         {
             get
             {
@@ -104,7 +105,7 @@ namespace SharpBCI.Paradigms.WebBrowser
                     clients = _clients.ToArray();
                 Client targetClient = null;
                 foreach (var client in clients)
-                    if (client.IsActived && (targetClient == null || client.Priority > targetClient.Priority))
+                    if (client.IsActive && (targetClient == null || client.Priority > targetClient.Priority))
                         targetClient = client;
                 return targetClient;
             }
@@ -122,12 +123,13 @@ namespace SharpBCI.Paradigms.WebBrowser
                 _messageHandlers.Remove(messageHandler);
         }
 
+        [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
         public void Start()
         {
+            var startedEvent = new ManualResetEvent(false);
             lock (_lock)
             {
                 if (_listeningThread?.IsAlive ?? false) return;
-                var startedEvent = new ManualResetEvent(false);
                 (_listeningThread = new Thread(() =>
                 {
                     _stoppedEvent.Reset();
@@ -136,9 +138,11 @@ namespace SharpBCI.Paradigms.WebBrowser
                     catch (ThreadInterruptedException) { }
                     catch (Exception ex) { Logger.Error("Start - listening thread", ex); }
                     finally { _stoppedEvent.Set(); }
-                }) {Name = "Web Browser Assistant Server Listener", IsBackground = true}).Start();
-                startedEvent.WaitOne();
+                })
+                {Name = "Web Browser Assistant Server Listener", IsBackground = true}).Start();
             }
+            startedEvent.WaitOne();
+            startedEvent.Dispose();
         }
 
         public void Stop()
@@ -167,9 +171,9 @@ namespace SharpBCI.Paradigms.WebBrowser
                 SendMessageToClient(client, message, async);
         }
 
-        public void SendMessageToActivedClient(OutgoingMessage message, bool async = true)
+        public void SendMessageToActiveClient(OutgoingMessage message, bool async = true)
         {
-            var targetClient = ActivedClient;
+            var targetClient = ActiveClient;
             if (targetClient == null) return;
             SendMessageToClient(targetClient, message, async);
         }
