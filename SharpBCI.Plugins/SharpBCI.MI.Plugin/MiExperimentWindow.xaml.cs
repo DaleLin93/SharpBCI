@@ -356,7 +356,7 @@ namespace SharpBCI.Paradigms.MI
                 Repeat = repeat;
             }
 
-            public bool Accept(MiStage.VisualStimulusType stimulusType) => stimulusType == MiStage.VisualStimulusType.Video;
+            public bool Accept(MiStage.VisualStimulusType stimulusType) => stimulusType == MiStage.VisualStimulusType.Image;
 
             public IVisualElement Present(string content, bool preload)
             {
@@ -617,7 +617,7 @@ namespace SharpBCI.Paradigms.MI
                             "type", visualStimulus.Type, "value", visualStimulus.Content);
                 }
                 auditoryStimulus = miStage.AuditoryStimulus;
-                if ((visualStimulus = miStage.VisualStimulus) != null)
+                if ((auditoryStimulus = miStage.AuditoryStimulus) != null)
                 {
                     asp = _auditoryStimulusPresenters.FirstOrDefault(p => p.Accept(auditoryStimulus.Type));
                     if (asp == null)
@@ -626,47 +626,46 @@ namespace SharpBCI.Paradigms.MI
                 }
             }
 
-            lock (this)
-                Application.Current.Dispatcher.Invoke(() =>
+            this.DispatcherInvoke(() =>
+            {
+                var forceReset = _paradigm.Config.Test.ForceReset;
+                ProgressBar.Visibility = showProgressBar ? Visibility.Visible : Visibility.Hidden;
+
+                var visualElement = vsp?.Present(visualStimulus?.Content, preload);
+                if (_activeVisualElement == visualElement)
                 {
-                    var forceReset = _paradigm.Config.Test.ForceReset;
-                    ProgressBar.Visibility = showProgressBar ? Visibility.Visible : Visibility.Hidden;
+                    if (visualElement != null && forceReset)
+                        visualElement.Restart();
+                }
+                else
+                {
+                    if (_activeVisualElement != null)
+                    {
+                        _activeVisualElement.Rewind();
+                        _activeVisualElement.Pause();
+                        _activeVisualElement.Hide();
+                    }
+                    if (visualElement != null)
+                    {
+                        visualElement.Show();
+                        visualElement.Play();
+                    }
+                }
+                _activeVisualElement = visualElement;
 
-                    var visualElement = vsp?.Present(visualStimulus?.Content, preload);
-                    if (_activeVisualElement == visualElement)
-                    {
-                        if (visualElement != null && forceReset)
-                            visualElement.Restart();
-                    }
-                    else
-                    {
-                        if (_activeVisualElement != null)
-                        {
-                            _activeVisualElement.Rewind();
-                            _activeVisualElement.Pause();
-                            _activeVisualElement.Hide();
-                        }
-                        if (visualElement != null)
-                        {
-                            visualElement.Show();
-                            visualElement.Play();
-                        }
-                    }
-                    _activeVisualElement = visualElement;
-
-                    var auditoryElement = asp?.Present(auditoryStimulus?.Content, preload);
-                    if (_activeAuditoryElement == auditoryElement)
-                    {
-                        if (auditoryElement != null && forceReset)
-                            auditoryElement.Restart();
-                    }
-                    else
-                    {
-                        _activeAuditoryElement?.Stop();
-                        auditoryElement?.Play();
-                    }
-                    _activeAuditoryElement = auditoryElement;
-                });
+                var auditoryElement = asp?.Present(auditoryStimulus?.Content, preload);
+                if (_activeAuditoryElement == auditoryElement)
+                {
+                    if (auditoryElement != null && forceReset)
+                        auditoryElement.Restart();
+                }
+                else
+                {
+                    _activeAuditoryElement?.Stop();
+                    auditoryElement?.Play();
+                }
+                _activeAuditoryElement = auditoryElement;
+            });
         }
 
         private void Stop(bool userInterrupted = false)

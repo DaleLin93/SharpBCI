@@ -186,7 +186,7 @@ namespace SharpBCI.Paradigms.MI
         public MiParadigm(Configuration configuration) : base(ParadigmName) => Config = configuration;
 
 #if DEBUG
-        private static IStageProvider[] DebugStageProviders => new IStageProvider[]
+        private static IStageProvider[] InternalProgramStageProviders => new IStageProvider[]
         {
             new DelayStageProvider(1000),
             new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
@@ -218,7 +218,7 @@ namespace SharpBCI.Paradigms.MI
 
         public override StageProgram CreateStagedProgram(Session session) =>
 #if DEBUG
-            Config.Test.UseInternalProgram ? new StageProgram(session.Clock, DebugStageProviders) : 
+            Config.Test.UseInternalProgram ? new StageProgram(session.Clock, InternalProgramStageProviders) : 
 #endif
                 new StageProgram(session.Clock, new MiRemoteStageProvider(MiStimClientProperty.Get(session)));
 

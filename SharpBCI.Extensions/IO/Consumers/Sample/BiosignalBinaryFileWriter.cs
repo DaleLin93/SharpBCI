@@ -9,6 +9,7 @@ using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 
 namespace SharpBCI.Extensions.IO.Consumers.Sample
 {
+
     /// <summary>
     /// Bio-signal binary data file writer (<see cref="FileSuffix"/>) in network order.
     /// Format:  (N channels (doubles) + 1 time (long))
