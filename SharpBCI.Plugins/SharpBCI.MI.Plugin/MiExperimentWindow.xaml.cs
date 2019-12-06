@@ -493,10 +493,10 @@ namespace SharpBCI.Paradigms.MI
                     switch (type.ToLowerInvariant())
                     {
                         case "visual":
-                            PresentStimuli(MiStage.Stimulus<MiStage.VisualStimulusType>.Parse(resource), null, false, true);
+                            PresentStimuli(MiStage.Stimulus<MiStage.VisualStimulusType>.Parse(resource), null, true);
                             break;
                         case "auditory":
-                            PresentStimuli(null, MiStage.Stimulus<MiStage.AuditoryStimulusType>.Parse(resource), false, true);
+                            PresentStimuli(null, MiStage.Stimulus<MiStage.AuditoryStimulusType>.Parse(resource), true);
                             break;
                     }
                 }
@@ -575,65 +575,62 @@ namespace SharpBCI.Paradigms.MI
         }
 
         private void PresentStimuli(MiStage.Stimulus<MiStage.VisualStimulusType> visualStimulus, 
-            MiStage.Stimulus<MiStage.AuditoryStimulusType> auditoryStimulus, bool showProgressBar, bool preload)
+            MiStage.Stimulus<MiStage.AuditoryStimulusType> auditoryStimulus, bool preload)
         {
             var forceReset = _paradigm.Config.Experimental.ForceReset;
-            ProgressBar.Visibility = showProgressBar ? Visibility.Visible : Visibility.Hidden;
 
+            IVisualStimulusPresenter vsp = null;
             if (visualStimulus != null)
             {
-                var vsp = _visualStimulusPresenters.FirstOrDefault(p => p.Accept(visualStimulus.Type));
+                vsp = _visualStimulusPresenters.FirstOrDefault(p => p.Accept(visualStimulus.Type));
                 if (vsp == null)
                     Log.Warn("PresentStimuli - visual stimulus presenter not found",
                         "type", visualStimulus.Type, "value", visualStimulus.Content);
-                else
+            }
+            var visualElement = vsp?.Present(visualStimulus.Content, preload);
+            if (_activeVisualElement == visualElement)
+            {
+                if (visualElement != null && forceReset)
+                    visualElement.Restart();
+            }
+            else
+            {
+                if (_activeVisualElement != null)
                 {
-                    var visualElement = vsp.Present(visualStimulus.Content, preload);
-                    if (_activeVisualElement == visualElement)
-                    {
-                        if (visualElement != null && forceReset)
-                            visualElement.Restart();
-                    }
-                    else
-                    {
-                        if (_activeVisualElement != null)
-                        {
-                            _activeVisualElement.Rewind();
-                            _activeVisualElement.Pause();
-                            _activeVisualElement.Hide();
-                        }
-                        if (visualElement != null)
-                        {
-                            visualElement.Show();
-                            visualElement.Play();
-                        }
-                    }
-                    _activeVisualElement = visualElement;
+                    _activeVisualElement.Rewind();
+                    _activeVisualElement.Pause();
+                    _activeVisualElement.Hide();
+                }
+                if (visualElement != null)
+                {
+                    visualElement.Show();
+                    visualElement.Play();
                 }
             }
+            _activeVisualElement = visualElement;
 
+            IAuditoryStimulusPresenter asp = null;
             if (auditoryStimulus != null)
             {
-                var asp = _auditoryStimulusPresenters.FirstOrDefault(p => p.Accept(auditoryStimulus.Type));
+                asp = _auditoryStimulusPresenters.FirstOrDefault(p => p.Accept(auditoryStimulus.Type));
                 if (asp == null)
                     Log.Warn("PresentStimuli - auditory stimulus presenter not found",
                         "type", auditoryStimulus.Type, "value", auditoryStimulus.Content);
-                else
-                {
-                    var auditoryElement = asp.Present(auditoryStimulus.Content, preload);
-                    if (_activeAuditoryElement == auditoryElement)
-                    {
-                        if (auditoryElement != null && forceReset)
-                            auditoryElement.Restart();
-                    }
-                    else
-                    {
-                        _activeAuditoryElement?.Stop();
-                        auditoryElement?.Play();
-                    }
-                    _activeAuditoryElement = auditoryElement;
-                }
             }
+            var auditoryElement = asp?.Present(auditoryStimulus.Content, preload);
+            if (_activeAuditoryElement == auditoryElement)
+            {
+                if (auditoryElement != null && forceReset)
+                    auditoryElement.Restart();
+            }
+            else
+            {
+                _activeAuditoryElement?.Stop();
+                auditoryElement?.Play();
+            }
+            _activeAuditoryElement = auditoryElement;
+
+            if (preload) PresentStimuli(null, null, false);
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -697,7 +694,11 @@ namespace SharpBCI.Paradigms.MI
                 auditoryStimulus = miStage.AuditoryStimulus;
             }
 
-            Application.Current.Dispatcher.Invoke(() => PresentStimuli(visualStimulus, auditoryStimulus, showProgressBar, preload));
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                ProgressBar.Visibility = !preload && showProgressBar ? Visibility.Visible : Visibility.Hidden;
+                PresentStimuli(visualStimulus, auditoryStimulus, preload);
+            });
         }
 
         private void Stop(bool userInterrupted = false)
