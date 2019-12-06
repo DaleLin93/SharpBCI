@@ -14,7 +14,7 @@ namespace SharpBCI.Paradigms.MI
 {
 
     [Paradigm(ParadigmName, typeof(Factory), "1.0", Description = "A stimulation client for motor imagery paradigm.")]
-    public class MiParadigm : StagedParadigm
+    public class MiParadigm : Paradigm
     {
 
         public const string ParadigmName = "Motor Imaginary (MI) [Client]";
@@ -37,7 +37,14 @@ namespace SharpBCI.Paradigms.MI
 
             }
 
-            public class TestConfig
+            public class CommConfig
+            {
+
+                public string ServerAddress;
+
+            }
+
+            public class ExperimentalConfig
             {
 
 #if DEBUG
@@ -53,20 +60,15 @@ namespace SharpBCI.Paradigms.MI
                 /// </summary>
                 public uint GazeToFocusDuration;
 
-            }
-
-            public class CommConfig
-            {
-
-                public string ServerAddress;
+                public string PreLoadResourceListFile;
 
             }
 
             public GuiConfig Gui;
 
-            public TestConfig Test;
-
             public CommConfig Comm;
+
+            public ExperimentalConfig Experimental;
 
         }
 
@@ -110,7 +112,7 @@ namespace SharpBCI.Paradigms.MI
         public class Factory : ParadigmFactory<MiParadigm>
         {
 
-            // Test
+            // Experimental
 
 #if DEBUG
             private static readonly Parameter<bool> UseInternalProgram = new Parameter<bool>("Use Internal Program", false);
@@ -121,6 +123,8 @@ namespace SharpBCI.Paradigms.MI
             private static readonly Parameter<bool> ForceReset = new Parameter<bool>("Force Reset", false);
 
             private static readonly Parameter<byte> GazeToFocusDuration = new Parameter<byte>("Gaze To Focus Duration", "s", null, 2);
+
+            private static readonly Parameter<Path> PreLoadResourceList = new Parameter<Path>("Pre-load Resource List", description: null, defaultValue: null);
 
             // Communication
 
@@ -145,7 +149,7 @@ namespace SharpBCI.Paradigms.MI
 #if DEBUG
                 new ParameterGroup("Diagnostics", UseInternalProgram),
 #endif
-                new ParameterGroup("Settings", Repeat, ForceReset, GazeToFocusDuration),
+                new ParameterGroup("Settings", Repeat, ForceReset, GazeToFocusDuration, PreLoadResourceList),
                 new ParameterGroup("Communication", ServerAddress),
                 new ParameterGroup("UI Window", BackgroundColor),
                 new ParameterGroup("UI Font", FontSize, FontColor),
@@ -162,7 +166,7 @@ namespace SharpBCI.Paradigms.MI
                     ProgressBarColor = ProgressBarColor.Get(context),
                     ProgressBarBorder = ProgressBarBorder.Get(context)
                 },
-                Test = new Configuration.TestConfig
+                Experimental = new Configuration.ExperimentalConfig
                 {
 #if DEBUG
                     UseInternalProgram = UseInternalProgram.Get(context),
@@ -170,6 +174,7 @@ namespace SharpBCI.Paradigms.MI
                     Repeat = Repeat.Get(context),
                     ForceReset = ForceReset.Get(context),
                     GazeToFocusDuration = (uint) (GazeToFocusDuration.Get(context) * 1000),
+                    PreLoadResourceListFile = PreLoadResourceList.Get(context)?.Value,
                 },
                 Comm = new Configuration.CommConfig
                 {
@@ -178,8 +183,6 @@ namespace SharpBCI.Paradigms.MI
             });
 
         }
-
-        internal static readonly ContextProperty<MiStimClient> MiStimClientProperty = new ContextProperty<MiStimClient>();
 
         public readonly Configuration Config;
 
@@ -190,14 +193,10 @@ namespace SharpBCI.Paradigms.MI
         {
             new DelayStageProvider(1000),
             new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
-            new StageProvider(
-                new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://D:/A.gif"), Duration = 0, IsPreload = true},
-                new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://D:/B.gif"), Duration = 0, IsPreload = true}
-            ),
             new RepeatingStageProvider.Simple(new Stage[]
             {
-                new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://D:/A.gif"), Duration = 3000, IsPreload = false},
-                new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://D:/B.gif"), Duration = 3000, IsPreload = false},
+                new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://F:/A.gif"), Duration = 3000, IsPreload = false},
+                new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://F:/B.gif"), Duration = 3000, IsPreload = false},
                 new MiStage {Duration = 3000, IsPreload = false}
             }, 50), 
             new MarkedStageProvider(MarkerDefinitions.ParadigmEndMarker),
@@ -205,22 +204,13 @@ namespace SharpBCI.Paradigms.MI
         };
 #endif
 
-        public override void Run(Session session)
-        {
-#if DEBUG
-            if (!Config.Test.UseInternalProgram)
-#else
-            if (true)
-#endif
-                MiStimClientProperty.Set(session, new MiStimClient(session));
-            new MiExperimentWindow(session).ShowDialog();
-        }
+        public override void Run(Session session) => new MiExperimentWindow(session).ShowDialog();
 
-        public override StageProgram CreateStagedProgram(Session session) =>
+        internal StageProgram CreateStagedProgram(Session session, MiStimClient client) =>
 #if DEBUG
-            Config.Test.UseInternalProgram ? new StageProgram(session.Clock, InternalProgramStageProviders) : 
+            Config.Experimental.UseInternalProgram ? new StageProgram(session.Clock, InternalProgramStageProviders) : 
 #endif
-                new StageProgram(session.Clock, new MiRemoteStageProvider(MiStimClientProperty.Get(session)));
+                new StageProgram(session.Clock, new MiRemoteStageProvider(client));
 
     }
 

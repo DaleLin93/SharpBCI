@@ -11,7 +11,8 @@ namespace SharpBCI.Extensions.Data
 
         private const string PathKey = "Path";
 
-        public static readonly ITypeConverter<Path, string> TypeConverter = TypeConverterExt.OfNull2Null<Path, string>(path => path.Value, path => new Path(path));
+        public static readonly ITypeConverter<Path, string> TypeConverter = TypeConverterExt
+            .OfNull2Null<Path, string>(path => path.Value, path => string.IsNullOrWhiteSpace(path) ? null : new Path(path));
 
         [JsonConstructor]
         public Path([JsonProperty(PathKey)] string path) => Value = path;

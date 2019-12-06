@@ -44,8 +44,8 @@ namespace SharpBCI.Extensions.Presenters
 
             public object GetValue()
             {
-                var path = new Path(_pathTextBox.Text);
-                if (_checkExistence)
+                var path = string.IsNullOrWhiteSpace(_pathTextBox.Text) ? null : new Path(_pathTextBox.Text);
+                if (path != null && _checkExistence)
                 {
                     switch (_pathType)
                     {

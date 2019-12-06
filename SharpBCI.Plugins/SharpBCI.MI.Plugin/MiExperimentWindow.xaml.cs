@@ -22,12 +22,12 @@ using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
-using Application = System.Windows.Application;
 using Image = System.Windows.Controls.Image;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using SharpBCI.Extensions.IO.Devices.EyeTrackers;
 using Brushes = System.Windows.Media.Brushes;
 using Point = System.Windows.Point;
+using System.IO;
 
 namespace SharpBCI.Paradigms.MI
 {
@@ -63,20 +63,14 @@ namespace SharpBCI.Paradigms.MI
 
             private const int MinimumGazePointCount = 20;
 
-            private static readonly IContainer<double> UserInterfaceScale = 
+            private static readonly IContainer<double> UserInterfaceScale =
                 new Memoized<double>(() => GraphicsUtils.Scale, MarukoLib.Lang.Clock.SystemMillisClock, 2000);
 
-            public event EventHandler Focused;
-
-            public event EventHandler Enter;
-
-            public event EventHandler Leave;
+            public event EventHandler Focused, Enter, Leave;
 
             private readonly LinkedList<GazeHitTest> _gazeHitTests = new LinkedList<GazeHitTest>();
 
-            private bool _enabled = false;
-
-            private bool _entered = false;
+            private bool _enabled, _entered;
 
             public GazeFocusDetector(IClock clock, uint t)
             {
@@ -120,11 +114,11 @@ namespace SharpBCI.Paradigms.MI
                 if (!IsEnabled || value.Value == null) return;
                 var now = Clock.Time;
                 var inside = IsInsideTargetCircle(value.Value);
-                if ( _entered != inside)
+                if (_entered != inside)
                 {
                     (inside ? Enter : Leave)?.Invoke(this, EventArgs.Empty);
                     _entered = inside;
-                } 
+                }
                 _gazeHitTests.AddLast(new GazeHitTest(now, inside));
                 while (_gazeHitTests.Count > 0 && _gazeHitTests.First.Value.Time < now - T) _gazeHitTests.RemoveFirst();
                 if (StartTimestamp + T > now) return;
@@ -172,88 +166,7 @@ namespace SharpBCI.Paradigms.MI
 
         }
 
-        private class ImageElement : IVisualElement
-        {
-
-            public Image Control;
-
-            public void Show() => Control.Visibility = Visibility.Visible;
-
-            public void Hide() => Control.Visibility = Visibility.Hidden;
-
-            public void Play()
-            {
-                var controller = ImageBehavior.GetAnimationController(Control);
-                if (controller != null && controller.FrameCount > 1) controller.Play();
-            }
-
-            public void Pause()
-            {
-                var controller = ImageBehavior.GetAnimationController(Control);
-                if (controller != null && controller.FrameCount > 1) controller.Pause();
-            }
-
-            public void Rewind()
-            {
-                var controller = ImageBehavior.GetAnimationController(Control);
-                if (controller != null && controller.FrameCount > 1) controller.GotoFrame(0);
-            }
-
-            public void Restart()
-            {
-                var controller = ImageBehavior.GetAnimationController(Control);
-                if (controller != null && controller.FrameCount > 1)
-                {
-                    controller.GotoFrame(0);
-                    controller.Play();
-                }
-            }
-
-        }
-
-        private class VideoElement : IVisualElement
-        {
-
-            public Image Control;
-
-            public DirectShowVideoSource Source;
-
-            public void Show() => Control.Visibility = Visibility.Visible;
-
-            public void Hide() => Control.Visibility = Visibility.Hidden;
-
-            public void Play() => Source.Play();
-
-            public void Pause() => Source.Pause();
-
-            public void Rewind() => Source.Rewind();
-
-            public void Restart() => Source.Reset(false);
-
-        }
-
-        private class AudioElement : IAuditoryElement
-        {
-
-            public MediaElement Control;
-
-            public void Play() => Control.Play();
-
-            public void Stop()
-            {
-                Control.Pause();
-                Control.Position = TimeSpan.Zero;
-            }
-
-            public void Restart()
-            {
-                Control.Position = TimeSpan.Zero;
-                Play();
-            }
-
-        }
-
-        private interface IVisualStimulusPresenter 
+        private interface IVisualStimulusPresenter
         {
 
             bool Accept(MiStage.VisualStimulusType stimulusType);
@@ -262,7 +175,7 @@ namespace SharpBCI.Paradigms.MI
 
         }
 
-        private interface IAuditoryStimulusPresenter 
+        private interface IAuditoryStimulusPresenter
         {
 
             bool Accept(MiStage.AuditoryStimulusType stimulusType);
@@ -271,15 +184,15 @@ namespace SharpBCI.Paradigms.MI
 
         }
 
-        private class TextStimulusPresenter : IVisualStimulusPresenter, IAuditoryStimulusPresenter
+        private class VisualTextStimulusPresenter : IVisualStimulusPresenter
         {
 
-            private class VisualTextElement : IVisualElement
+            private class Element : IVisualElement
             {
 
                 public readonly TextBlock TextBlock;
 
-                public VisualTextElement(TextBlock textBlock) => TextBlock = textBlock;
+                public Element(TextBlock textBlock) => TextBlock = textBlock;
 
                 public void Show() => TextBlock.Visibility = Visibility.Visible;
 
@@ -295,48 +208,22 @@ namespace SharpBCI.Paradigms.MI
 
             }
 
-            private class AuditoryTextElement : IAuditoryElement
-            {
-
-                public readonly SpeechSynthesizer Synthesizer = new SpeechSynthesizer();
-
-                public string Text;
-
-                public void Play() => Synthesizer.SpeakAsync(Text);
-
-                public void Stop() { }
-
-                public void Restart() { }
-
-            }
-
             private readonly TextBlock _textBlock;
 
-            private readonly VisualTextElement _visualTextElement;
+            private readonly Element _textElement;
 
-            private readonly AuditoryTextElement _auditoryTextElement;
-
-            public TextStimulusPresenter(TextBlock textBlock)
+            public VisualTextStimulusPresenter(TextBlock textBlock)
             {
                 _textBlock = textBlock;
-                _visualTextElement = new VisualTextElement(textBlock);
-                _auditoryTextElement = new AuditoryTextElement();
+                _textElement = new Element(textBlock);
             }
 
             public bool Accept(MiStage.VisualStimulusType stimulusType) => stimulusType == MiStage.VisualStimulusType.Text;
 
-            public bool Accept(MiStage.AuditoryStimulusType stimulusType) => stimulusType == MiStage.AuditoryStimulusType.Text;
-
-            IAuditoryElement IAuditoryStimulusPresenter.Present(string content, bool repeat)
-            {
-                _auditoryTextElement.Text = content;
-                return _auditoryTextElement;
-            }
-
-            IVisualElement IVisualStimulusPresenter.Present(string content, bool repeat)
+            public IVisualElement Present(string content, bool repeat)
             {
                 _textBlock.Text = content;
-                return _visualTextElement;
+                return _textElement;
             }
 
         }
@@ -344,7 +231,46 @@ namespace SharpBCI.Paradigms.MI
         private class VisualImageStimulusPresenter : IVisualStimulusPresenter
         {
 
-            private readonly IDictionary<Uri, ImageElement> _elements = new Dictionary<Uri, ImageElement>();
+            private class Element : IVisualElement
+            {
+
+                public Image Control;
+
+                public void Show() => Control.Visibility = Visibility.Visible;
+
+                public void Hide() => Control.Visibility = Visibility.Hidden;
+
+                public void Play()
+                {
+                    var controller = ImageBehavior.GetAnimationController(Control);
+                    if (controller != null && controller.FrameCount > 1) controller.Play();
+                }
+
+                public void Pause()
+                {
+                    var controller = ImageBehavior.GetAnimationController(Control);
+                    if (controller != null && controller.FrameCount > 1) controller.Pause();
+                }
+
+                public void Rewind()
+                {
+                    var controller = ImageBehavior.GetAnimationController(Control);
+                    if (controller != null && controller.FrameCount > 1) controller.GotoFrame(0);
+                }
+
+                public void Restart()
+                {
+                    var controller = ImageBehavior.GetAnimationController(Control);
+                    if (controller != null && controller.FrameCount > 1)
+                    {
+                        controller.GotoFrame(0);
+                        controller.Play();
+                    }
+                }
+
+            }
+
+            private readonly IDictionary<Uri, Element> _elements = new Dictionary<Uri, Element>();
 
             public readonly Grid ImageContainer;
 
@@ -363,12 +289,12 @@ namespace SharpBCI.Paradigms.MI
                 var imageUri = new Uri(content);
                 return _elements.GetOrCreate(imageUri, uri =>
                 {
-                    var image = new Image { Visibility = Visibility.Hidden };
+                    var image = new Image {Visibility = Visibility.Hidden};
+                    ImageBehavior.SetAnimatedSource(image, new BitmapImage(uri));
                     ImageBehavior.SetAutoStart(image, true);
                     ImageBehavior.SetRepeatBehavior(image, Repeat ? RepeatBehavior.Forever : new RepeatBehavior(1));
-                    ImageBehavior.SetAnimatedSource(image, new BitmapImage(uri));
                     ImageContainer.Children.Add(image);
-                    return new ImageElement { Control = image };
+                    return new Element {Control = image};
                 });
             }
 
@@ -377,7 +303,28 @@ namespace SharpBCI.Paradigms.MI
         private class VisualVideoStimulusPresenter : IVisualStimulusPresenter
         {
 
-            private readonly IDictionary<Uri, VideoElement> _elements = new Dictionary<Uri, VideoElement>();
+            private class Element : IVisualElement
+            {
+
+                public Image Control;
+
+                public DirectShowVideoSource Source;
+
+                public void Show() => Control.Visibility = Visibility.Visible;
+
+                public void Hide() => Control.Visibility = Visibility.Hidden;
+
+                public void Play() => Source.Play();
+
+                public void Pause() => Source.Pause();
+
+                public void Rewind() => Source.Rewind();
+
+                public void Restart() => Source.Reset(false);
+
+            }
+
+            private readonly IDictionary<Uri, Element> _elements = new Dictionary<Uri, Element>();
 
             public readonly Grid VideoContainer;
 
@@ -400,14 +347,67 @@ namespace SharpBCI.Paradigms.MI
                     var source = new DirectShowVideoSource(uri, Repeat);
                     source.NewFrame += (s0, e0) => image.DispatcherInvoke(img => { img.Source = ((Bitmap)e0.Clone()).ToBitmapSource(); });
                     VideoContainer.Children.Add(image);
-                    return new VideoElement { Control = image, Source = source };
+                    return new Element { Control = image, Source = source };
                 });
+            }
+
+        }
+
+        private class AuditoryTextStimulusPresenter : IAuditoryStimulusPresenter
+        {
+
+            private class Element : IAuditoryElement
+            {
+
+                public readonly SpeechSynthesizer Synthesizer = new SpeechSynthesizer();
+
+                public string Text;
+
+                public void Play() => Synthesizer.SpeakAsync(Text);
+
+                public void Stop() { }
+
+                public void Restart() { }
+
+            }
+
+            private readonly Element _textElement;
+
+            public AuditoryTextStimulusPresenter() => _textElement = new Element();
+
+            public bool Accept(MiStage.AuditoryStimulusType stimulusType) => stimulusType == MiStage.AuditoryStimulusType.Text;
+
+            public IAuditoryElement Present(string content, bool repeat)
+            {
+                _textElement.Text = content;
+                return _textElement;
             }
 
         }
 
         private class AuditoryAudioStimulusPresenter : IAuditoryStimulusPresenter
         {
+
+            private class AudioElement : IAuditoryElement
+            {
+
+                public MediaElement Control;
+
+                public void Play() => Control.Play();
+
+                public void Stop()
+                {
+                    Control.Pause();
+                    Control.Position = TimeSpan.Zero;
+                }
+
+                public void Restart()
+                {
+                    Control.Position = TimeSpan.Zero;
+                    Play();
+                }
+
+            }
 
             private readonly IDictionary<Uri, AudioElement> _elements = new Dictionary<Uri, AudioElement>();
 
@@ -458,9 +458,9 @@ namespace SharpBCI.Paradigms.MI
 
         private readonly IList<IAuditoryStimulusPresenter> _auditoryStimulusPresenters;
 
-        private IVisualElement _activeVisualElement = null;
+        private IVisualElement _activeVisualElement;
 
-        private IAuditoryElement _activeAuditoryElement = null;
+        private IAuditoryElement _activeAuditoryElement;
 
         public MiExperimentWindow(Session session)
         {
@@ -470,29 +470,57 @@ namespace SharpBCI.Paradigms.MI
 
             _visualStimulusPresenters = new List<IVisualStimulusPresenter>
             {
-                new TextStimulusPresenter(CueTextBlock),
-                new VisualImageStimulusPresenter(ImageContainer, _paradigm.Config.Test.Repeat),
-                new VisualVideoStimulusPresenter(VideoContainer, _paradigm.Config.Test.Repeat)
+                new VisualTextStimulusPresenter(CueTextBlock),
+                new VisualImageStimulusPresenter(ImageContainer, _paradigm.Config.Experimental.Repeat),
+                new VisualVideoStimulusPresenter(VideoContainer, _paradigm.Config.Experimental.Repeat)
             };
             _auditoryStimulusPresenters = new List<IAuditoryStimulusPresenter>
             {
-                (IAuditoryStimulusPresenter) _visualStimulusPresenters[0],
-                new AuditoryAudioStimulusPresenter(AudioContainer, _paradigm.Config.Test.Repeat)
+                new AuditoryTextStimulusPresenter(),
+                new AuditoryAudioStimulusPresenter(AudioContainer, _paradigm.Config.Experimental.Repeat)
             };
             _markable = session.StreamerCollection.FindFirstOrDefault<IMarkable>();
 
-            if (MiParadigm.MiStimClientProperty.TryGet(session, out _miStimClient))
+            if (_paradigm.Config.Experimental.PreLoadResourceListFile != null)
+            {
+                foreach (var line in File.ReadAllLines(_paradigm.Config.Experimental.PreLoadResourceListFile))
+                {
+                    var verticalIndex = line.IndexOf("|", StringComparison.Ordinal);
+                    if (verticalIndex <= 0) continue;
+                    var type = line.Substring(0, verticalIndex);
+                    var resource = line.Substring(verticalIndex + 1);
+                    // ReSharper disable once SwitchStatementMissingSomeCases
+                    switch (type.ToLowerInvariant())
+                    {
+                        case "visual":
+                            PresentStimuli(MiStage.Stimulus<MiStage.VisualStimulusType>.Parse(resource), null, false, true);
+                            break;
+                        case "auditory":
+                            PresentStimuli(null, MiStage.Stimulus<MiStage.AuditoryStimulusType>.Parse(resource), false, true);
+                            break;
+                    }
+                }
+            }
+
+#if DEBUG
+            if (!_paradigm.Config.Experimental.UseInternalProgram)
+#else
+            if (true)
+#endif
+                _miStimClient = new MiStimClient(session);
+
+            if (_miStimClient != null)
             {
                 // ReSharper disable once PossibleNullReferenceException
                 _miStimClient.ProgressChanged += (sender, progress) => this.DispatcherInvoke(() => ProgressBar.Value = progress);
                 _miStimClient.FocusRequested += (sender, e) => EnterRequestForFocusMode();
-                _miStimClient.PlayChanged += OnPlayChanged;
+                _miStimClient.PlayChanged += (sender, stop) => OnPlayChanged(stop);
             }
 
             /* Initialize GazeFocusDetector to enable 'request for focus' */
             if (session.StreamerCollection.TryFindFirst<GazePointStreamer>(out var gazePointStreamer))
             {
-                _gazeFocusDetector = new GazeFocusDetector(session.Clock, (uint)TimeUnit.Millisecond.ConvertTo(_paradigm.Config.Test.GazeToFocusDuration, session.Clock.Unit));
+                _gazeFocusDetector = new GazeFocusDetector(session.Clock, (uint)TimeUnit.Millisecond.ConvertTo(_paradigm.Config.Experimental.GazeToFocusDuration, session.Clock.Unit));
                 _gazeFocusDetector.Focused += (sender, e) => OnFocused();
                 _gazeFocusDetector.Enter += (sender, e) => this.DispatcherInvoke(() => FocusCircle.Fill = Brushes.Pink);
                 _gazeFocusDetector.Leave += (sender, e) => this.DispatcherInvoke(() => FocusCircle.Fill = Brushes.Red);
@@ -510,11 +538,9 @@ namespace SharpBCI.Paradigms.MI
             ProgressBar.BorderThickness = new Thickness(_paradigm.Config.Gui.ProgressBarBorder.Width);
             ProgressBar.BorderBrush = new SolidColorBrush(_paradigm.Config.Gui.ProgressBarBorder.Color.ToSwmColor());
 
-            _stageProgram = _paradigm.CreateStagedProgram(session);
+            _stageProgram = _paradigm.CreateStagedProgram(session, _miStimClient);
             _stageProgram.StageChanged += StageProgram_StageChanged;
         }
-
-
 
         public IntPtr Handle => new WindowInteropHelper(this).Handle;
 
@@ -531,12 +557,6 @@ namespace SharpBCI.Paradigms.MI
             if (_gazeFocusDetector != null) _gazeFocusDetector.IsEnabled = true;
         }
 
-        private void OnPlayChanged(object sender, bool IsStopCtrl)
-        {
-            if (IsStopCtrl) _activeVisualElement.Pause();
-            else _activeVisualElement.Play();
-        }
-
         internal void OnFocused()
         {
             if (_gazeFocusDetector != null) _gazeFocusDetector.IsEnabled = false;
@@ -546,6 +566,74 @@ namespace SharpBCI.Paradigms.MI
                 MainGrid.Visibility = Visibility.Visible;
                 FocusIndicationContainer.Visibility = Visibility.Hidden;
             });
+        }
+
+        internal void OnPlayChanged(bool stop)
+        {
+            if (stop) _activeVisualElement.Pause();
+            else _activeVisualElement.Play();
+        }
+
+        private void PresentStimuli(MiStage.Stimulus<MiStage.VisualStimulusType> visualStimulus, 
+            MiStage.Stimulus<MiStage.AuditoryStimulusType> auditoryStimulus, bool showProgressBar, bool preload)
+        {
+            var forceReset = _paradigm.Config.Experimental.ForceReset;
+            ProgressBar.Visibility = showProgressBar ? Visibility.Visible : Visibility.Hidden;
+
+            if (visualStimulus != null)
+            {
+                var vsp = _visualStimulusPresenters.FirstOrDefault(p => p.Accept(visualStimulus.Type));
+                if (vsp == null)
+                    Log.Warn("PresentStimuli - visual stimulus presenter not found",
+                        "type", visualStimulus.Type, "value", visualStimulus.Content);
+                else
+                {
+                    var visualElement = vsp.Present(visualStimulus.Content, preload);
+                    if (_activeVisualElement == visualElement)
+                    {
+                        if (visualElement != null && forceReset)
+                            visualElement.Restart();
+                    }
+                    else
+                    {
+                        if (_activeVisualElement != null)
+                        {
+                            _activeVisualElement.Rewind();
+                            _activeVisualElement.Pause();
+                            _activeVisualElement.Hide();
+                        }
+                        if (visualElement != null)
+                        {
+                            visualElement.Show();
+                            visualElement.Play();
+                        }
+                    }
+                    _activeVisualElement = visualElement;
+                }
+            }
+
+            if (auditoryStimulus != null)
+            {
+                var asp = _auditoryStimulusPresenters.FirstOrDefault(p => p.Accept(auditoryStimulus.Type));
+                if (asp == null)
+                    Log.Warn("PresentStimuli - auditory stimulus presenter not found",
+                        "type", auditoryStimulus.Type, "value", auditoryStimulus.Content);
+                else
+                {
+                    var auditoryElement = asp.Present(auditoryStimulus.Content, preload);
+                    if (_activeAuditoryElement == auditoryElement)
+                    {
+                        if (auditoryElement != null && forceReset)
+                            auditoryElement.Restart();
+                    }
+                    else
+                    {
+                        _activeAuditoryElement?.Stop();
+                        auditoryElement?.Play();
+                    }
+                    _activeAuditoryElement = auditoryElement;
+                }
+            }
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -598,74 +686,18 @@ namespace SharpBCI.Paradigms.MI
 
             var preload = false;
             var showProgressBar = false;
-
             MiStage.Stimulus<MiStage.VisualStimulusType> visualStimulus = null;
-            IVisualStimulusPresenter vsp = null;
-
             MiStage.Stimulus<MiStage.AuditoryStimulusType> auditoryStimulus = null;
-            IAuditoryStimulusPresenter asp = null;
 
             if (stage is MiStage miStage)
             {
                 preload = miStage.IsPreload;
                 showProgressBar = miStage.ShowProgressBar;
-                if ((visualStimulus = miStage.VisualStimulus) != null)
-                {
-                    vsp = _visualStimulusPresenters.FirstOrDefault(p => p.Accept(visualStimulus.Type));
-                    if (vsp == null)
-                        Log.Warn("StageProgram_StageChanged - visual stimulus presenter not found",
-                            "type", visualStimulus.Type, "value", visualStimulus.Content);
-                }
+                visualStimulus = miStage.VisualStimulus;
                 auditoryStimulus = miStage.AuditoryStimulus;
-                if ((auditoryStimulus = miStage.AuditoryStimulus) != null)
-                {
-                    asp = _auditoryStimulusPresenters.FirstOrDefault(p => p.Accept(auditoryStimulus.Type));
-                    if (asp == null)
-                        Log.Warn("StageProgram_StageChanged - auditory stimulus presenter not found", 
-                            "type", auditoryStimulus.Type, "value", auditoryStimulus.Content);
-                }
             }
 
-            this.DispatcherInvoke(() =>
-            {
-                var forceReset = _paradigm.Config.Test.ForceReset;
-                ProgressBar.Visibility = showProgressBar ? Visibility.Visible : Visibility.Hidden;
-
-                var visualElement = vsp?.Present(visualStimulus?.Content, preload);
-                if (_activeVisualElement == visualElement)
-                {
-                    if (visualElement != null && forceReset)
-                        visualElement.Restart();
-                }
-                else
-                {
-                    if (_activeVisualElement != null)
-                    {
-                        _activeVisualElement.Rewind();
-                        _activeVisualElement.Pause();
-                        _activeVisualElement.Hide();
-                    }
-                    if (visualElement != null)
-                    {
-                        visualElement.Show();
-                        visualElement.Play();
-                    }
-                }
-                _activeVisualElement = visualElement;
-
-                var auditoryElement = asp?.Present(auditoryStimulus?.Content, preload);
-                if (_activeAuditoryElement == auditoryElement)
-                {
-                    if (auditoryElement != null && forceReset)
-                        auditoryElement.Restart();
-                }
-                else
-                {
-                    _activeAuditoryElement?.Stop();
-                    auditoryElement?.Play();
-                }
-                _activeAuditoryElement = auditoryElement;
-            });
+            Application.Current.Dispatcher.Invoke(() => PresentStimuli(visualStimulus, auditoryStimulus, showProgressBar, preload));
         }
 
         private void Stop(bool userInterrupted = false)
