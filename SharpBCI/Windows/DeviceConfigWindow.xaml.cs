@@ -234,10 +234,12 @@ namespace SharpBCI.Windows
             var comboBox = (ComboBox)sender;
             var viewModel = (DeviceConfigViewModel)comboBox.Tag;
             var device = comboBox.SelectedItem as PluginDevice;
+            var oldDevice = viewModel.Current;
+            var oldContext = viewModel.ParamPanel.Context;
             InitializeDeviceConfigurationPanel(device);
 
             if (_deviceParamsUpdateLock.IsReferred) return;
-            var eventArgs = new DeviceChangedEventArgs(_deviceType, viewModel.Current, device, viewModel.ParamPanel.Context);
+            var eventArgs = new DeviceChangedEventArgs(_deviceType, oldDevice, device, oldContext);
             DeviceChanged?.Invoke(this, eventArgs);
             viewModel.ParamPanel.Context = eventArgs.NewDeviceParams ?? EmptyContext.Instance;
         }
@@ -247,10 +249,12 @@ namespace SharpBCI.Windows
             var comboBox = (ComboBox) sender;
             var viewModel = (ConsumerConfigViewModel) comboBox.Tag;
             var streamConsumer = comboBox.SelectedItem as PluginStreamConsumer;
+            var oldConsumer = viewModel.Current;
+            var oldContext = viewModel.ParamPanel.Context;
             InitializeConsumerConfigurationPanel(viewModel, streamConsumer);
 
             if (_consumerParamsUpdateLock.IsReferred) return;
-            var eventArgs = new ConsumerChangedEventArgs(_deviceType, viewModel.Current, streamConsumer, viewModel.ParamPanel.Context);
+            var eventArgs = new ConsumerChangedEventArgs(_deviceType, oldConsumer, streamConsumer, oldContext);
             ConsumerChanged?.Invoke(this, eventArgs);
             viewModel.ParamPanel.Context = eventArgs.NewConsumerParams ?? EmptyContext.Instance;
         }
