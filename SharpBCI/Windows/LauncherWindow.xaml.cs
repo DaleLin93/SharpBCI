@@ -570,6 +570,15 @@ namespace SharpBCI.Windows
             PluginsMenuItem.ItemsSource = menuItems.ToArray();
         }
 
+        private void ShowPopupConfigurationPanel(string title, [NotNull] IEnumerable<IDescriptor> descriptors,
+            IReadonlyContext context = null, IParameterPresentAdapter adapter = null)
+        {
+            PopupTitleTextBlock.Text = title;
+            PopupParameterPanel.SetDescriptors(adapter, descriptors);
+            PopupParameterPanel.Context = context ?? EmptyContext.Instance;
+            PopupGrid.Visibility = Visibility.Visible;
+        }
+
         private void Window_OnLoaded(object sender, RoutedEventArgs e)
         {
             LoadPlatformCaps();

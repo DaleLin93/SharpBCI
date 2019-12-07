@@ -95,6 +95,35 @@
                 </StackPanel>
             </ScrollViewer>
 
+            <Grid x:Name="PopupGrid" Visibility="Hidden" Background="{StaticResource BackgroundBrush}">
+                <Rectangle x:Name="PopupBackgroundRectangle">
+                    <Rectangle.Fill>
+                        <VisualBrush Visual="{Binding ElementName=ScrollView}" Stretch="None" AlignmentY="Top" AlignmentX="Left"/>
+                    </Rectangle.Fill>
+                    <Rectangle.Effect>
+                        <BlurEffect/>
+                    </Rectangle.Effect>
+                </Rectangle>
+                <Rectangle Fill="#66888888"/>
+                <!-- Popup content panel -->
+                <StackPanel VerticalAlignment="Center" Background="{StaticResource BackgroundBrush}" Margin="10 0">
+                    <StackPanel.Effect>
+                        <DropShadowEffect Direction="250" BlurRadius="20" ShadowDepth="2" RenderingBias="Performance" />
+                    </StackPanel.Effect>
+                    <TextBlock x:Name="PopupTitleTextBlock" FontSize="17" Margin="0 6" FontWeight="Bold" HorizontalAlignment="Stretch" TextAlignment="Center" />
+                    <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFAEAEAE" Margin="0 2 0 12"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalAlignment="Center">
+                        <StackPanel>
+                            <windows:ParameterPanel x:Name="PopupParameterPanel"/>
+                            <Grid Margin="5 15" Height="35">
+                                <Button Content="OK" Width="90" Margin="0 0 10 0" HorizontalAlignment="Right" />
+                                <Button Content="Cancel" Width="90" Margin="0 0 120 0" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </StackPanel>
+            </Grid>
+
             <!-- Menu drop shadow -->
             <Rectangle VerticalAlignment="Top" Height="10" IsHitTestVisible="False">
                 <Rectangle.Fill>
