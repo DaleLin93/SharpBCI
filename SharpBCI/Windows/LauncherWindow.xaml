@@ -8,16 +8,11 @@
         mc:Ignorable="d"
         Title="SharpBCI Session Launcher" Background="{StaticResource BackgroundBrush}"
         Height="350" Width="600" MinHeight="350" MinWidth="550" ResizeMode="CanResize"
-        Loaded="Window_OnLoaded" KeyDown="Window_OnKeyDown" Closed="Window_OnClosed" LayoutUpdated="Window_OnLayoutUpdated" >
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+        Loaded="Window_OnLoaded" KeyDown="Window_OnKeyDown" Closed="Window_OnClosed" LayoutUpdated="Window_OnLayoutUpdated">
+    <DockPanel>
 
         <!-- Menu -->
-        <StackPanel Grid.Row="0">
+        <StackPanel DockPanel.Dock="Top">
             <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
             <Menu Background="#88FAFAFA">
                 <MenuItem Header="File" >
@@ -50,43 +45,8 @@
             <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
         </StackPanel>
 
-        <!-- Main Panel: Session configuration, Paradigm configuration, Devices & Consumers configuration -->
-        <ScrollViewer x:Name="ScrollView" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <ScrollViewer.Resources>
-                <!-- ReSharper disable once Xaml.RedundantResource -->
-                <system:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</system:Double>
-            </ScrollViewer.Resources>
-            <StackPanel x:Name="MainPanel" Margin="0 10 0 15">
-                <StackPanel x:Name="HeaderPanel" />
-                <windows:ParameterPanel x:Name="ParadigmParamPanel" LayoutChanged="ParadigmParamPanel_OnLayoutChanged"
-                                         ContextChanged="ParadigmParamPanel_OnContextChanged" />
-                <windows:SummaryPanel x:Name="ParadigmSummaryPanel" LayoutChanged="ParadigmParamPanel_OnLayoutChanged" />
-                <StackPanel x:Name="FooterPanel" />
-            </StackPanel>
-        </ScrollViewer>
-
-        <!-- Menu drop shadow -->
-        <Rectangle Grid.Row="1" VerticalAlignment="Top" Height="10" IsHitTestVisible="False">
-            <Rectangle.Fill>
-                <LinearGradientBrush StartPoint="0.5 0" EndPoint="0.5 1">
-                    <GradientStop Offset="0" Color="#CCFAFAFA"/>
-                    <GradientStop Offset="1" Color="#00EDEDED"/>
-                </LinearGradientBrush>
-            </Rectangle.Fill>
-        </Rectangle>
-
-        <!-- ActionPanel drop shadow -->
-        <Rectangle Grid.Row="1" VerticalAlignment="Bottom" Height="20" IsHitTestVisible="False">
-            <Rectangle.Fill>
-                <LinearGradientBrush StartPoint="0.5 0" EndPoint="0.5 1">
-                    <GradientStop Offset="0" Color="#00EAEAEA"/>
-                    <GradientStop Offset="1" Color="#AAEDEDED"/>
-                </LinearGradientBrush>
-            </Rectangle.Fill>
-        </Rectangle>
-
         <!-- Action Panel: Error Message, Start Button -->
-        <Grid x:Name="ActionPanel" Grid.Row="2" VerticalAlignment="Bottom" Height="80" Margin="0 0 0 0" Background="#88F2F2F2" >
+        <Grid x:Name="ActionPanel" DockPanel.Dock="Bottom" VerticalAlignment="Bottom" Height="80" Margin="0 0 0 0" Background="#88F2F2F2" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -117,5 +77,44 @@
             </Button>
         </Grid>
 
-    </Grid>
+        <!-- Content Panel -->
+        <Grid>
+
+            <!-- Configuration Panel: Session configuration, Paradigm configuration, Devices & Consumers configuration -->
+            <ScrollViewer x:Name="ScrollView" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Resources>
+                    <!-- ReSharper disable once Xaml.RedundantResource -->
+                    <system:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</system:Double>
+                </ScrollViewer.Resources>
+                <StackPanel x:Name="MainPanel" Margin="0 10 0 15">
+                    <StackPanel x:Name="HeaderPanel" />
+                    <windows:ParameterPanel x:Name="ParadigmParamPanel" LayoutChanged="ParadigmParamPanel_OnLayoutChanged"
+                                            ContextChanged="ParadigmParamPanel_OnContextChanged" />
+                    <windows:SummaryPanel x:Name="ParadigmSummaryPanel" LayoutChanged="ParadigmParamPanel_OnLayoutChanged" />
+                    <StackPanel x:Name="FooterPanel" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Menu drop shadow -->
+            <Rectangle VerticalAlignment="Top" Height="10" IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0.5 0" EndPoint="0.5 1">
+                        <GradientStop Offset="0" Color="#CCFAFAFA"/>
+                        <GradientStop Offset="1" Color="#00EDEDED"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+
+            <!-- ActionPanel drop shadow -->
+            <Rectangle VerticalAlignment="Bottom" Height="20" IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0.5 0" EndPoint="0.5 1">
+                        <GradientStop Offset="0" Color="#00EAEAEA"/>
+                        <GradientStop Offset="1" Color="#AAEDEDED"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+        </Grid>
+
+    </DockPanel>
 </Window>
