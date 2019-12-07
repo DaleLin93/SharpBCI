@@ -76,20 +76,20 @@ namespace SharpBCI.Extensions.Windows
             Width = AlertImageSize, Height = AlertImageSize
         };
 
-        private bool _err = false;
+        private bool _err;
 
         public KeyValueRow(UIElement leftPart, UIElement rightPart)
         {
             Margin = ViewConstants.RowMargin;
-            RowDefinitions.Add(new RowDefinition { Height = new GridLength(2) });
-            RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto});
-            RowDefinitions.Add(new RowDefinition { Height = new GridLength(2) });
-            ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3) });
-            ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3) });
+            RowDefinitions.Add(new RowDefinition {Height = new GridLength(2)});
+            RowDefinitions.Add(new RowDefinition {Height = GridLength.Auto});
+            RowDefinitions.Add(new RowDefinition {Height = new GridLength(2)});
+            ColumnDefinitions.Add(new ColumnDefinition {Width = new GridLength(3)});
+            ColumnDefinitions.Add(new ColumnDefinition {Width = new GridLength(3)});
             ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength, MaxWidth = 300});
             ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.MajorSpacingGridLength});
             ColumnDefinitions.Add(new ColumnDefinition {Width = new GridLength(2.5, GridUnitType.Star)});
-            ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2) });
+            ColumnDefinitions.Add(new ColumnDefinition {Width = new GridLength(2)});
 
             Children.Add(_leftRect);
             SetRow(_leftRect, 0);
@@ -186,11 +186,13 @@ namespace SharpBCI.Extensions.Windows
 
         [NotNull] public readonly IGroupDescriptor Group;
 
-        [NotNull] public readonly StackPanel GroupPanel, ItemsPanel;
+        [NotNull] public readonly DockPanel GroupPanel;
+        
+        [NotNull] public readonly StackPanel ItemsPanel;
 
         public readonly int Depth;
 
-        public GroupViewModel(IGroupDescriptor group, StackPanel groupPanel, StackPanel itemsPanel, int depth)
+        public GroupViewModel(IGroupDescriptor group, DockPanel groupPanel, StackPanel itemsPanel, int depth)
         {
             Group = group;
             GroupPanel = groupPanel;

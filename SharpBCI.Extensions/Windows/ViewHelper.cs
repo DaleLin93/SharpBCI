@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
@@ -124,27 +124,49 @@ namespace SharpBCI.Extensions.Windows
             };
         }
 
-        public static StackPanel AddGroupPanel(this Panel parent, string header, string description, int depth = 0) => 
-            AddGroupPanel(parent, CreateGroupHeader(header, description), depth);
+        public static DockPanel CreateGroupPanel([NotNull] GroupHeader groupHeader, int depth = 0)
+        {
+            var dockPanel = new DockPanel();
+            if (depth > 0)
+            {
+                var groupIntendRectangle =  new Rectangle
+                {
+                    Width = 2,
+                    Margin = new Thickness {Left = ViewConstants.Intend},
+                    Fill = GetResource("LightSeparatorColorBrush") as Brush,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    VerticalAlignment = VerticalAlignment.Stretch
+                };
+                dockPanel.Children.Add(groupIntendRectangle);
+                DockPanel.SetDock(groupIntendRectangle, Dock.Left);
+            }
+            dockPanel.Children.Add(groupHeader);
+            DockPanel.SetDock(groupHeader, Dock.Top);
+            return dockPanel;
+        }
 
-        public static StackPanel AddGroupPanel(this Panel parent, [NotNull] GroupHeader groupHeader, int depth = 0)
+        public static StackPanel AddGroupStackPanel(this Panel parent, string header, string description)
         {
             var stackPanel = new StackPanel();
-            if (depth > 0) stackPanel.Margin = new Thickness { Left = ViewConstants.Intend * depth };
-            stackPanel.Children.Add(groupHeader);
+            stackPanel.Children.Add(CreateGroupHeader(header, description));
             parent.Children.Add(stackPanel);
             return stackPanel;
+        } 
+            
+        public static DockPanel AddGroupDockPanel(this Panel parent, [NotNull] GroupHeader groupHeader, int depth = 0)
+        {
+            var dockPanel = CreateGroupPanel(groupHeader, depth);
+            parent.Children.Add(dockPanel);
+            return dockPanel;
         }
 
         public static GroupViewModel CreateGroupViewModel(IGroupDescriptor group, int depth = 0, bool click2Collapse = false, Func<bool> collapseControl = null)
         {
-            var stackPanel = new StackPanel();
-            if (depth > 0) stackPanel.Margin = new Thickness { Left = ViewConstants.Intend * depth };
             var groupHeader = CreateGroupHeader(group.Name, group.Description, click2Collapse);
-            stackPanel.Children.Add(groupHeader);
+            var dockPanel = CreateGroupPanel(groupHeader, depth);
             var itemsPanel = new StackPanel();
-            stackPanel.Children.Add(itemsPanel);
-            var viewModel = new GroupViewModel(group, stackPanel, itemsPanel, depth);
+            dockPanel.Children.Add(itemsPanel);
+            var viewModel = new GroupViewModel(group, dockPanel, itemsPanel, depth);
             if (click2Collapse) groupHeader.MouseLeftButtonUp += (sender, e) =>
             {
                 var collapse = !viewModel.IsCollapsed;

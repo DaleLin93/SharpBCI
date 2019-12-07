@@ -98,6 +98,8 @@ namespace SharpBCI.Extensions
             }
         }
 
+        public override string ToString() => Name ?? "<ABSENT>";
+
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         private bool Equals(IGroupDescriptor other) => string.Equals(Name, other.Name) && Equals(Items, other.Items);

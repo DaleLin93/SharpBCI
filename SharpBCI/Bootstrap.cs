@@ -214,7 +214,7 @@ namespace SharpBCI
             instance = null;
             try
             {
-                instance = paradigm.Factory.Create(paradigm.ParadigmClass, context);
+                instance = paradigm.Factory.Create(paradigm.Clz, context);
                 return true;
             }
             catch (Exception ex)

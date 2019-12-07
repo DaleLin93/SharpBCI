@@ -11,16 +11,16 @@ namespace SharpBCI.Plugins
     public class PluginDevice : ParameterizedRegistrable
     {
 
-        [NotNull] public readonly Type DeviceClass;
+        [NotNull] public readonly Type Clz;
 
-        [NotNull] public readonly DeviceAttribute DeviceAttribute;
+        [NotNull] public readonly DeviceAttribute Attribute;
 
         [NotNull] public readonly IDeviceFactory Factory;
 
         internal PluginDevice(Plugin plugin, [NotNull] Type clz, [NotNull] DeviceAttribute attr, [NotNull] IDeviceFactory factory) : base(plugin)
         {
-            DeviceClass = clz ?? throw new ArgumentNullException(nameof(clz));
-            DeviceAttribute = attr ?? throw new ArgumentNullException(nameof(attr));
+            Clz = clz ?? throw new ArgumentNullException(nameof(clz));
+            Attribute = attr ?? throw new ArgumentNullException(nameof(attr));
             Factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
 
@@ -29,13 +29,13 @@ namespace SharpBCI.Plugins
 
         public override string Identifier => DeviceName;
 
-        public string DeviceName => DeviceAttribute.Name;
+        public string DeviceName => Attribute.Name;
 
-        public DeviceType DeviceType => Factory.GetDeviceType(DeviceClass);
+        public DeviceType DeviceType => Factory.GetDeviceType(Clz);
 
-        protected override IEnumerable<IParameterDescriptor> AllParameters => Factory.GetParameters(DeviceClass);
+        protected override IEnumerable<IParameterDescriptor> AllParameters => Factory.GetParameters(Clz);
 
-        public IDevice NewInstance(IReadonlyContext context) => Factory.Create(DeviceClass, context);
+        public IDevice NewInstance(IReadonlyContext context) => Factory.Create(Clz, context);
 
     }
 

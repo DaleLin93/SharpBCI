@@ -2,6 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <SolidColorBrush x:Key="GroupHeaderColorBrush" Color="#66FFFFFF"/>
     <SolidColorBrush x:Key="SeparatorColorBrush" Color="#FFE4E4E4"/>
+    <SolidColorBrush x:Key="LightSeparatorColorBrush" Color="#FFEFEFEF"/>
     <Style TargetType="Button">
         <Setter Property="Background" Value="#55EAEAEA" />
     </Style>
@@ -23,7 +24,7 @@
         <Setter Property="Background" Value="{StaticResource GroupHeaderColorBrush}"/>
     </Style>
     <Style x:Key="ParamGroupHeaderLine" TargetType="Rectangle">
-        <Setter Property="Fill" Value="#FFE4E4E4" />
+        <Setter Property="Fill" Value="{StaticResource SeparatorColorBrush}" />
         <Setter Property="VerticalAlignment" Value="Top" />
         <Setter Property="Height" Value="1"/>
     </Style>

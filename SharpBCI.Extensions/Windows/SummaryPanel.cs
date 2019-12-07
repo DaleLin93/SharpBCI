@@ -61,11 +61,11 @@ namespace SharpBCI.Extensions.Windows
 
             if (Summaries?.Any() ?? false)
             {
-                var groupPanel = GroupHeader == null ? this : this.AddGroupPanel(GroupHeader, null);
+                if (GroupHeader != null) Children.Add(ViewHelper.CreateGroupHeader(GroupHeader, null));
                 foreach (var summary in Summaries)
                 {
                     var valueTextBlock = new TextBlock { TextAlignment = TextAlignment.Right };
-                    var summaryViewModel = new SummaryViewModel(summary, groupPanel.AddRow(summary.Name, valueTextBlock), valueTextBlock);
+                    var summaryViewModel = new SummaryViewModel(summary, this.AddRow(summary.Name, valueTextBlock), valueTextBlock);
                     summaryViewModel.AnimationCompleted += (sender, e) => LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
                     _summaryViewModels.Add(summaryViewModel);
                 }

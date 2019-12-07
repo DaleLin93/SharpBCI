@@ -13,27 +13,27 @@ namespace SharpBCI.Plugins
     public class PluginStreamConsumer : ParameterizedRegistrable
     {
 
-        [NotNull] public readonly Type ConsumerClass;
+        [NotNull] public readonly Type Clz;
 
-        [NotNull] public readonly StreamConsumerAttribute ConsumerAttribute;
+        [NotNull] public readonly StreamConsumerAttribute Attribute;
 
         [NotNull] public readonly IStreamConsumerFactory Factory;
 
         internal PluginStreamConsumer(Plugin plugin, [NotNull] Type clz, [NotNull] StreamConsumerAttribute attr, [NotNull]  IStreamConsumerFactory factory) : base(plugin)
         {
-            ConsumerClass = clz ?? throw new ArgumentNullException(nameof(clz));
-            ConsumerAttribute = attr ?? throw new ArgumentNullException(nameof(attr));
+            Clz = clz ?? throw new ArgumentNullException(nameof(clz));
+            Attribute = attr ?? throw new ArgumentNullException(nameof(attr));
             Factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
 
         public static ParameterizedEntity CreateParameterizedEntity(PluginStreamConsumer consumer, IReadonlyContext context) => 
             new ParameterizedEntity(consumer?.Identifier, consumer?.SerializeParams(context));
 
-        public override string Identifier => ConsumerAttribute.Name;
+        public override string Identifier => Attribute.Name;
 
-        protected override IEnumerable<IParameterDescriptor> AllParameters => Factory.GetParameters(ConsumerClass);
+        protected override IEnumerable<IParameterDescriptor> AllParameters => Factory.GetParameters(Clz);
 
-        public IStreamConsumer NewInstance(Session session, IReadonlyContext context, byte? index) => Factory.Create(ConsumerClass, session, context, index);
+        public IStreamConsumer NewInstance(Session session, IReadonlyContext context, byte? index) => Factory.Create(Clz, session, context, index);
 
     }
 

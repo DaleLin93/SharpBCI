@@ -199,8 +199,8 @@ namespace SharpBCI.Windows
 
         public SessionConfig GetSessionConfig()
         {
-            var paradigm = (PluginParadigm)_paradigmComboBox.SelectedItem ?? throw new UserException("No paradigm was selected");
-            var paradigmEntity = new ParameterizedEntity(paradigm.Identifier, paradigm.ParadigmAttribute.Version?.ToString(), paradigm.SerializeParams(ParadigmParamPanel.Context));
+            var paradigm = _currentParadigm ?? throw new UserException("No paradigm was selected");
+            var paradigmEntity = new ParameterizedEntity(paradigm.Identifier, paradigm.Version, paradigm.SerializeParams(ParadigmParamPanel.Context));
             return new SessionConfig
             {
                 Subject = _subjectTextBox.Text,
@@ -260,9 +260,11 @@ namespace SharpBCI.Windows
                 catch (Exception e)
                 {
                     Logger.Warn("UpdateFullSessionName - update full session name", e, "sessionDescriptor", _sessionDescriptorTextBox.Text);
+                    _sessionFullNameTextBlock.Text = "<SYNTAX ERR>";
                 }
             }
-            _sessionFullNameTextBlock.Text = "<ERR>";
+            else
+                _sessionFullNameTextBlock.Text = "<UNEXPECTED ERR>";
             _sessionFullNameTextBlock.Foreground = Brushes.DarkRed;
         }
 
@@ -271,7 +273,6 @@ namespace SharpBCI.Windows
             var pluginParadigm = _currentParadigm;
             if (pluginParadigm == null) return;
             if (!ValidateParadigmParams(false)) return;
-
             var context = ParadigmParamPanel.Context;
             UpdateFullSessionName(pluginParadigm, context);
             Bootstrap.TryInitiateParadigm(pluginParadigm, context, out var paradigm, false);
@@ -280,14 +281,14 @@ namespace SharpBCI.Windows
 
         private void InitializeHeaderPanel()
         {
-            var sessionPanel = HeaderPanel.AddGroupPanel("Session", "General Session Information");
+            var sessionPanel = HeaderPanel.AddGroupStackPanel("Session", "General Session Information");
             sessionPanel.AddRow("Subject", _subjectTextBox = new TextBox { Text = "Anonymous", MaxLength = 32});
             sessionPanel.AddRow("Session Descriptor", _sessionDescriptorTextBox = new TextBox {Text = "Unnamed", MaxLength = 64});
             sessionPanel.AddRow("", _sessionFullNameTextBlock = new TextBlock {FontSize = 10, Foreground = Brushes.DarkGray, Margin = new Thickness {Top = 3}});
             void OnSessionInfoChanged(object sender, TextChangedEventArgs e) => UpdateFullSessionName(_currentParadigm, ParadigmParamPanel.Context);
             _subjectTextBox.TextChanged += OnSessionInfoChanged;
             _sessionDescriptorTextBox.TextChanged += OnSessionInfoChanged;
-            var paradigmPanel = HeaderPanel.AddGroupPanel("Paradigm", "Paradigm Selection");
+            var paradigmPanel = HeaderPanel.AddGroupStackPanel("Paradigm", "Paradigm Selection");
             var paradigmComboBoxContainer = new Grid();
             _paradigmComboBox = new ComboBox {Margin = new Thickness {Right = ViewConstants.DefaultRowHeight + ViewConstants.MinorSpacing}};
             _paradigmComboBox.SelectionChanged += ParadigmComboBox_OnSelectionChanged;
@@ -320,12 +321,12 @@ namespace SharpBCI.Windows
 
         private void InitializeParadigmConfigurationPanel(PluginParadigm paradigm)
         {
-            _paradigmDescriptionTextBlock.Text = paradigm.ParadigmAttribute.Description;
+            _paradigmDescriptionTextBlock.Text = paradigm.Attribute.Description;
             _paradigmDescriptionRow.Visibility = string.IsNullOrWhiteSpace(_paradigmDescriptionTextBlock.Text) 
                 ? Visibility.Collapsed : Visibility.Visible;
 
-            ParadigmParamPanel.SetDescriptors(paradigm.Factory as IParameterPresentAdapter, paradigm.Factory.GetParameterGroups(paradigm.ParadigmClass));
-            ParadigmSummaryPanel.SetSummaries(paradigm.Factory as ISummaryPresentAdapter, paradigm.Factory.GetSummaries(paradigm.ParadigmClass));
+            ParadigmParamPanel.SetDescriptors(paradigm.Factory as IParameterPresentAdapter, paradigm.Factory.GetParameterGroups(paradigm.Clz));
+            ParadigmSummaryPanel.SetSummaries(paradigm.Factory as ISummaryPresentAdapter, paradigm.Factory.GetSummaries(paradigm.Clz));
 
             ScrollView.InvalidateScrollInfo();
             ScrollView.ScrollToTop();
@@ -340,7 +341,7 @@ namespace SharpBCI.Windows
             var paradigm = _currentParadigm;
             if (paradigm == null) return;
             _config.SetParadigm(new ParameterizedEntity(paradigm.Identifier, 
-                paradigm.ParadigmAttribute.Version?.ToString(), 
+                paradigm.Attribute.Version?.ToString(), 
                 paradigm.SerializeParams(ParadigmParamPanel.Context)));
         }
 
@@ -418,7 +419,7 @@ namespace SharpBCI.Windows
                     .Select(pd =>
                     {
                         var valid = ValidationResult.Failed();
-                        try { valid = factory.CheckValid(paradigm.ParadigmClass, context, pd); }
+                        try { valid = factory.CheckValid(paradigm.Clz, context, pd); }
                         catch (Exception e) { Logger.Warn("ValidateParadigmParams", e, "parameter", pd.Key); }
                         var row = ParadigmParamPanel[pd]?.Container;
                         if (row != null && (row.IsError = valid.IsFailed)) row.ErrorMessage = valid.Message?.Trim();
@@ -512,8 +513,8 @@ namespace SharpBCI.Windows
                         else
                             foreach (var device in devices)
                             {
-                                var deviceAttribute = device.DeviceAttribute;
-                                var menuItemHeader = $"{deviceAttribute.Name} ({deviceAttribute.FullVersionName}) - {device.DeviceClass.FullName}";
+                                var deviceAttribute = device.Attribute;
+                                var menuItemHeader = $"{deviceAttribute.Name} ({deviceAttribute.FullVersionName}) - {device.Clz.FullName}";
                                 var deviceMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
                                 deviceMenuItem.Click += (sender, e) => _deviceConfigPanel.FindAndSelectDevice(deviceType, device.DeviceName, null);
                                 children.AddLast(deviceMenuItem);
@@ -537,8 +538,8 @@ namespace SharpBCI.Windows
                     else
                         foreach (var paradigm in plugin.Paradigms)
                         {
-                            var paradigmAttribute = paradigm.ParadigmAttribute;
-                            var menuItemHeader = $"{paradigmAttribute.Name} ({paradigmAttribute.FullVersionName}) - {paradigm.ParadigmClass.FullName}";
+                            var paradigmAttribute = paradigm.Attribute;
+                            var menuItemHeader = $"{paradigmAttribute.Name} ({paradigmAttribute.FullVersionName}) - {paradigm.Clz.FullName}";
                             var paradigmMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
                             paradigmMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelectFirstByString(paradigmAttribute.Name, null);
                             children.AddLast(paradigmMenuItem);
@@ -550,8 +551,8 @@ namespace SharpBCI.Windows
                     else
                         foreach (var streamConsumer in plugin.StreamConsumers)
                         {
-                            var consumerAttribute = streamConsumer.ConsumerAttribute;
-                            var menuItemHeader = $"{consumerAttribute.Name} ({consumerAttribute.FullVersionName}) - {streamConsumer.ConsumerClass.FullName}";
+                            var consumerAttribute = streamConsumer.Attribute;
+                            var menuItemHeader = $"{consumerAttribute.Name} ({consumerAttribute.FullVersionName}) - {streamConsumer.Clz.FullName}";
                             var consumerMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
                             consumerMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelectFirstByString(consumerAttribute.Name, null);
                             children.AddLast(consumerMenuItem);

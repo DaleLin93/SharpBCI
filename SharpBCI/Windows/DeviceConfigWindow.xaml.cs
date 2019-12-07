@@ -40,7 +40,7 @@ namespace SharpBCI.Windows
             internal EntityConfigViewModel(string type, string groupDesc, StackPanel container, IEnumerable selections)
             {
                 Container = container;
-                var consumerGroupPanel = Container.AddGroupPanel(type, groupDesc);
+                var consumerGroupPanel = Container.AddGroupStackPanel(type, groupDesc);
                 ComboBox = new ComboBox {ItemsSource = selections, Tag = this};
                 consumerGroupPanel.AddRow(type, ComboBox);
                 ParamPanel = new ParameterPanel {AllowCollapse = false, Tag = this};
@@ -146,7 +146,7 @@ namespace SharpBCI.Windows
             var list = new List<object> {ViewHelper.CreateDefaultComboBoxItem()};
             if (streamerValueType == null) return list;
             list.AddRange(App.Instance.Registries.Registry<PluginStreamConsumer>().Registered
-                .Where(pc => pc.Factory.GetAcceptType(pc.ConsumerClass).IsAssignableFrom(streamerValueType)));
+                .Where(pc => pc.Factory.GetAcceptType(pc.Clz).IsAssignableFrom(streamerValueType)));
             return list;
         }
 
@@ -167,7 +167,7 @@ namespace SharpBCI.Windows
         private void InitializeDeviceConfigurationPanel(PluginDevice device)
         {
             _deviceViewModel.Current = device;
-            _deviceViewModel.ParamPanel.SetDescriptors(device?.Factory as IParameterPresentAdapter, AsGroup(device?.Factory.GetParameters(device.DeviceClass)));
+            _deviceViewModel.ParamPanel.SetDescriptors(device?.Factory as IParameterPresentAdapter, AsGroup(device?.Factory.GetParameters(device.Clz)));
 
             ScrollView.InvalidateScrollInfo();
             _needResizeWindow = IsLoaded;
@@ -176,7 +176,7 @@ namespace SharpBCI.Windows
         private void InitializeConsumerConfigurationPanel(ConsumerConfigViewModel consumerConfigViewModel, PluginStreamConsumer consumer)
         {
             consumerConfigViewModel.Current = consumer;
-            consumerConfigViewModel.ParamPanel.SetDescriptors(consumer?.Factory as IParameterPresentAdapter, AsGroup(consumer?.Factory.GetParameters(consumer.ConsumerClass)));
+            consumerConfigViewModel.ParamPanel.SetDescriptors(consumer?.Factory as IParameterPresentAdapter, AsGroup(consumer?.Factory.GetParameters(consumer.Clz)));
 
             ScrollView.InvalidateScrollInfo();
             _needResizeWindow = IsLoaded;
