@@ -2,6 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <SolidColorBrush x:Key="GroupHeaderColorBrush" Color="#66FFFFFF"/>
     <SolidColorBrush x:Key="SeparatorColorBrush" Color="#FFE4E4E4"/>
+    <SolidColorBrush x:Key="DarkSeparatorColorBrush" Color="#FFA4A4A4"/>
     <SolidColorBrush x:Key="LightSeparatorColorBrush" Color="#FFEFEFEF"/>
     <Style TargetType="Button">
         <Setter Property="Background" Value="#55EAEAEA" />
