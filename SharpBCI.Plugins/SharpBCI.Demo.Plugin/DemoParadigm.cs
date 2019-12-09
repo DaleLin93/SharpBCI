@@ -6,7 +6,7 @@ using SharpBCI.Extensions;
 namespace SharpBCI.Paradigms.Demo
 {
 
-    [Paradigm(ParadigmName, typeof(AutoParadigmFactory), "1.0", Description = "This is a simple demo.")]
+    [Paradigm(ParadigmName, typeof(AutoParadigmFactory), "Demo", "1.0", Description = "This is a simple demo.")]
     public class DemoParadigm : Paradigm
     {
 

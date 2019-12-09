@@ -10,7 +10,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Extensions.Paradigms.TextDisplay
 {
 
-    [Paradigm(ParadigmName, typeof(Factory), "1.0", Description = "A text display paradigm.")]
+    [Paradigm(ParadigmName, typeof(Factory), "Basic", "1.0", Description = "A text display paradigm.")]
     public class TextDisplayParadigm : StagedParadigm.Basic
     {
 

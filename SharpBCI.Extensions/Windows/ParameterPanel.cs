@@ -146,7 +146,7 @@ namespace SharpBCI.Extensions.Windows
                                     presentedParameter.SetValue(paramItem.DefaultValue);
                                 OnParamChanged(paramItem);
                             };
-                        var rowGrid = groupMeta.Container.AddRow(nameTextBlock, presentedParameter.Element);
+                        var rowGrid = groupMeta.Container.AddLabeledRow(nameTextBlock, presentedParameter.Element);
                         var paramViewModel = new ParamViewModel(groupMeta.Group, rowGrid, nameTextBlock, presentedParameter);
                         paramViewModel.AnimationCompleted += (sender, e) => LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
                         _paramViewModels[paramItem] = paramViewModel;

@@ -72,15 +72,18 @@ namespace SharpBCI.Extensions
     public sealed class ParadigmAttribute : Attribute
     {
 
-        public ParadigmAttribute([NotNull] string name, [NotNull] Type factoryType, [CanBeNull] string version = null, [CanBeNull] string versionName = null)
+        public ParadigmAttribute([NotNull] string name, [NotNull] Type factoryType, [CanBeNull] string category = null, [CanBeNull] string version = null, [CanBeNull] string versionName = null)
         {
             Name = name.Trim2Null() ?? throw new ArgumentException(nameof(name));
             FactoryType = factoryType ?? throw new ArgumentException(nameof(factoryType));
+            Category = category;
             Version = version == null ? null : Version.Parse(version);
             VersionName = versionName?.Trim2Null();
         }
 
         [NotNull] public string Name { get; }
+
+        [NotNull] public string Category { get; }
 
         [NotNull] public Type FactoryType { get; }
 

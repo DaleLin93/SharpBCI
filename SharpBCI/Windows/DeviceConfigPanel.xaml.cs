@@ -59,7 +59,7 @@ namespace SharpBCI.Windows
                 Container = container;
                 var consumerGroupPanel = Container.AddGroupStackPanel(type, groupDesc);
                 ComboBox = new ComboBox {ItemsSource = selections, Tag = this};
-                consumerGroupPanel.AddRow(type, ComboBox);
+                consumerGroupPanel.AddLabeledRow(type, ComboBox);
                 ParamPanel = new ParameterPanel {AllowCollapse = false, Tag = this};
                 Container.Children.Add(ParamPanel);
             }

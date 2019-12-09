@@ -47,12 +47,16 @@ namespace SharpBCI.Extensions.Windows
 
     }
 
-    public class KeyValueRow : Grid
+    public class LabeledRow : Grid
     {
 
         private const int AlertImageSize = 15;
 
         private static readonly ImageSource AlertImageSource = new BitmapImage(new Uri(ViewConstants.AlertImageUri));
+
+        public readonly TextBlock LabelPart;
+
+        public readonly UIElement ContentPart;
 
         private readonly Rectangle _leftRect = new Rectangle
         {
@@ -78,8 +82,10 @@ namespace SharpBCI.Extensions.Windows
 
         private bool _err;
 
-        public KeyValueRow(UIElement leftPart, UIElement rightPart)
+        public LabeledRow(TextBlock labelPart, UIElement contentPart)
         {
+            LabelPart = labelPart;
+            ContentPart = contentPart;
             Margin = ViewConstants.RowMargin;
             RowDefinitions.Add(new RowDefinition {Height = new GridLength(2)});
             RowDefinitions.Add(new RowDefinition {Height = GridLength.Auto});
@@ -104,12 +110,12 @@ namespace SharpBCI.Extensions.Windows
             SetRow(_alertImage, 1);
             SetColumn(_alertImage, 2);
 
-            Children.Add(leftPart);
-            SetRow(leftPart, 1);
-            SetColumn(leftPart, 2);
-            Children.Add(rightPart);
-            SetRow(rightPart, 1);
-            SetColumn(rightPart, 4);
+            Children.Add(labelPart);
+            SetRow(labelPart, 1);
+            SetColumn(labelPart, 2);
+            Children.Add(contentPart);
+            SetRow(contentPart, 1);
+            SetColumn(contentPart, 4);
         }
 
         public bool IsError
@@ -202,7 +208,7 @@ namespace SharpBCI.Extensions.Windows
 
         public bool IsVisible { get; private set; } = true;
 
-        public bool IsCollapsed { get; private set; } = false;
+        public bool IsCollapsed { get; private set; }
 
         public void SetVisible(bool value, bool animate = true)
         {
@@ -225,17 +231,17 @@ namespace SharpBCI.Extensions.Windows
 
         [CanBeNull] public readonly GroupViewModel Group;
 
-        [NotNull] public readonly KeyValueRow Container;
+        [NotNull] public readonly LabeledRow Row;
 
         [CanBeNull] public readonly TextBlock NameTextBlock;
 
         [NotNull] public readonly PresentedParameter PresentedParameter;
 
-        public ParamViewModel([CanBeNull] GroupViewModel group, [NotNull] KeyValueRow container, 
+        public ParamViewModel([CanBeNull] GroupViewModel group, [NotNull] LabeledRow row, 
             [CanBeNull] TextBlock nameTextBlock, [NotNull] PresentedParameter presentedParameter)
         {
             Group = group;
-            Container = container ?? throw new ArgumentNullException(nameof(container));
+            Row = row ?? throw new ArgumentNullException(nameof(row));
             NameTextBlock = nameTextBlock;
             PresentedParameter = presentedParameter ?? throw new ArgumentNullException(nameof(presentedParameter));
         }
@@ -248,7 +254,7 @@ namespace SharpBCI.Extensions.Windows
         {
             if (IsVisible == value) return;
             IsVisible = value;
-            UpdateVisibility(Container, IsVisible, animate);
+            UpdateVisibility(Row, IsVisible, animate);
         }
 
         public bool CheckValid()

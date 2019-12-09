@@ -66,7 +66,7 @@ namespace SharpBCI.Paradigms.Speller
 
     }
 
-    [Paradigm(ParadigmName, typeof(Factory), "1.0")]
+    [Paradigm(ParadigmName, typeof(Factory), "EEG", "1.0")]
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class SpellerParadigm : Paradigm
     {

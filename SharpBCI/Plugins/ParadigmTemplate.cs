@@ -24,6 +24,8 @@ namespace SharpBCI.Plugins
 
         public override string Identifier => Attribute.Name;
 
+        public string Category => Attribute.Category;
+
         [CanBeNull] public string Version => Attribute.Version?.ToString();
 
         protected override IEnumerable<IParameterDescriptor> AllParameters => Factory.GetParameterGroups(Clz).GetAllParameters();
