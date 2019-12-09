@@ -19,6 +19,10 @@ namespace SharpBCI.Core.IO
 
         public StreamerCollection(params IStreamer[] streamers) => Add(streamers);
 
+        public int Count => _streamers.Count;
+
+        public IStreamer[] Values => _streamers.ToArray();
+
         /// <summary>
         /// Add streamers into current StreamerCollection.
         /// </summary>
