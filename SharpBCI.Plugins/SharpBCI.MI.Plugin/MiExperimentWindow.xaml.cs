@@ -570,8 +570,11 @@ namespace SharpBCI.Paradigms.MI
 
         internal void OnPlayChanged(bool stop)
         {
-            if (stop) _activeVisualElement.Pause();
-            else _activeVisualElement.Play();
+            this.DispatcherInvoke(() =>
+            {
+                if (stop) _activeVisualElement.Pause();
+                else _activeVisualElement.Play();
+            });
         }
 
         private void PresentStimuli(MiStage.Stimulus<MiStage.VisualStimulusType> visualStimulus, 
