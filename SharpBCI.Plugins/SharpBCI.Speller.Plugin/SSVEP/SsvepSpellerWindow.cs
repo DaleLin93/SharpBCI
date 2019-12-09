@@ -109,7 +109,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                     Paradigm.Config.Test.Channels.Enumerate(1, _biosignalStreamer.BiosignalSource.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
                     _biosignalStreamer.BiosignalSource.Frequency, Paradigm.Config.Test.Trial.Duration,
                     Paradigm.Config.Test.SsvepDelay);
-                _biosignalStreamer.Attach(_hybridSsvepClassifier);
+                _biosignalStreamer.AttachConsumer(_hybridSsvepClassifier);
             }
         }
 
@@ -168,13 +168,13 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                         if (_hybridSsvepClassifier != null)
                         {
                             _initializer = _hybridSsvepClassifier?.CreateInitializer();
-                            _biosignalStreamer.Attach(_initializer);
+                            _biosignalStreamer.AttachConsumer(_initializer);
                         }
                         break;
                     case MarkerDefinitions.BaselineEndMarker:
                         if (_initializer != null)
                         {
-                            _biosignalStreamer.Detach(_initializer);
+                            _biosignalStreamer.DetachConsumer(_initializer);
                             _initializer.Initialize();
                             _initializer = null;
                         }

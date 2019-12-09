@@ -49,7 +49,7 @@ namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
             KeyUp += Window_OnKeyUp;
 
             _streamer = streamer;
-            streamer.Attach(this);
+            streamer.AttachConsumer(this);
 
             _channelNum = channelNum;
             _windowLength = windowLength;
@@ -148,9 +148,9 @@ namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
             if (e.KeyCode == Keys.Escape) Close();
         }
 
-        Type IConsumer.AcceptType => typeof(Timestamped<ISample>);
+        Type IComponent.AcceptType => typeof(Timestamped<ISample>);
 
-        ConsumerPriority IConsumer.Priority => ConsumerPriority.Highest;
+        Priority IPriority.Priority => Priority.Highest;
 
         void IConsumer.Accept(object value) => Accept((Timestamped<ISample>)value);
 

@@ -524,7 +524,7 @@ namespace SharpBCI.Paradigms.MI
                 _gazeFocusDetector.Focused += (sender, e) => OnFocused();
                 _gazeFocusDetector.Enter += (sender, e) => this.DispatcherInvoke(() => FocusCircle.Fill = Brushes.Pink);
                 _gazeFocusDetector.Leave += (sender, e) => this.DispatcherInvoke(() => FocusCircle.Fill = Brushes.Red);
-                gazePointStreamer.Attach(_gazeFocusDetector);
+                gazePointStreamer.AttachConsumer(_gazeFocusDetector);
                 if (gazePointStreamer.EyeTracker.GetType() != typeof(CursorTracker)) this.HideCursorInside();
             }
             else

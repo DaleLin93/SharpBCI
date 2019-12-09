@@ -492,7 +492,7 @@ namespace SharpBCI.Paradigms.Speller
             GazePointHandler = new GazePointHandler();
             if (session.StreamerCollection.TryFindFirst<GazePointStreamer>(out var gazePointStreamer))
             {
-                gazePointStreamer.Attach(GazePointHandler);
+                gazePointStreamer.AttachConsumer(GazePointHandler);
                 // if (_paradigm.Config.Test.TrialCancellable) TODO: blink to cancel
                 if (gazePointStreamer.EyeTracker.GetType() != typeof(CursorTracker)) this.HideCursorInside();
             }

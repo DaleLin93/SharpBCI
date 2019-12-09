@@ -148,7 +148,7 @@
     </Compile>
     <Compile Include="IO\Devices\VideoSources\VideoFrameStreamer.cs" />
     <Compile Include="IO\Devices\VideoSources\VideoSource.cs" />
-    <Compile Include="IO\StreamConsumerFactory.cs" />
+    <Compile Include="IO\ConsumerFactory.cs" />
     <Compile Include="Paradigms\TextDisplay\TextDisplayParadigm.cs" />
     <Compile Include="Paradigms\TextDisplay\TextDisplayExperimentWindow.xaml.cs">
       <DependentUpon>TextDisplayExperimentWindow.xaml</DependentUpon>

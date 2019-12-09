@@ -182,8 +182,8 @@ namespace SharpBCI.Paradigms.WebBrowser
 
             _ssvepDetector.Active = true;
 
-            _biosignalStreamer.Attach(_ssvepDetector);
-            _gazePointStreamer.Attach(_gazePointProvider);
+            _biosignalStreamer.AttachConsumer(_ssvepDetector);
+            _gazePointStreamer.AttachConsumer(_gazePointProvider);
 
             (_thread = new Thread(RunTrials) {IsBackground = true}).Start();
         }
@@ -192,8 +192,8 @@ namespace SharpBCI.Paradigms.WebBrowser
         {
             _ssvepDetector.Active = false;
 
-            _biosignalStreamer.Detach(_ssvepDetector);
-            _gazePointStreamer.Detach(_gazePointProvider);
+            _biosignalStreamer.DetachConsumer(_ssvepDetector);
+            _gazePointStreamer.DetachConsumer(_gazePointProvider);
 
             _dwellTrialController.Stop();
             _server.Stop();

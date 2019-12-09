@@ -38,7 +38,7 @@ namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
         public BiosignalStreamer(IBiosignalSource biosignalSource, IClock clock, IConsumer<Timestamped<ISample>> consumer, ArrayQuery channelSelector = null) 
-            : this(biosignalSource, clock, channelSelector) => Attach(consumer);
+            : this(biosignalSource, clock, channelSelector) => AttachConsumer(consumer);
 
         public uint[] SelectedChannelIndices => (uint[]) _channelIndices?.Clone();
 

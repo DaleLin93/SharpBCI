@@ -41,7 +41,7 @@ namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
             KeyUp += Window_OnKeyUp;
 
             _streamer = streamer;
-            streamer.Attach(this);
+            streamer.AttachConsumer(this);
 
             _historyCount = historyCount;
         }
@@ -100,9 +100,9 @@ namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
             if (e.KeyCode == Keys.Escape) Close();
         }
 
-        Type IConsumer.AcceptType => typeof(Timestamped<IGazePoint>);
+        Type IComponent.AcceptType => typeof(Timestamped<IGazePoint>);
 
-        ConsumerPriority IConsumer.Priority => ConsumerPriority.Highest;
+        Priority IPriority.Priority => Priority.Highest;
 
         void IConsumer.Accept(object value) => Accept((Timestamped<IGazePoint>)value);
 
