@@ -514,7 +514,7 @@ namespace SharpBCI.Paradigms.MI
                 // ReSharper disable once PossibleNullReferenceException
                 _miStimClient.ProgressChanged += (sender, progress) => this.DispatcherInvoke(() => ProgressBar.Value = progress);
                 _miStimClient.FocusRequested += (sender, e) => EnterRequestForFocusMode();
-                _miStimClient.PlayChanged += (sender, stop) => OnPlayChanged(stop);
+                _miStimClient.PlayChanged += (sender, stop) => OnMediaControlCommandReceived(stop);
             }
 
             /* Initialize GazeFocusDetector to enable 'request for focus' */
@@ -568,11 +568,15 @@ namespace SharpBCI.Paradigms.MI
             });
         }
 
-        internal void OnPlayChanged(bool stop)
+        internal void OnMediaControlCommandReceived(bool pause)
         {
             this.DispatcherInvoke(() =>
             {
+<<<<<<< HEAD
                 if (stop) _activeVisualElement.Pause();
+=======
+                if (pause) _activeVisualElement.Pause();
+>>>>>>> origin/dev
                 else _activeVisualElement.Play();
             });
         }
