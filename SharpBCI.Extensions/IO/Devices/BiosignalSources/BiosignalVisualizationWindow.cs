@@ -15,7 +15,7 @@ using Color = SharpDX.Color;
 namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
 {
 
-    internal class BiosignalVisualizationWindow : SimpleD2DForm, IStreamConsumer<Timestamped<ISample>>
+    internal class BiosignalVisualizationWindow : SimpleD2DForm, IConsumer<Timestamped<ISample>>
     {
 
         private readonly BiosignalStreamer _streamer;
@@ -148,11 +148,11 @@ namespace SharpBCI.Extensions.IO.Devices.BiosignalSources
             if (e.KeyCode == Keys.Escape) Close();
         }
 
-        Type IStreamConsumer.AcceptType => typeof(Timestamped<ISample>);
+        Type IConsumer.AcceptType => typeof(Timestamped<ISample>);
 
-        StreamConsumerPriority IStreamConsumer.Priority => StreamConsumerPriority.Highest;
+        ConsumerPriority IConsumer.Priority => ConsumerPriority.Highest;
 
-        void IStreamConsumer.Accept(object value) => Accept((Timestamped<ISample>)value);
+        void IConsumer.Accept(object value) => Accept((Timestamped<ISample>)value);
 
     }
 }

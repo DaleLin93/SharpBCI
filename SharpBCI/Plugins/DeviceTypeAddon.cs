@@ -5,14 +5,14 @@ using SharpBCI.Extensions.IO.Devices;
 namespace SharpBCI.Plugins
 {
 
-    public class PluginDeviceType : IRegistrable
+    public class DeviceTypeAddOn : IRegistrable
     {
 
         [CanBeNull] public readonly Plugin Plugin;
 
         public readonly DeviceType DeviceType;
 
-        internal PluginDeviceType(Plugin plugin, DeviceType deviceType) 
+        internal DeviceTypeAddOn(Plugin plugin, DeviceType deviceType) 
         {
             Plugin = plugin;
             DeviceType = deviceType;

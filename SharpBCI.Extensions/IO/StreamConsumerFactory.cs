@@ -10,24 +10,24 @@ namespace SharpBCI.Extensions.IO
 {
 
     /// <summary>
-    /// Factory of StreamConsumer.
+    /// Factory of Consumer.
     /// </summary>
-    public interface IStreamConsumerFactory
+    public interface IConsumerFactory
     {
 
         [NotNull] Type GetAcceptType(Type consumerClass);
 
         [NotNull] IReadOnlyCollection<IParameterDescriptor> GetParameters(Type consumerClass);
 
-        [NotNull] IStreamConsumer Create(Type consumerClass, Session session, IReadonlyContext context, byte? num);
+        [NotNull] IConsumer Create(Type consumerClass, Session session, IReadonlyContext context, byte? num);
 
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
-    public sealed class StreamConsumerAttribute : Attribute
+    public sealed class ConsumerAttribute : Attribute
     {
 
-        public StreamConsumerAttribute([NotNull] string name, [NotNull] Type factoryType, [CanBeNull] string version = null, [CanBeNull] string versionName = null)
+        public ConsumerAttribute([NotNull] string name, [NotNull] Type factoryType, [CanBeNull] string version = null, [CanBeNull] string versionName = null)
         {
             Name = name.Trim2Null() ?? throw new ArgumentException(nameof(name));
             FactoryType = factoryType ?? throw new ArgumentException(nameof(factoryType));
@@ -57,13 +57,13 @@ namespace SharpBCI.Extensions.IO
     }
 
     /// <summary>
-    /// An abstract implementation IStreamConsumerFactory.
+    /// An abstract implementation IConsumerFactory.
     /// </summary>
-    /// <typeparam name="T">Accept type of StreamConsumer </typeparam>
-    public abstract class StreamConsumerFactory<T> : IStreamConsumerFactory, IParameterPresentAdapter
+    /// <typeparam name="T">Accept type of Consumer </typeparam>
+    public abstract class ConsumerFactory<T> : IConsumerFactory, IParameterPresentAdapter
     {
 
-        protected StreamConsumerFactory(params IParameterDescriptor[] parameters) => Parameters = parameters;
+        protected ConsumerFactory(params IParameterDescriptor[] parameters) => Parameters = parameters;
 
         public Type AcceptType => typeof(T);
 
@@ -79,13 +79,13 @@ namespace SharpBCI.Extensions.IO
 
         public virtual IReadOnlyCollection<IParameterDescriptor> Parameters { get; }
 
-        public abstract IStreamConsumer<T> Create(Session session, IReadonlyContext context, byte? num);
+        public abstract IConsumer<T> Create(Session session, IReadonlyContext context, byte? num);
 
-        Type IStreamConsumerFactory.GetAcceptType(Type consumerClass) => AcceptType;
+        Type IConsumerFactory.GetAcceptType(Type consumerClass) => AcceptType;
 
-        IReadOnlyCollection<IParameterDescriptor> IStreamConsumerFactory.GetParameters(Type consumerClass) => Parameters;
+        IReadOnlyCollection<IParameterDescriptor> IConsumerFactory.GetParameters(Type consumerClass) => Parameters;
 
-        IStreamConsumer IStreamConsumerFactory.Create(Type consumerClass, Session session, IReadonlyContext context, byte? num) => Create(session, context, num);
+        IConsumer IConsumerFactory.Create(Type consumerClass, Session session, IReadonlyContext context, byte? num) => Create(session, context, num);
 
     }
 

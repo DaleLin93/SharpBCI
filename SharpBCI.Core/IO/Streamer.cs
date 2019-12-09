@@ -30,18 +30,18 @@ namespace SharpBCI.Core.IO
 
         void Stop();
 
-        void Attach(IStreamConsumer consumer);
+        void Attach(IConsumer consumer);
 
-        bool Detach(IStreamConsumer consumer);
+        bool Detach(IConsumer consumer);
 
-        IEnumerable<T> FindConsumers<T>() where T : IStreamConsumer;
+        IEnumerable<T> FindConsumers<T>() where T : IConsumer;
 
     }
 
     public abstract class Streamer : IStreamer
     {
 
-        private readonly LinkedList<IStreamConsumer> _consumers = new LinkedList<IStreamConsumer>();
+        private readonly LinkedList<IConsumer> _consumers = new LinkedList<IConsumer>();
 
         private readonly ReaderWriterLockSlim _consumersLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
@@ -63,7 +63,7 @@ namespace SharpBCI.Core.IO
 
         public abstract void Stop();
 
-        public void Attach(IStreamConsumer consumer)
+        public void Attach(IConsumer consumer)
         {
             if (!consumer.AcceptType.IsAssignableFrom(ValueType)) 
                 throw new ArgumentException($"Type not match, streamer value type: {ValueType}, consumer accept type: {consumer.AcceptType}");
@@ -93,7 +93,7 @@ namespace SharpBCI.Core.IO
             }
         }
 
-        public bool Detach(IStreamConsumer consumer)
+        public bool Detach(IConsumer consumer)
         {
             if (!consumer.AcceptType.IsAssignableFrom(ValueType)) return false;
             try
@@ -107,7 +107,7 @@ namespace SharpBCI.Core.IO
             }
         }
 
-        public IEnumerable<TC> FindConsumers<TC>() where TC : IStreamConsumer
+        public IEnumerable<TC> FindConsumers<TC>() where TC : IConsumer
         {
             var consumers = new LinkedList<TC>();
             var type = typeof(TC);

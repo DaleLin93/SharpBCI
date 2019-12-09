@@ -34,7 +34,7 @@ namespace SharpBCI.Extensions.Windows
     public static class PresentAdapterExt
     {
 
-        public static double GetPreferredMinWidth(this IEnumerable<IPresentAdapter> presentAdapters)
+        public static double GetPreferredMinWidth(this IEnumerable<IPresentAdapter> presentAdapters, double defaultValue = double.NaN)
         {
             double? max = null;
             // ReSharper disable once LoopCanBeConvertedToQuery
@@ -44,7 +44,7 @@ namespace SharpBCI.Extensions.Windows
                 if (!double.IsNaN(w) && (max == null || max.Value < w))
                     max = w;
             }
-            return max ?? double.NaN;
+            return max ?? defaultValue;
         }
 
     }

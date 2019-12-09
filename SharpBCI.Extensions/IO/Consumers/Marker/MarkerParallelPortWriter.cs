@@ -23,13 +23,13 @@ namespace SharpBCI.Extensions.IO.Consumers.Marker
         LPT4 = 4
     }
 
-    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
-    public class MarkerParallelPortWriter : StreamConsumer<Timestamped<IMarker>>, IDisposable
+    [Consumer(ConsumerName, typeof(Factory), "1.0")]
+    public class MarkerParallelPortWriter : Core.IO.Consumer<Timestamped<IMarker>>, IDisposable
     {
 
         public const string ConsumerName = "Marker Parallel Port Writer";
 
-        public class Factory : StreamConsumerFactory<Timestamped<IMarker>>
+        public class Factory : ConsumerFactory<Timestamped<IMarker>>
         {
 
             public static readonly Parameter<LogicalParallelPort> LogicalParallelPortParam = Parameter<LogicalParallelPort>.OfEnum("LPT", LogicalParallelPort.LPT1);
@@ -48,7 +48,7 @@ namespace SharpBCI.Extensions.IO.Consumers.Marker
 
             public Factory() : base(LogicalParallelPortParam, InvertBitsParam, ReverseBitsParam) { }
 
-            public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
+            public override IConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
                 => new MarkerParallelPortWriter(LogicalParallelPortParam.Get(context), InvertBitsParam.Get(context), ReverseBitsParam.Get(context));
 
         }

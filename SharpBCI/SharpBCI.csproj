@@ -111,17 +111,21 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Plugins\PluginAppEntry.cs" />
-    <Compile Include="Plugins\ParameterizedRegistrable.cs" />
-    <Compile Include="Plugins\PluginDeviceType.cs" />
-    <Compile Include="Plugins\PluginStreamConsumer.cs" />
-    <Compile Include="Plugins\PluginParadigm.cs" />
+    <Compile Include="Plugins\TemplateWithArgs.cs" />
+    <Compile Include="Plugins\AppEntryAddOn.cs" />
+    <Compile Include="Plugins\TemplateAddOn.cs" />
+    <Compile Include="Plugins\DeviceTypeAddOn.cs" />
+    <Compile Include="Plugins\ConsumerTemplate.cs" />
+    <Compile Include="Plugins\ParadigmTemplate.cs" />
     <Compile Include="Configs.cs" />
     <Compile Include="Plugins\Plugin.cs" />
-    <Compile Include="Plugins\PluginDevice.cs" />
+    <Compile Include="Plugins\DeviceTemplate.cs" />
     <Compile Include="Bootstrap.cs" />
-    <Compile Include="Windows\MultiSessionConfigWindow.xaml.cs">
-      <DependentUpon>MultiSessionConfigWindow.xaml</DependentUpon>
+    <Compile Include="Windows\DeviceConfigPanel.xaml.cs">
+      <DependentUpon>DeviceConfigPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\MultiSessionLauncherWindow.xaml.cs">
+      <DependentUpon>MultiSessionLauncherWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Windows\AnalysisWindow.xaml.cs">
       <DependentUpon>AnalysisWindow.xaml</DependentUpon>
@@ -133,17 +137,14 @@
     <Compile Include="Windows\VideoFrameAnalysisWindow.xaml.cs">
       <DependentUpon>VideoFrameAnalysisWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Windows\MonitorWindow.xaml.cs">
-      <DependentUpon>MonitorWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Windows\ResultWindow.xaml.cs">
       <DependentUpon>ResultWindow.xaml</DependentUpon>
     </Compile>
-    <Page Include="Windows\MultiSessionConfigWindow.xaml">
+    <Page Include="Windows\DeviceConfigPanel.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Windows\MonitorWindow.xaml">
+    <Page Include="Windows\MultiSessionLauncherWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -11,7 +11,7 @@ using Color = SharpDX.Color;
 namespace SharpBCI.Extensions.IO.Devices.VideoSources
 {
 
-    internal class VideoFramePresentationWindow : SimpleD2DForm, IStreamConsumer<Timestamped<IVideoFrame>>
+    internal class VideoFramePresentationWindow : SimpleD2DForm, IConsumer<Timestamped<IVideoFrame>>
     {
 
         private readonly VideoFrameStreamer _streamer;
@@ -88,11 +88,11 @@ namespace SharpBCI.Extensions.IO.Devices.VideoSources
             if (e.KeyCode == Keys.Escape) Close();
         }
 
-        Type IStreamConsumer.AcceptType => typeof(Timestamped<IVideoFrame>);
+        Type IConsumer.AcceptType => typeof(Timestamped<IVideoFrame>);
 
-        StreamConsumerPriority IStreamConsumer.Priority => StreamConsumerPriority.Highest;
+        ConsumerPriority IConsumer.Priority => ConsumerPriority.Highest;
 
-        void IStreamConsumer.Accept(object value) => Accept((Timestamped<IVideoFrame>)value);
+        void IConsumer.Accept(object value) => Accept((Timestamped<IVideoFrame>)value);
 
     }
 }

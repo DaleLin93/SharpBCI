@@ -13,14 +13,14 @@ namespace SharpBCI.Extensions.IO.Consumers.Marker
     /// Format: 
     ///     Marker; Time (relative to session create time);
     /// </summary>
-    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
+    [Consumer(ConsumerName, typeof(Factory), "1.0")]
     public class MarkerAsciiFileWriter : TimestampedFileWriter<IMarker>
     {
 
-        public sealed class Factory : StreamConsumerFactory<Timestamped<IMarker>>
+        public sealed class Factory : ConsumerFactory<Timestamped<IMarker>>
         {
 
-            public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num) =>
+            public override IConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new MarkerAsciiFileWriter(session.GetDataFileName(FileSuffix, num), session.CreateTimestamp);
 
         }

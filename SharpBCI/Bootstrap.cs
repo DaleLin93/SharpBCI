@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -11,7 +12,6 @@ using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions.IO.Devices;
 using SharpBCI.Plugins;
-using SharpBCI.Windows;
 
 namespace SharpBCI
 {
@@ -22,11 +22,13 @@ namespace SharpBCI
         public interface ISessionListener
         {
 
-            void BeforeStart(int index, Session session);
+            void BeforeAllSessionsStart();
 
-            void AfterCompleted(int index, Session session);
+            void BeforeSessionStart(int index, Session session);
 
-            void AfterAllCompleted(Session[] sessions);
+            void AfterSessionCompleted(int index, Session session);
+
+            void AfterAllSessionsCompleted(Session[] sessions);
 
         }
 
@@ -37,18 +39,28 @@ namespace SharpBCI
 
             private SuicideAfterCompletedListener() { }
 
-            public void BeforeStart(int index, Session session) { }
+            public void BeforeAllSessionsStart() { }
 
-            public void AfterCompleted(int index, Session session) { }
+            public void BeforeSessionStart(int index, Session session) { }
 
-            public void AfterAllCompleted(Session[] sessions) => App.Kill();
+            public void AfterSessionCompleted(int index, Session session) { }
+
+            public void AfterAllSessionsCompleted(Session[] sessions) => App.Kill();
 
         }
 
-        public static void StartSession(SessionConfig config, bool monitor = false, ISessionListener sessionListener = null) =>
-            StartSession(config.Subject, new[] {config.SessionDescriptor}, new[] {config.Paradigm}, config.Devices, monitor, sessionListener);
+        public static void StartSession(SessionConfig config, ISessionListener sessionListener = null) =>
+            StartSessions(config.Subject, new[] {config.SessionDescriptor}, new[] {config.Paradigm}, config.Devices, sessionListener);
 
-        public static void StartSession(string subject, string[] sessionDescriptors, ParameterizedEntity[] paradigms, [NotNull] DeviceParams[] devices, bool monitor = false,
+        /// <summary>
+        /// Start multiple sessions in one run continuously.
+        /// </summary>
+        /// <param name="subject">subject name</param>
+        /// <param name="sessionDescriptors">descriptors of each session</param>
+        /// <param name="paradigms">paradigms of each session</param>
+        /// <param name="devices">devices used across sessions</param>
+        /// <param name="sessionListener"></param>
+        public static void StartSessions(string subject, string[] sessionDescriptors, SerializedObject[] paradigms, [NotNull] DeviceConfig[] devices, 
             ISessionListener sessionListener = null)
         {
             subject = subject?.Trim2Null() ?? throw new UserException("subject name cannot be empty");
@@ -61,35 +73,35 @@ namespace SharpBCI
             for (var i = 0; i < sessionNum; i++)
             {
                 var paradigm = paradigms[i];
-                if (!App.Instance.Registries.Registry<PluginParadigm>().LookUp(paradigm.Id, out var pluginParadigm))
+                if (!App.Instance.Registries.Registry<ParadigmTemplate>().LookUp(paradigm.Id, out var paradigmTemplate))
                     throw new ArgumentException($"Cannot find specific paradigm by id: {paradigm.Id}");
-                var paradigmContext = pluginParadigm.DeserializeParams(paradigm.Params);
-                if (!TryInitiateParadigm(pluginParadigm, paradigmContext, out var paradigmInstance)) return;
+                var paradigmContext = paradigmTemplate.DeserializeArgs(paradigm.Args);
+                if (!TryInitiateParadigm(paradigmTemplate, paradigmContext, out var paradigmInstance)) return;
                 paradigmInstances[i] = paradigmInstance;
                 formattedSessionDescriptors[i] = SessionConfigExt.StringInterpolation(sessionDescriptors[i], paradigmContext);
             }
 
-            var deviceTypes = App.Instance.Registries.Registry<PluginDeviceType>().Registered.Select(pdt => pdt.DeviceType).ToArray();
+            var deviceTypes = App.Instance.Registries.Registry<DeviceTypeAddOn>().Registered.Select(pdt => pdt.DeviceType).ToArray();
 
             /* Constructs device map. */
-            var deviceMap = new Dictionary<string, DeviceParams>();
+            var deviceMap = new Dictionary<string, DeviceConfig>();
             foreach (var device in devices)
                 if (!deviceMap.ContainsKey(device.DeviceType))
                     deviceMap[device.DeviceType] = device;
 
             /* Parse consumer configurations. */
-            var deviceConsumerLists = new Dictionary<DeviceType, IList<Tuple<PluginStreamConsumer, IReadonlyContext>>>();
+            var deviceConsumerLists = new Dictionary<DeviceType, IList<TemplateWithArgs<ConsumerTemplate>>>();
             foreach (var deviceType in deviceTypes)
             {
-                if (!deviceMap.TryGetValue(deviceType.Name, out var deviceParams)) continue;
-                var list = new List<Tuple<PluginStreamConsumer, IReadonlyContext>>();
+                if (!deviceMap.TryGetValue(deviceType.Name, out var deviceArgs)) continue;
+                var list = new List<TemplateWithArgs<ConsumerTemplate>>();
                 deviceConsumerLists[deviceType] = list;
-                foreach (var consumerConf in deviceParams.Consumers)
+                foreach (var consumerConf in deviceArgs.Consumers)
                 {
                     if (consumerConf.Id == null) continue;
-                    if (!App.Instance.Registries.Registry<PluginStreamConsumer>().LookUp(consumerConf.Id, out var pluginStreamConsumer))
+                    if (!App.Instance.Registries.Registry<ConsumerTemplate>().LookUp(consumerConf.Id, out var consumerTemplate))
                         throw new ArgumentException($"Cannot find specific consumer by id: {consumerConf.Id}");
-                    list.Add(new Tuple<PluginStreamConsumer, IReadonlyContext>(pluginStreamConsumer, pluginStreamConsumer.DeserializeParams(consumerConf.Params)));
+                    list.Add(new TemplateWithArgs<ConsumerTemplate>(consumerTemplate, consumerTemplate.DeserializeArgs(consumerConf.Args)));
                 }
             }
 
@@ -97,17 +109,16 @@ namespace SharpBCI
 
             var deviceInstances = InitiateDevices(deviceTypes, deviceMap);
 
-            var monitorWindow = monitor ? MonitorWindow.Show() : null;
-
             var sessions = new Session[sessionNum];
             var baseClock = Clock.SystemMillisClock;
             var streamers = CreateStreamerCollection(deviceTypes, deviceInstances, baseClock, out var deviceStreamers);
+
+            sessionListener?.BeforeAllSessionsStart();
 
             var disposablePool = new DisposablePool();
             try
             {
                 streamers.Start();
-                monitorWindow?.Bind(streamers);
 
                 for (var i = 0; i < sessionNum; i++)
                 {
@@ -126,16 +137,17 @@ namespace SharpBCI
 
                             foreach (var consumerWithParams in consumerListOfDevice)
                             {
-                                var consumer = consumerWithParams.Item1.NewInstance(session, consumerWithParams.Item2, indexed ? num++ : (byte?)null);
+                                Debug.Assert(consumerWithParams.Template != null, "consumerWithParams.Template != null");
+                                var consumer = consumerWithParams.Template.NewInstance(session, consumerWithParams.Args, indexed ? num++ : (byte?)null);
                                 disposablePool.AddIfDisposable(consumer);
                                 deviceStreamer.Attach(consumer);
                                 disposablePool.Add(new DelegatedDisposable(() => deviceStreamer.Detach(consumer)));
                             }
                         }
 
-                    sessionListener?.BeforeStart(i, session);
+                    sessionListener?.BeforeSessionStart(i, session);
                     var result = session.Run();
-                    sessionListener?.AfterCompleted(i, session);
+                    sessionListener?.AfterSessionCompleted(i, session);
 
                     disposablePool.DisposeAll(); // Release resources.
 
@@ -152,15 +164,14 @@ namespace SharpBCI
             {
                 disposablePool.Dispose();
                 streamers.Stop();
-                monitorWindow?.Release(); // Detach session from monitor.
             }
-            sessionListener?.AfterAllCompleted(sessions);
             foreach (var instance in deviceInstances.Values) instance.Dispose();
+            sessionListener?.AfterAllSessionsCompleted(sessions);
         }
 
-        public static IDictionary<DeviceType, IDevice> InitiateDevices(IReadOnlyCollection<DeviceType> deviceTypes, IDictionary<string, DeviceParams> devices)
+        public static IDictionary<DeviceType, IDevice> InitiateDevices(IReadOnlyCollection<DeviceType> deviceTypes, IDictionary<string, DeviceConfig> devices)
         {
-            var deviceLookups = new Dictionary<DeviceType, Tuple<PluginDevice, IReadonlyContext>>();
+            var deviceLookups = new Dictionary<DeviceType, TemplateWithArgs<DeviceTemplate>>();
             foreach (var deviceType in deviceTypes)
             {
                 if (!devices.TryGetValue(deviceType.Name, out var entity) || entity.Device.Id == null)
@@ -168,16 +179,20 @@ namespace SharpBCI
                     if (deviceType.IsRequired) throw new ArgumentException($"Device type '{deviceType.DisplayName}' is required.");
                     continue;
                 }
-                if (!App.Instance.Registries.Registry<PluginDevice>().LookUp(entity.Device.Id, out var device))
+                if (!App.Instance.Registries.Registry<DeviceTemplate>().LookUp(entity.Device.Id, out var deviceTemplate))
                     throw new ArgumentException($"Cannot find device by id: {entity.Device.Id}");
-                deviceLookups[deviceType] = new Tuple<PluginDevice, IReadonlyContext>(device, device.DeserializeParams(entity.Device.Params));
+                deviceLookups[deviceType] = new TemplateWithArgs<DeviceTemplate>(deviceTemplate, deviceTemplate.DeserializeArgs(entity.Device.Args));
             }
             var deviceInstances = new Dictionary<DeviceType, IDevice>();
             var success = false;
             try
             {
                 foreach (var entry in deviceLookups)
-                    deviceInstances[entry.Key] = entry.Value.Item1.NewInstance(entry.Value.Item2);
+                {
+                    Debug.Assert(entry.Value.Template != null, "entry.Value.Template != null");
+                    deviceInstances[entry.Key] = entry.Value.Template.NewInstance(entry.Value.Args);
+                }
+
                 success = true;
             }
             finally
@@ -199,6 +214,7 @@ namespace SharpBCI
             var streamers = new StreamerCollection();
             foreach (var deviceType in deviceTypes)
             {
+                // ReSharper disable once RedundantAssignment
                 if (!devices.TryGetValue(deviceType, out var instance)) instance = null;
                 var streamer = deviceType.StreamerFactory?.Create(instance, clock);
                 if (streamer != null) streamers.Add(deviceStreamers[deviceType] = streamer);
@@ -209,7 +225,7 @@ namespace SharpBCI
         /// <summary>
         /// Try initiate paradigm under specific context.
         /// </summary>
-        public static bool TryInitiateParadigm(PluginParadigm paradigm, IReadonlyContext context, out IParadigm instance, bool msgBox = true)
+        public static bool TryInitiateParadigm(ParadigmTemplate paradigm, IReadonlyContext context, out IParadigm instance, bool msgBox = true)
         {
             instance = null;
             try

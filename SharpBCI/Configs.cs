@@ -16,36 +16,36 @@ namespace SharpBCI
 {
 
 #pragma warning disable 0649
-    public struct ParameterizedEntity
+    public struct SerializedObject
     {
 
         public string Id;
 
         public string Version;
 
-        public IDictionary<string, string> Params;
+        public IDictionary<string, string> Args;
 
-        public ParameterizedEntity(string id, IDictionary<string, string> @params) : this(id, null, @params) { }
+        public SerializedObject(string id, IDictionary<string, string> args) : this(id, null, args) { }
 
-        public ParameterizedEntity(string id, string version, IDictionary<string, string> @params)
+        public SerializedObject(string id, string version, IDictionary<string, string> args)
         {
             Id = id;
             Version = version;
-            Params = @params;
+            Args = args;
         }
 
     }
 
-    public struct DeviceParams
+    public struct DeviceConfig
     {
 
         public string DeviceType;
 
-        public ParameterizedEntity Device;
+        public SerializedObject Device;
 
-        public ParameterizedEntity[] Consumers;
+        public SerializedObject[] Consumers;
 
-        public DeviceParams(string deviceType, ParameterizedEntity device, ParameterizedEntity[] consumers)
+        public DeviceConfig(string deviceType, SerializedObject device, SerializedObject[] consumers)
         {
             DeviceType = deviceType;
             Device = device;
@@ -72,7 +72,7 @@ namespace SharpBCI
 
         public SessionItem[] Sessions;
 
-        public DeviceParams[] Devices;
+        public DeviceConfig[] Devices;
 
     }
 
@@ -85,11 +85,9 @@ namespace SharpBCI
 
         public string SessionDescriptor;
 
-        public ParameterizedEntity Paradigm;
+        public SerializedObject Paradigm;
 
-        public DeviceParams[] Devices;
-
-        public bool Monitor;
+        public DeviceConfig[] Devices;
 
     }
 #pragma warning restore 0649
@@ -164,11 +162,11 @@ namespace SharpBCI
         public static string GetFullSessionName(this SessionConfig sessionConfig, long? time = null) => 
             GetFullSessionName(sessionConfig.Subject, sessionConfig.SessionDescriptor, sessionConfig.Paradigm, time);
 
-        public static string GetFullSessionName(string subject, string sessionDescriptor, ParameterizedEntity paradigmEntity, long? time = null)
+        public static string GetFullSessionName(string subject, string sessionDescriptor, SerializedObject serializedParadigm, long? time = null)
         {
             IReadonlyContext context = null;
-            if (paradigmEntity.Params != null && App.Instance.Registries.Registry<PluginParadigm>().LookUp(paradigmEntity.Id, out var paradigm))
-                context = paradigm.DeserializeParams(paradigmEntity.Params);
+            if (serializedParadigm.Args != null && App.Instance.Registries.Registry<ParadigmTemplate>().LookUp(serializedParadigm.Id, out var paradigmTemplate))
+                context = paradigmTemplate.DeserializeArgs(serializedParadigm.Args);
             return GetFullSessionName(subject, sessionDescriptor, context, time);
         }
 

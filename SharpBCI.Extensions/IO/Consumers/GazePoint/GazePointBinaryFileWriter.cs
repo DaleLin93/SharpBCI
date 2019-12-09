@@ -15,14 +15,14 @@ namespace SharpBCI.Extensions.IO.Consumers.GazePoint
     /// Format:  (X (double) + Y (double) + time (long))
     /// Time is relative to session create time.
     /// </summary>
-    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
+    [Consumer(ConsumerName, typeof(Factory), "1.0")]
     public class GazePointBinaryFileWriter : TimestampedFileWriter<IGazePoint>
     {
 
-        public sealed class Factory : StreamConsumerFactory<Timestamped<IGazePoint>>
+        public sealed class Factory : ConsumerFactory<Timestamped<IGazePoint>>
         {
 
-            public override IStreamConsumer<Timestamped<IGazePoint>> Create(Session session, IReadonlyContext context, byte? num) =>
+            public override IConsumer<Timestamped<IGazePoint>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new GazePointBinaryFileWriter(session.GetDataFileName(FileSuffix, num), session.CreateTimestamp);
 
         }

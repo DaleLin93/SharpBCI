@@ -126,7 +126,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         }
 
-        internal interface IInitializer : IStreamConsumer<Timestamped<ISample>>
+        internal interface IInitializer : IConsumer<Timestamped<ISample>>
         {
 
             void Accept(ISample sample);
@@ -137,7 +137,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         }
 
-        internal sealed class NoOpInitializer : StreamConsumer<Timestamped<ISample>>, IInitializer
+        internal sealed class NoOpInitializer : Core.IO.Consumer<Timestamped<ISample>>, IInitializer
         {
 
             public override void Accept(Timestamped<ISample> value) { }
@@ -150,7 +150,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         }
 
-        internal sealed class DistributionInitializer : StreamConsumer<Timestamped<ISample>>, IInitializer
+        internal sealed class DistributionInitializer : Core.IO.Consumer<Timestamped<ISample>>, IInitializer
         {
 
             private class StatisticsPredictor : IPredictor
@@ -420,7 +420,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
             return index < half ? half + index + reminder : index - half;
         }
 
-        public override StreamConsumerPriority Priority => StreamConsumerPriority.Lowest;
+        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
 
         public IInitializer CreateInitializer() => new NoOpInitializer();//new DistributionInitializer(this);
 
@@ -468,13 +468,13 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         public double[] ComputeFeatures(double[] array)
         {
-            var ccas = ComputeCanonicalCorrelations(array).Select(ArrayUtils.NaN2Zero).ToArray();
+            var ccas = ComputeCanonicalCorrelations(array).Select(NumberUtils.NaN2Zero).ToArray();
             Logger.Debug("ComputeFeatures - CCA", "values", $"[{ccas.Select(cca => $"{cca:F2}").Join(", ")}]");
             ZScoreInPlace(ccas);
-            var mecs = ComputeMinimumEnergyCombinations(array).Select(ArrayUtils.NaN2Zero).ToArray();
+            var mecs = ComputeMinimumEnergyCombinations(array).Select(NumberUtils.NaN2Zero).ToArray();
             Logger.Debug("ComputeFeatures - MEC", "values", $"[{mecs.Select(mec => $"{mec:F2}").Join(", ")}]");
             ZScoreInPlace(mecs);
-            var features = ccas.Select(ArrayUtils.NaN2Zero).ToArray().Add(mecs.Select(ArrayUtils.NaN2Zero).ToArray());
+            var features = ccas.Select(NumberUtils.NaN2Zero).ToArray().Add(mecs.Select(NumberUtils.NaN2Zero).ToArray());
             //            SoftmaxPlace(features);
             return features;
         }

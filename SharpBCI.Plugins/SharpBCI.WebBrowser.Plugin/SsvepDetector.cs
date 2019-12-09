@@ -24,7 +24,7 @@ namespace SharpBCI.Paradigms.WebBrowser
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
-    internal sealed class SsvepDetector : StreamConsumer<Timestamped<ISample>>
+    internal sealed class SsvepDetector : Core.IO.Consumer<Timestamped<ISample>>
     {
 
         public struct FbccaSubBandMixingParams 
@@ -167,7 +167,7 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         }
 
-        internal interface IInitializer : IStreamConsumer<Timestamped<ISample>>
+        internal interface IInitializer : IConsumer<Timestamped<ISample>>
         {
 
             void Accept(ISample sample);
@@ -178,7 +178,7 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         }
 
-        internal sealed class NoOpInitializer : StreamConsumer<Timestamped<ISample>>, IInitializer
+        internal sealed class NoOpInitializer : Core.IO.Consumer<Timestamped<ISample>>, IInitializer
         {
 
             public override void Accept(Timestamped<ISample> value) { }
@@ -191,7 +191,7 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         }
 
-        internal sealed class DistributionInitializer : StreamConsumer<Timestamped<ISample>>, IInitializer
+        internal sealed class DistributionInitializer : Core.IO.Consumer<Timestamped<ISample>>, IInitializer
         {
 
             private class StatisticsPredictor : IPredictor
@@ -511,11 +511,11 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         public double[] ComputeFeatures(double[] array)
         {
-            var ccas = ComputeCanonicalCorrelations(array).Select(ArrayUtils.NaN2Zero).ToArray();
+            var ccas = ComputeCanonicalCorrelations(array).Select(NumberUtils.NaN2Zero).ToArray();
             ZScoreInPlace(ccas);
-            var mecs = ComputeMinimumEnergyCombinations(array).Select(ArrayUtils.NaN2Zero).ToArray();
+            var mecs = ComputeMinimumEnergyCombinations(array).Select(NumberUtils.NaN2Zero).ToArray();
             ZScoreInPlace(mecs);
-            var features = ccas.Select(ArrayUtils.NaN2Zero).ToArray().Add(mecs.Select(ArrayUtils.NaN2Zero).ToArray());
+            var features = ccas.Select(NumberUtils.NaN2Zero).ToArray().Add(mecs.Select(NumberUtils.NaN2Zero).ToArray());
             //            SoftmaxPlace(features);
             return features;
         }

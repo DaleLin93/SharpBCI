@@ -6,7 +6,7 @@ using SharpBCI.Extensions;
 namespace SharpBCI.Plugins
 {
 
-    public class PluginParadigm : ParameterizedRegistrable
+    public class ParadigmTemplate : TemplateAddOn
     {
 
         [NotNull] public readonly Type Clz;
@@ -15,7 +15,7 @@ namespace SharpBCI.Plugins
 
         [NotNull] public readonly IParadigmFactory Factory;
 
-        internal PluginParadigm(Plugin plugin, Type clz, ParadigmAttribute attr, IParadigmFactory factory) : base(plugin)
+        internal ParadigmTemplate(Plugin plugin, Type clz, ParadigmAttribute attr, IParadigmFactory factory) : base(plugin)
         {
             Clz = clz ?? throw new ArgumentNullException(nameof(clz));
             Attribute = attr ?? throw new ArgumentNullException(nameof(attr));

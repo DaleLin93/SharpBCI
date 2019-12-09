@@ -18,11 +18,11 @@ namespace SharpBCI.Windows
 
     /// <inheritdoc cref="Window" />
     /// <summary>
-    /// Interaction logic for MultiSessionConfigWindow.xaml
+    /// Interaction logic for MultiSessionLauncherWindow.xaml
     /// </summary>
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    partial class MultiSessionConfigWindow : Bootstrap.ISessionListener
+    partial class MultiSessionLauncherWindow : Bootstrap.ISessionListener
     {
 
         public const string DeviceFileSuffix = ".dcfg";
@@ -42,19 +42,19 @@ namespace SharpBCI.Windows
 
         }
 
-        public class ParadigmItem : FileItem<ParameterizedEntity>
+        public class ParadigmItem : FileItem<SerializedObject>
         {
 
-            public ParadigmItem(string filePath, ParameterizedEntity value) : base(filePath, value) { }
+            public ParadigmItem(string filePath, SerializedObject value) : base(filePath, value) { }
 
             public string ParadigmId => Value.Id;
 
         }
 
-        public class DeviceItem : FileItem<DeviceParams[]>
+        public class DeviceItem : FileItem<DeviceConfig[]>
         {
 
-            public DeviceItem(string filePath, DeviceParams[] value) : base(filePath, value) { }
+            public DeviceItem(string filePath, DeviceConfig[] value) : base(filePath, value) { }
 
         }
 
@@ -77,7 +77,7 @@ namespace SharpBCI.Windows
         
         private string _msCfgFile;
 
-        public MultiSessionConfigWindow([CanBeNull] string msCfgFile = null)
+        public MultiSessionLauncherWindow([CanBeNull] string msCfgFile = null)
         {
             InitializeComponent();
 
@@ -119,7 +119,7 @@ namespace SharpBCI.Windows
             }
             if (path.EndsWith(DeviceFileSuffix, StringComparison.OrdinalIgnoreCase))
             {
-                if (!JsonUtils.TryDeserializeFromFile<DeviceParams[]>(deviceFilePath, out var config))
+                if (!JsonUtils.TryDeserializeFromFile<DeviceConfig[]>(deviceFilePath, out var config))
                     throw new UserException($"Malformed device config file: {path}");
                 return new DeviceItem(alternativeDirectory, config);
             }
@@ -134,10 +134,10 @@ namespace SharpBCI.Windows
                 return;
             }
             Close();
-            Bootstrap.StartSession(SubjectTextBox.Text,
+            Bootstrap.StartSessions(SubjectTextBox.Text,
                 _sessionListViewItems.Select(session => session.SessionDescriptor).ToArray(),
                 _sessionListViewItems.Select(session => session.Paradigm.Value).ToArray(), 
-                DeviceConfigPanel.DeviceConfig, false, this);
+                DeviceConfigPanel.DeviceConfigs, this);
         }
 
         private void UpdateTitle() => Title = string.IsNullOrWhiteSpace(_msCfgFile) 
@@ -163,7 +163,7 @@ namespace SharpBCI.Windows
             foreach (var session in msCfg.Sessions ?? EmptyArray<MultiSessionConfig.SessionItem>.Instance) 
                 _sessionListViewItems.Add(ReadSessionConfig(session, dir));
 
-            DeviceConfigPanel.DeviceConfig = msCfg.Devices;
+            DeviceConfigPanel.DeviceConfigs = msCfg.Devices;
 
             _msCfgFile = path;
             UpdateTitle();
@@ -179,19 +179,19 @@ namespace SharpBCI.Windows
                     SessionDescriptor =  item.SessionDescriptor,
                     ParadigmConfigPath = item.Paradigm.FilePath
                 }).ToArray(),
-                Devices = DeviceConfigPanel.DeviceConfig
+                Devices = DeviceConfigPanel.DeviceConfigs
             }.JsonSerializeToFile(path, JsonUtils.PrettyFormat, JsonUtils.DefaultEncoding);
             _msCfgFile = path;
             UpdateTitle();
         }
 
-        private void SaveDeviceConfig(string path) => DeviceConfigPanel.DeviceConfig.JsonSerializeToFile(path, JsonUtils.PrettyFormat, JsonUtils.DefaultEncoding); 
+        private void SaveDeviceConfig(string path) => DeviceConfigPanel.DeviceConfigs.JsonSerializeToFile(path, JsonUtils.PrettyFormat, JsonUtils.DefaultEncoding); 
 
         private void Clear()
         {
             SubjectTextBox.Text = "";
             _sessionListViewItems.Clear();
-            DeviceConfigPanel.DeviceConfig = EmptyArray<DeviceParams>.Instance;
+            DeviceConfigPanel.DeviceConfigs = EmptyArray<DeviceConfig>.Instance;
         }
 
         private void RunSessions_OnClick(object sender, RoutedEventArgs e) => Start();
@@ -293,7 +293,7 @@ namespace SharpBCI.Windows
             if (!string.IsNullOrWhiteSpace(_msCfgFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_msCfgFile)) ?? "";
             else if (!string.IsNullOrWhiteSpace(_msCfgFile)) dialog.InitialDirectory = Path.GetDirectoryName(Path.GetFullPath(_msCfgFile)) ?? "";
             if (!dialog.ShowDialog(this).Value) return;
-            DeviceConfigPanel.DeviceConfig = ReadDeviceConfig(dialog.FileName, null).Value;
+            DeviceConfigPanel.DeviceConfigs = ReadDeviceConfig(dialog.FileName, null).Value;
         }
 
         private void SaveDeviceConfigAsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -336,11 +336,13 @@ namespace SharpBCI.Windows
                 _sessionListViewItems.Move(SessionListView.SelectedIndex, SessionListView.SelectedIndex + 1);
         }
 
-        void Bootstrap.ISessionListener.BeforeStart(int index, Session session) { }
+        void Bootstrap.ISessionListener.BeforeAllSessionsStart() { }
 
-        void Bootstrap.ISessionListener.AfterCompleted(int index, Session session) { }
+        void Bootstrap.ISessionListener.BeforeSessionStart(int index, Session session) { }
 
-        void Bootstrap.ISessionListener.AfterAllCompleted(Session[] sessions)
+        void Bootstrap.ISessionListener.AfterSessionCompleted(int index, Session session) { }
+
+        void Bootstrap.ISessionListener.AfterAllSessionsCompleted(Session[] sessions)
         {
             if (IsKillOnFinish) App.Kill();
         }

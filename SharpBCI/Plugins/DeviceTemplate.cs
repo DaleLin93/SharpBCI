@@ -8,7 +8,7 @@ using SharpBCI.Extensions.IO.Devices;
 namespace SharpBCI.Plugins
 {
 
-    public class PluginDevice : ParameterizedRegistrable
+    public class DeviceTemplate : TemplateAddOn
     {
 
         [NotNull] public readonly Type Clz;
@@ -17,15 +17,12 @@ namespace SharpBCI.Plugins
 
         [NotNull] public readonly IDeviceFactory Factory;
 
-        internal PluginDevice(Plugin plugin, [NotNull] Type clz, [NotNull] DeviceAttribute attr, [NotNull] IDeviceFactory factory) : base(plugin)
+        internal DeviceTemplate(Plugin plugin, [NotNull] Type clz, [NotNull] DeviceAttribute attr, [NotNull] IDeviceFactory factory) : base(plugin)
         {
             Clz = clz ?? throw new ArgumentNullException(nameof(clz));
             Attribute = attr ?? throw new ArgumentNullException(nameof(attr));
             Factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
-
-        public static ParameterizedEntity CreateParameterizedEntity(PluginDevice device, IReadonlyContext context) =>
-            new ParameterizedEntity(device?.Identifier, device?.SerializeParams(context));
 
         public override string Identifier => DeviceName;
 

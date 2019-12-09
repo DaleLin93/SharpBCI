@@ -33,7 +33,7 @@ namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
         }
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        public GazePointStreamer(IEyeTracker eyeTracker, IClock clock, IStreamConsumer<Timestamped<IGazePoint>> consumer) : this(eyeTracker, clock) => Attach(consumer);
+        public GazePointStreamer(IEyeTracker eyeTracker, IClock clock, IConsumer<Timestamped<IGazePoint>> consumer) : this(eyeTracker, clock) => Attach(consumer);
 
         protected override Timestamped<IGazePoint> Acquire() => WithTimestamp(EyeTracker.Read() ?? throw new EndOfStreamException());
 

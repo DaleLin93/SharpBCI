@@ -41,7 +41,7 @@ namespace SharpBCI.Paradigms.MI
 
         private static readonly Logger Log = Logger.GetLogger(typeof(MiExperimentWindow));
 
-        private class GazeFocusDetector : StreamConsumer<Timestamped<IGazePoint>>
+        private class GazeFocusDetector : Core.IO.Consumer<Timestamped<IGazePoint>>
         {
 
             public struct GazeHitTest

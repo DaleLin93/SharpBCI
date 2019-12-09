@@ -20,25 +20,25 @@ namespace SharpBCI.Extensions
         public static bool TryGetPersistentTypeConverter(this IParameterDescriptor parameter, out ITypeConverter converter) => 
             PersistentTypeConverterProperty.TryGet(parameter.Metadata, out converter) && converter != null;
 
-        public static IDictionary<string, string> SerializeParams(this IEnumerable<IParameterDescriptor> parameters, IReadonlyContext context)
+        public static IDictionary<string, string> SerializeArgs(this IEnumerable<IParameterDescriptor> parameters, IReadonlyContext context)
         {
             if (context == null) return null;
             var @params = new Dictionary<string, string>();
             foreach (var p in parameters)
                 if (context.TryGet(p, out var val))
                     try { @params[p.Key] = p.SerializeParam(val); }
-                    catch (Exception e) { Logger.Warn("SerializeParams", e, "param", p.Key, "value", val); }
+                    catch (Exception e) { Logger.Warn("SerializeArgs", e, "param", p.Key, "value", val); }
             return @params;
         }
 
-        public static IContext DeserializeParams(this IEnumerable<IParameterDescriptor> parameters, IDictionary<string, string> input)
+        public static IContext DeserializeArgs(this IEnumerable<IParameterDescriptor> parameters, IDictionary<string, string> input)
         {
             if (input == null) return null;
             var context = new Context();
             foreach (var p in parameters)
                 if (input.ContainsKey(p.Key))
                     try { context.Set(p, p.DeserializeParam(input[p.Key])); }
-                    catch (Exception e) { Logger.Warn("DeserializeParams", e, "param", p.Key, "value", input[p.Key]); }
+                    catch (Exception e) { Logger.Warn("DeserializeArgs", e, "param", p.Key, "value", input[p.Key]); }
             return context;
         }
 

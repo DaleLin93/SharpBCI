@@ -10,13 +10,13 @@ using SharpBCI.Extensions.Presenters;
 namespace SharpBCI.Extensions.IO.Consumers.Marker
 {
 
-    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
-    public class MarkerParallelPortSetter : StreamConsumer<Timestamped<IMarker>>
+    [Consumer(ConsumerName, typeof(Factory), "1.0")]
+    public class MarkerParallelPortSetter : Core.IO.Consumer<Timestamped<IMarker>>
     {
 
         public const string ConsumerName = "Marker Parallel Port Setter";
 
-        public class Factory : StreamConsumerFactory<Timestamped<IMarker>>
+        public class Factory : ConsumerFactory<Timestamped<IMarker>>
         {
 
             private static readonly ITypeConverter Short2HexConverter = TypeConverter<short, string>.Of(
@@ -37,7 +37,7 @@ namespace SharpBCI.Extensions.IO.Consumers.Marker
 
             public Factory() : base(ParallelPortAddressParam, InvertBitsParam, ReverseBitsParam) { }
 
-            public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
+            public override IConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
                 => new MarkerParallelPortSetter(ParallelPortAddressParam.Get(context), InvertBitsParam.Get(context), ReverseBitsParam.Get(context));
 
         }

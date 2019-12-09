@@ -5,7 +5,7 @@ using SharpBCI.Extensions;
 namespace SharpBCI.Plugins
 {
 
-    public class PluginAppEntry : IRegistrable
+    public class AppEntryAddOn : IRegistrable
     {
 
         [CanBeNull] public readonly Plugin Plugin;
@@ -14,7 +14,7 @@ namespace SharpBCI.Plugins
 
         [NotNull] public readonly AppEntryAttribute Attribute;
 
-        internal PluginAppEntry(Plugin plugin, IAppEntry entry)
+        internal AppEntryAddOn(Plugin plugin, IAppEntry entry)
         {
             Plugin = plugin;
             Entry = entry;

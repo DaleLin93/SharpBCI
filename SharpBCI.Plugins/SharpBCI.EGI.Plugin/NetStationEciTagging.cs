@@ -24,8 +24,8 @@ namespace SharpBCI.EGI
     /// <summary>
     /// See: https://github.com/Psychtoolbox-3/Psychtoolbox-3/blob/fab0b49fd38ec477e3b4573f23dbd7766b0a89aa/Psychtoolbox/PsychHardware/NetStation.m
     /// </summary>
-    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
-    public class NetStationEciTagging : StreamConsumer<Timestamped<IMarker>>, IDisposable
+    [Consumer(ConsumerName, typeof(Factory), "1.0")]
+    public class NetStationEciTagging : Core.IO.Consumer<Timestamped<IMarker>>, IDisposable
     {
 
         public const string ConsumerName = "Net Station ECI Tagging";
@@ -81,7 +81,7 @@ namespace SharpBCI.EGI
 
         }
 
-        public class Factory : StreamConsumerFactory<Timestamped<IMarker>>
+        public class Factory : ConsumerFactory<Timestamped<IMarker>>
         {
 
             public static readonly Parameter<string> IpAddressParam = new Parameter<string>("IP Address", defaultValue: "127.0.0.1");
@@ -110,7 +110,7 @@ namespace SharpBCI.EGI
                 return base.IsVisible(context, descriptor);
             }
 
-            public override IStreamConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
+            public override IConsumer<Timestamped<IMarker>> Create(Session session, IReadonlyContext context, byte? num)
             {
                 TrPulseGenParams? trParams = null;
                 if (GenerateTrPulseParam.Get(context)) trParams = new TrPulseGenParams(TrPulseControlSignalsParam.Get(context), TrPulseIntervalParam.Get(context).TimeSpan);

@@ -8,24 +8,24 @@
         mc:Ignorable="d"
         Title="SharpBCI Session Launcher" Background="{StaticResource BackgroundBrush}"
         Height="350" Width="600" MinHeight="350" MinWidth="550" ResizeMode="CanResize"
-        Loaded="Window_OnLoaded" KeyDown="Window_OnKeyDown" Closed="Window_OnClosed" LayoutUpdated="Window_OnLayoutUpdated">
+        Loaded="Window_OnLoaded" LayoutUpdated="Window_OnLayoutUpdated" KeyDown="Window_OnKeyDown" Closing="Window_OnClosing" Closed="Window_OnClosed">
     <DockPanel>
 
         <!-- Menu -->
         <StackPanel DockPanel.Dock="Top">
             <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
             <Menu Background="#88FAFAFA">
-                <MenuItem Header="File" >
-                    <MenuItem Header="Save Config" Click="SaveMenuItem_OnClick" />
-                    <MenuItem Header="Reload Config" Click="ReloadMenuItem_OnClick" />
-                    <Separator/>
+                <MenuItem Header="File" SubmenuOpened="MenuItem_OnSubmenuOpened">
+                    <MenuItem Header="Open Session Config from..." Click="OpenFromMenuItem_OnClick" />
                     <MenuItem Header="Save Session Config as..." Click="SaveAsMenuItem_OnClick" />
-                    <MenuItem Header="Load Session Config from..." Click="LoadFromMenuItem_OnClick" />
                     <Separator/>
                     <MenuItem Header="New Multi-Session Config" Click="NewMultiSessionConfigMenuItem_OnClick" />
                     <MenuItem Header="Open Multi-Session Config" Click="OpenMultiSessionConfigMenuItem_OnClick" />
                     <Separator/>
-                    <MenuItem x:Name="LoadFromRecentSessionMenuItem" Header="Load From Recent Session" />
+                    <MenuItem x:Name="SaveSnapshotMenuItem" Header="Save Snapshot"/>
+                    <MenuItem x:Name="LoadSnapshotMenuItem" Header="Load Snapshot"/>
+                    <Separator/>
+                    <MenuItem x:Name="RecentSessionsMenuItem" Header="Recent Sessions" />
                     <Separator/>
                     <MenuItem Header="Exit" Click="ExitMenuItem_OnClick" />
                 </MenuItem>
@@ -40,7 +40,6 @@
                 </MenuItem>
                 <MenuItem x:Name="AppsMenuItem" Header="Apps" />
                 <MenuItem x:Name="PluginsMenuItem" Header="Plugins" />
-                <MenuItem Header="Monitor" Click="MonitorMenuItem_OnClick" Visibility="Collapsed" />
             </Menu>
             <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
         </StackPanel>
@@ -101,27 +100,57 @@
                         <VisualBrush Visual="{Binding ElementName=ScrollView}" Stretch="None" AlignmentY="Top" AlignmentX="Left"/>
                     </Rectangle.Fill>
                     <Rectangle.Effect>
-                        <BlurEffect/>
+                        <BlurEffect RenderingBias="Performance" />
                     </Rectangle.Effect>
                 </Rectangle>
                 <Rectangle Fill="#66888888"/>
                 <!-- Popup content panel -->
-                <StackPanel VerticalAlignment="Center" Background="{StaticResource BackgroundBrush}" Margin="10 0">
-                    <StackPanel.Effect>
+                <ContentControl x:Name="PopupContentControl">
+                    <ContentControl.Effect>
                         <DropShadowEffect Direction="250" BlurRadius="20" ShadowDepth="2" RenderingBias="Performance" />
-                    </StackPanel.Effect>
-                    <TextBlock x:Name="PopupTitleTextBlock" FontSize="17" Margin="0 6" FontWeight="Bold" HorizontalAlignment="Stretch" TextAlignment="Center" />
-                    <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFAEAEAE" Margin="0 2 0 12"/>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalAlignment="Center">
-                        <StackPanel>
-                            <windows:ParameterPanel x:Name="PopupParameterPanel"/>
-                            <Grid Margin="5 15" Height="35">
-                                <Button Content="OK" Width="90" Margin="0 0 10 0" HorizontalAlignment="Right" />
-                                <Button Content="Cancel" Width="90" Margin="0 0 120 0" HorizontalAlignment="Right"/>
-                            </Grid>
-                        </StackPanel>
-                    </ScrollViewer>
-                </StackPanel>
+                    </ContentControl.Effect>
+                    <Border BorderThickness="1" BorderBrush="{StaticResource DarkSeparatorColorBrush}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0 0" HorizontalAlignment="Center" VerticalAlignment="Center" Background="White">
+                            <StackPanel>
+                                <Grid x:Name="PopupHeaderGrid" Visibility="Collapsed" Margin="0 0 0 12">
+                                    <TextBlock x:Name="PopupTitleTextBlock" FontSize="17" Margin="0 6" FontWeight="Bold" HorizontalAlignment="Stretch" TextAlignment="Center" />
+                                    <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFAEAEAE" VerticalAlignment="Bottom"/>
+                                </Grid>
+                                <Grid x:Name="PopupCustomGrid"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Height="35">
+                                    <StackPanel.Triggers>
+                                        <EventTrigger RoutedEvent="Grid.Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="Rectangle1"
+                                                             Storyboard.TargetProperty="Height"
+                                                             From="10" To="30" Duration="0:0:0.4"
+                                                             RepeatBehavior="Forever" AutoReverse="True" />
+                                                    <DoubleAnimation Storyboard.TargetName="Rectangle2"
+                                                             Storyboard.TargetProperty="Height"
+                                                             From="10" To="30" Duration="0:0:0.4" BeginTime="0:0:0.1"
+                                                             RepeatBehavior="Forever" AutoReverse="True" />
+                                                    <DoubleAnimation Storyboard.TargetName="Rectangle3"
+                                                             Storyboard.TargetProperty="Height"
+                                                             From="10" To="30" Duration="0:0:0.4" BeginTime="0:0:0.2"
+                                                             RepeatBehavior="Forever" AutoReverse="True" />
+                                                    <DoubleAnimation Storyboard.TargetName="Rectangle4"
+                                                             Storyboard.TargetProperty="Height"
+                                                             From="10" To="30" Duration="0:0:0.4" BeginTime="0:0:0.3"
+                                                             RepeatBehavior="Forever" AutoReverse="True" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </StackPanel.Triggers>
+                                    <Rectangle x:Name="Rectangle1" Width="10" Height="10" Fill="LightGray" Margin="2" RadiusX="2" RadiusY="2" VerticalAlignment="Bottom"/>
+                                    <Rectangle x:Name="Rectangle2" Width="10" Height="10" Fill="LightGray" Margin="2" RadiusX="2" RadiusY="2" VerticalAlignment="Bottom"/>
+                                    <Rectangle x:Name="Rectangle3" Width="10" Height="10" Fill="LightGray" Margin="2" RadiusX="2" RadiusY="2" VerticalAlignment="Bottom"/>
+                                    <Rectangle x:Name="Rectangle4" Width="10" Height="10" Fill="LightGray" Margin="2" RadiusX="2" RadiusY="2" VerticalAlignment="Bottom"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                </ContentControl>
             </Grid>
 
             <!-- Menu drop shadow -->

@@ -9,7 +9,7 @@ using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 namespace SharpBCI.Paradigms.Speller.SSVEP
 {
 
-    public interface ISsvepClassifier : IStreamConsumer<Timestamped<ISample>>
+    public interface ISsvepClassifier : IConsumer<Timestamped<ISample>>
     {
 
         bool Actived { get; set; }
@@ -18,7 +18,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
     }
 
-    internal abstract class AbstractSsvepClassifier : StreamConsumer<Timestamped<ISample>>, ISsvepClassifier
+    internal abstract class AbstractSsvepClassifier : Core.IO.Consumer<Timestamped<ISample>>, ISsvepClassifier
     {
 
         protected readonly IClock Clock;

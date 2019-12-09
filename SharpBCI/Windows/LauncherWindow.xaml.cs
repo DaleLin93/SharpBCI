@@ -2,11 +2,13 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -21,6 +23,7 @@ using SharpBCI.Plugins;
 using SharpBCI.Extensions.Windows;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
+using MarukoLib.Threading;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using ValidationResult = SharpBCI.Extensions.ValidationResult;
@@ -45,7 +48,7 @@ namespace SharpBCI.Windows
 
             public string Subject;
 
-            public string SessionName;
+            public string SessionDescriptor;
 
             public string SelectedParadigm;
 
@@ -53,15 +56,15 @@ namespace SharpBCI.Windows
 
             public IDictionary<string, string[]> SelectedConsumers = new Dictionary<string, string[]>();
 
-            public IList<ParameterizedEntity> Paradigms = new List<ParameterizedEntity>();
+            public IList<SerializedObject> Paradigms = new List<SerializedObject>();
 
-            public IList<ParameterizedEntity> Devices = new List<ParameterizedEntity>();
+            public IList<SerializedObject> Devices = new List<SerializedObject>();
 
-            public IList<ParameterizedEntity> Consumers = new List<ParameterizedEntity>();
+            public IList<SerializedObject> Consumers = new List<SerializedObject>();
 
             public LinkedList<string> RecentSessions = new LinkedList<string>();
 
-            private static void Set(IList<ParameterizedEntity> list, ParameterizedEntity value)
+            private static void Set(IList<SerializedObject> list, SerializedObject value)
             {
                 for (var i = 0; i < list.Count; i++)
                     if (Equals(list[i].Id, value.Id))
@@ -72,17 +75,17 @@ namespace SharpBCI.Windows
                 list.Add(value);
             }
 
-            public ParameterizedEntity GetParadigm(string name) => Paradigms.FirstOrDefault(entity => Equals(entity.Id, name));
+            public SerializedObject GetParadigm(string name) => Paradigms.FirstOrDefault(entity => Equals(entity.Id, name));
 
-            public ParameterizedEntity GetDevice( string name) => Devices.FirstOrDefault(entity => Equals(entity.Id, name));
+            public SerializedObject GetDevice( string name) => Devices.FirstOrDefault(entity => Equals(entity.Id, name));
 
-            public ParameterizedEntity GetConsumer(string name) => Consumers.FirstOrDefault(entity => Equals(entity.Id, name));
+            public SerializedObject GetConsumer(string name) => Consumers.FirstOrDefault(entity => Equals(entity.Id, name));
 
-            public void SetParadigm(ParameterizedEntity entity) => Set(Paradigms, entity);
+            public void SetParadigm(SerializedObject serializedParadigm) => Set(Paradigms, serializedParadigm);
 
-            public void SetDevice(ParameterizedEntity entity) => Set(Devices, entity);
+            public void SetDevice(SerializedObject serializedDevice) => Set(Devices, serializedDevice);
 
-            public void SetConsumer(ParameterizedEntity entity) => Set(Consumers, entity);
+            public void SetConsumer(SerializedObject serializedConsumer) => Set(Consumers, serializedConsumer);
 
             public void AddRecentSession(string prefix)
             {
@@ -112,7 +115,7 @@ namespace SharpBCI.Windows
 
         private const string DataDir = App.DataDir + "\\";
 
-        private const string ConfigFile = "config.json";
+        private const int MaxSnapshotCount = 10;
 
         private static readonly Logger Logger = Logger.GetLogger(typeof(LauncherWindow));
 
@@ -132,21 +135,32 @@ namespace SharpBCI.Windows
 
         /* Config */
 
+        private readonly ReaderWriterLockSlim _configReadWriteLock;
+
+        private readonly Timer _configAutoSaveTimer;
+
+        private bool _configDirty;
+
         private WindowConfig _config = new WindowConfig();
 
         /* Temporary variables */
 
-        private PluginParadigm _currentParadigm;
+        private ParadigmTemplate _currentParadigm;
 
         static LauncherWindow() => Directory.CreateDirectory(ConfigDir);
 
         public LauncherWindow()
         {
+            _configReadWriteLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+            _configAutoSaveTimer = new Timer(AutoSaveTimer_OnTick, null, 5000, 5000);
             if (App.IsRealtimePriority) Title += " (Realtime)"; 
             InitializeComponent();
             InitializeHeaderPanel();
             InitializeFooterPanel();
         }
+
+        private static string GetConfigFilePath(uint snapshotIndex) => 
+            Path.Combine(FileUtils.ExecutableDirectory, snapshotIndex == 0 ? "default.conf" : $"snapshot-{snapshotIndex + 1}.conf");
 
         public void SetErrorMessage([CanBeNull] string errorMessage)
         {
@@ -175,16 +189,16 @@ namespace SharpBCI.Windows
             {
                 lock (StartBtn)
                 {
-                    if (!ValidateParadigmParams()) return;
+                    if (!CheckParadigmArgs()) return;
                     if (!StartBtn.IsEnabled) return;
                     StartBtn.IsEnabled = false;
                     Visibility = Visibility.Hidden;
                 }
-                Bootstrap.StartSession(GetSessionConfig(), MonitorWindow.IsShown, this);
+                Bootstrap.StartSession(GetSessionConfig(), this);
             }
             catch (Exception ex)
             {
-                Logger.Error("StartSession", ex);
+                Logger.Error("StartSessions", ex);
                 App.ShowErrorMessage(ex);
             }
             finally
@@ -200,14 +214,13 @@ namespace SharpBCI.Windows
         public SessionConfig GetSessionConfig()
         {
             var paradigm = _currentParadigm ?? throw new UserException("No paradigm was selected");
-            var paradigmEntity = new ParameterizedEntity(paradigm.Identifier, paradigm.Version, paradigm.SerializeParams(ParadigmParamPanel.Context));
+            var paradigmEntity = new SerializedObject(paradigm.Identifier, paradigm.Version, paradigm.SerializeArgs(ParadigmParamPanel.Context));
             return new SessionConfig
             {
                 Subject = _subjectTextBox.Text,
                 SessionDescriptor = _sessionDescriptorTextBox.Text,
                 Paradigm = paradigmEntity,
-                Devices = _deviceConfigPanel.DeviceConfig,
-                Monitor = MonitorWindow.IsShown
+                Devices = _deviceConfigPanel.DeviceConfigs,
             };
         }
 
@@ -215,46 +228,52 @@ namespace SharpBCI.Windows
         {
             _subjectTextBox.Text = config.Subject ?? _subjectTextBox.Text;
             _sessionDescriptorTextBox.Text = config.SessionDescriptor ?? _sessionDescriptorTextBox.Text;
-            if (_paradigmComboBox.FindAndSelectFirstByString(config.Paradigm.Id, null))
-                ParadigmParamPanel.Context = _currentParadigm.DeserializeParams(config.Paradigm.Params);
-            _deviceConfigPanel.DeviceConfig = config.Devices;
+            if (_paradigmComboBox.FindAndSelectFirstByTag(tag => Equals((tag as ParadigmTemplate)?.Identifier, config.Paradigm.Id), null))
+                ParadigmParamPanel.Context = _currentParadigm.DeserializeArgs(config.Paradigm.Args);
+            _deviceConfigPanel.DeviceConfigs = config.Devices;
         }
 
-        public void LoadConfig()
+        public void LoadConfig(uint snapshotIdx = 0)
         {
-            _config = JsonUtils.DeserializeFromFile<WindowConfig>(ConfigFile) ?? new WindowConfig();
+            using (_configReadWriteLock.AcquireWriteLock())
+            {
+                _config = JsonUtils.DeserializeFromFile<WindowConfig>(GetConfigFilePath(snapshotIdx)) ?? new WindowConfig();
 
-            _subjectTextBox.Text = _config.Subject ?? _subjectTextBox.Text;
-            _sessionDescriptorTextBox.Text = _config.SessionName ?? _sessionDescriptorTextBox.Text;
+                _subjectTextBox.Text = _config.Subject ?? _subjectTextBox.Text;
+                _sessionDescriptorTextBox.Text = _config.SessionDescriptor ?? _sessionDescriptorTextBox.Text;
 
-            var oldIdx = _paradigmComboBox.SelectedIndex;
-            _paradigmComboBox.FindAndSelectFirstByString(_config.SelectedParadigm, 0);
-            var newIdx = _paradigmComboBox.SelectedIndex;
+                var oldIdx = _paradigmComboBox.SelectedIndex;
+                _paradigmComboBox.FindAndSelectFirstByTag(tag => Equals((tag as ParadigmTemplate)?.Identifier, _config.SelectedParadigm), 0);
+                var newIdx = _paradigmComboBox.SelectedIndex;
 
-            if (oldIdx == newIdx) DeserializeParadigmConfig();
-            DeserializeDevicesConfig();
+                if (oldIdx == newIdx) DeserializeParadigmConfig();
+                DeserializeDevicesConfig();
+            }
         }
 
-        public void SaveConfig()
+        public void SaveConfig(uint snapshotIdx = 0)
         {
-            _config.Subject = _subjectTextBox.Text;
-            _config.SessionName = _sessionDescriptorTextBox.Text;
-            _config.SelectedParadigm = (_paradigmComboBox.SelectedItem as PluginParadigm)?.Identifier;
+            using (_configReadWriteLock.AcquireWriteLock())
+            {
+                _config.Subject = _subjectTextBox.Text;
+                _config.SessionDescriptor = _sessionDescriptorTextBox.Text;
+                _config.SelectedParadigm = _currentParadigm?.Identifier;
 
-            SerializeParadigmConfig();
-            SerializeDevicesConfig();
+                SerializeParadigmConfig();
+                SerializeDevicesConfig();
 
-            _config.JsonSerializeToFile(ConfigFile, JsonUtils.PrettyFormat);
+                _config.JsonSerializeToFile(GetConfigFilePath(snapshotIdx), JsonUtils.PrettyFormat);
+            }
         }
 
-        private void UpdateFullSessionName(PluginParadigm paradigm, IReadonlyContext @params)
+        private void UpdateFullSessionName(ParadigmTemplate paradigm, IReadonlyContext args)
         {
             if (paradigm != null)
             {
                 try
                 {
                     _sessionFullNameTextBlock.Foreground = Brushes.DarkGray;
-                    _sessionFullNameTextBlock.Text = SessionConfigExt.GetFullSessionName(_subjectTextBox.Text, _sessionDescriptorTextBox.Text, @params);
+                    _sessionFullNameTextBlock.Text = SessionConfigExt.GetFullSessionName(_subjectTextBox.Text, _sessionDescriptorTextBox.Text, args);
                     return;
                 }
                 catch (Exception e)
@@ -268,14 +287,14 @@ namespace SharpBCI.Windows
             _sessionFullNameTextBlock.Foreground = Brushes.DarkRed;
         }
 
-        private void OnParadigmParamsUpdated()
+        private void OnParadigmArgsUpdated()
         {
-            var pluginParadigm = _currentParadigm;
-            if (pluginParadigm == null) return;
-            if (!ValidateParadigmParams(false)) return;
+            var paradigmTemplate = _currentParadigm;
+            if (paradigmTemplate == null) return;
+            if (!CheckParadigmArgs(false)) return;
             var context = ParadigmParamPanel.Context;
-            UpdateFullSessionName(pluginParadigm, context);
-            Bootstrap.TryInitiateParadigm(pluginParadigm, context, out var paradigm, false);
+            UpdateFullSessionName(paradigmTemplate, context);
+            Bootstrap.TryInitiateParadigm(paradigmTemplate, context, out var paradigm, false);
             ParadigmSummaryPanel.Update(context, paradigm);
         }
 
@@ -308,18 +327,18 @@ namespace SharpBCI.Windows
             _deviceConfigPanel = new DeviceSelectionPanel();
             _deviceConfigPanel.DeviceChanged += (sender, e) =>
             {
-                SerializeDeviceConfig(e.OldDevice, e.OldDeviceParams);
-                e.NewDeviceParams = DeserializeDeviceConfig(e.NewDevice);
+                SerializeDeviceConfig(e.OldDevice, e.OldDeviceArgs);
+                e.NewDeviceArgs = DeserializeDeviceConfig(e.NewDevice);
             };
             _deviceConfigPanel.ConsumerChanged += (sender, e) =>
             {
-                SerializeConsumerConfig(e.OldConsumer, e.OldConsumerParams);
-                e.NewConsumerParams = DeserializeConsumerConfig(e.NewConsumer);
+                SerializeConsumerConfig(e.OldConsumer, e.OldConsumerArgs);
+                e.NewConsumerArgs = DeserializeConsumerConfig(e.NewConsumer);
             };
             FooterPanel.Children.Add(_deviceConfigPanel);
         }
 
-        private void InitializeParadigmConfigurationPanel(PluginParadigm paradigm)
+        private void InitializeParadigmConfigurationPanel(ParadigmTemplate paradigm)
         {
             _paradigmDescriptionTextBlock.Text = paradigm.Attribute.Description;
             _paradigmDescriptionRow.Visibility = string.IsNullOrWhiteSpace(_paradigmDescriptionTextBlock.Text) 
@@ -332,76 +351,129 @@ namespace SharpBCI.Windows
             ScrollView.ScrollToTop();
 
             _currentParadigm = paradigm;
-            // OnParadigmParamsUpdated();
+            // OnParadigmArgsUpdated();
             _needResizeWindow = true;
         }
         
+        /// <summary>
+        /// Serialize paradigm config to WindowConfig.
+        /// </summary>
         private void SerializeParadigmConfig()
         {
             var paradigm = _currentParadigm;
             if (paradigm == null) return;
-            _config.SetParadigm(new ParameterizedEntity(paradigm.Identifier, 
-                paradigm.Attribute.Version?.ToString(), 
-                paradigm.SerializeParams(ParadigmParamPanel.Context)));
+            using (_configReadWriteLock.AcquireWriteLock())
+            {
+                _config.SetParadigm(new SerializedObject(paradigm.Identifier,
+                    paradigm.Attribute.Version?.ToString(),
+                    paradigm.SerializeArgs(ParadigmParamPanel.Context)));
+            }
         }
 
+        /// <summary>
+        /// Deserialize paradigm config from WindowConfig.
+        /// </summary>
         private void DeserializeParadigmConfig()
         {
             var paradigm = _currentParadigm;
             if (paradigm == null) return;
-            var entity = _config.GetParadigm(paradigm.Identifier);
-            ParadigmParamPanel.Context = (IReadonlyContext) paradigm.DeserializeParams(entity.Params) ?? EmptyContext.Instance;
+            SerializedObject serializedParadigm;
+            using (_configReadWriteLock.AcquireReadLock()) serializedParadigm = _config.GetParadigm(paradigm.Identifier);
+            ParadigmParamPanel.Context = (IReadonlyContext) paradigm.DeserializeArgs(serializedParadigm.Args) ?? EmptyContext.Instance;
         }
 
+        /// <summary>
+        /// Serialize config of all devices to WindowConfig.
+        /// </summary>
         private void SerializeDevicesConfig()
         {
             foreach (var deviceType in _deviceConfigPanel.DeviceTypes)
             {
-                var deviceParams = _deviceConfigPanel[deviceType];
-                _config.SelectedDevices[deviceType.Name] = deviceParams.Device.Id;
-                _config.SetDevice(deviceParams.Device);
-                _config.SelectedConsumers[deviceType.Name] = deviceParams.Consumers.Select(c => c.Id).ToArray();
-                foreach (var consumerEntity in deviceParams.Consumers)
-                    _config.SetConsumer(consumerEntity);
+                var deviceArgs = _deviceConfigPanel[deviceType];
+                using (_configReadWriteLock.AcquireWriteLock())
+                {
+                    _config.SelectedDevices[deviceType.Name] = deviceArgs.Device.Id;
+                    _config.SetDevice(deviceArgs.Device);
+                    _config.SelectedConsumers[deviceType.Name] = deviceArgs.Consumers?.Select(c => c.Id).ToArray();
+                    if (deviceArgs.Consumers != null)
+                        foreach (var consumerEntity in deviceArgs.Consumers)
+                            _config.SetConsumer(consumerEntity);
+                }
             }
-
         }
 
+        /// <summary>
+        /// Serialize device config to WindowConfig.
+        /// <param name="device">Target device</param>
+        /// <param name="args">Arguments to serialize</param>
+        /// </summary>
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private void SerializeDeviceConfig(PluginDevice device, IReadonlyContext @params)
+        private void SerializeDeviceConfig(DeviceTemplate device, IReadonlyContext args)
         {
             if (device == null) return;
-            _config.SetDevice(new ParameterizedEntity(device.Identifier, device.SerializeParams(@params)));
+            using (_configReadWriteLock.AcquireWriteLock())
+                _config.SetDevice(new SerializedObject(device.Identifier, device.SerializeArgs(args)));
         }
 
+        /// <summary>
+        /// Deserialize config of all devices from WindowConfig.
+        /// </summary>
         private void DeserializeDevicesConfig()
         {
             foreach (var deviceType in _deviceConfigPanel.DeviceTypes)
-                _deviceConfigPanel[deviceType] = new DeviceParams
-                {
-                    DeviceType = deviceType.Name,
-                    Device = _config.SelectedDevices.TryGetValue(deviceType.Name, out var did) ? _config.GetDevice(did) : default,
-                    Consumers = _config.SelectedConsumers.TryGetValue(deviceType.Name, out var consumerIds) && consumerIds != null 
-                        ? consumerIds.Select(cid => _config.GetConsumer(cid)).ToArray() : EmptyArray<ParameterizedEntity>.Instance
-                };
+                using (_configReadWriteLock.AcquireReadLock())
+                    _deviceConfigPanel[deviceType] = new DeviceConfig
+                    {
+                        DeviceType = deviceType.Name,
+                        Device = _config.SelectedDevices.TryGetValue(deviceType.Name, out var did) ? _config.GetDevice(did) : default,
+                        Consumers = _config.SelectedConsumers.TryGetValue(deviceType.Name, out var consumerIds) && consumerIds != null
+                            ? consumerIds.Select(cid => _config.GetConsumer(cid)).ToArray() : EmptyArray<SerializedObject>.Instance
+                    };
         }
 
+        /// <summary>
+        /// Deserialize device config from WindowConfig.
+        /// <param name="device">Target device</param>
+        /// </summary>
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private IReadonlyContext DeserializeDeviceConfig(PluginDevice device) =>
-            device == null ? EmptyContext.Instance : (IReadonlyContext)device.DeserializeParams(_config.GetDevice(device.Identifier).Params) ?? EmptyContext.Instance;
+        private IReadonlyContext DeserializeDeviceConfig(DeviceTemplate device)
+        {
+            if (device == null) return EmptyContext.Instance;
+            using (_configReadWriteLock.AcquireReadLock())
+                return (IReadonlyContext)device.DeserializeArgs(_config.GetDevice(device.Identifier).Args) ?? EmptyContext.Instance; 
+        }
 
+        /// <summary>
+        /// Serialize consumer config to WindowConfig.
+        /// <param name="consumer">Target consumer</param>
+        /// <param name="args">Arguments to serialize</param>
+        /// </summary>
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private void SerializeConsumerConfig(PluginStreamConsumer consumer, IReadonlyContext @params)
+        private void SerializeConsumerConfig(ConsumerTemplate consumer, IReadonlyContext args)
         {
             if (consumer == null) return;
-            _config.SetConsumer(new ParameterizedEntity(consumer.Identifier, consumer.SerializeParams(@params)));
+            using (_configReadWriteLock.AcquireWriteLock())
+                _config.SetConsumer(new SerializedObject(consumer.Identifier, consumer.SerializeArgs(args)));
         }
 
+        /// <summary>
+        /// Deserialize consumer config from WindowConfig.
+        /// <param name="consumer">Target consumer</param>
+        /// </summary>
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
-        private IReadonlyContext DeserializeConsumerConfig(PluginStreamConsumer consumer) =>
-            consumer == null ? EmptyContext.Instance : (IReadonlyContext)consumer.DeserializeParams(_config.GetConsumer(consumer.Identifier).Params) ?? EmptyContext.Instance;
+        private IReadonlyContext DeserializeConsumerConfig(ConsumerTemplate consumer)
+        {
+            if (consumer == null) return EmptyContext.Instance;
+            using (_configReadWriteLock.AcquireReadLock()) 
+                return (IReadonlyContext)consumer.DeserializeArgs(_config.GetConsumer(consumer.Identifier).Args) ?? EmptyContext.Instance; 
+        }
 
-        private bool ValidateParadigmParams(bool msgBox = true)
+        /// <summary>
+        /// Check the arguments for current paradigm.
+        /// <param name="msgBox">Show message box of invalid parameters</param>
+        /// <returns>true if all the arguments are valid</returns>
+        /// </summary>
+        private bool CheckParadigmArgs(bool msgBox = true)
         {
             var paradigm = _currentParadigm;
             var factory = paradigm?.Factory;
@@ -420,7 +492,7 @@ namespace SharpBCI.Windows
                     {
                         var valid = ValidationResult.Failed();
                         try { valid = factory.CheckValid(paradigm.Clz, context, pd); }
-                        catch (Exception e) { Logger.Warn("ValidateParadigmParams", e, "parameter", pd.Key); }
+                        catch (Exception e) { Logger.Warn("CheckParadigmArgs", e, "parameter", pd.Key); }
                         var row = ParadigmParamPanel[pd]?.Container;
                         if (row != null && (row.IsError = valid.IsFailed)) row.ErrorMessage = valid.Message?.Trim();
                         return new ParamValidationResult(pd, valid);
@@ -446,46 +518,102 @@ namespace SharpBCI.Windows
             return false;
         }
 
-        public void LoadPlatformCaps()
+        /// <summary>
+        /// Refresh combobox for supported paradigms.
+        /// </summary>
+        private void RefreshParadigmComboboxItems()
         {
-            var style = (Style)FindResource("MenuItem");
+            var paradigmItems = new LinkedList<object>();
+            foreach (var paradigm in App.Instance.Registries.Registry<ParadigmTemplate>().Registered.OrderBy(p => p.Identifier))
+            {
+                var stackPanel = new StackPanel {Orientation = Orientation.Horizontal, Tag = paradigm};
+                stackPanel.Children.Add(new TextBlock {Text = paradigm.Identifier, VerticalAlignment = VerticalAlignment.Center});
+                if (paradigm.Version != null)
+                {
+                    stackPanel.Children.Add(new TextBlock
+                    {
+                        Text = $"v{paradigm.Version}",
+                        Margin = new Thickness(5, 0, 0, 0),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        FontSize = 9,
+                        Foreground = Brushes.DarkGray
+                    });
+                }
+                paradigmItems.AddLast(stackPanel);
+            }
+            _paradigmComboBox.ItemsSource = paradigmItems;
+        }
+
+        private void RefreshSnapshotsMenuItems()
+        {
+            var style = FindResource("MenuItem") as Style;
+            if (!(SaveSnapshotMenuItem.ItemsSource is ObservableCollection<MenuItem> saveMenuItems))
+                SaveSnapshotMenuItem.ItemsSource = saveMenuItems = new ObservableCollection<MenuItem>();
+            if (!(LoadSnapshotMenuItem.ItemsSource is ObservableCollection<MenuItem> loadMenuItems))
+                LoadSnapshotMenuItem.ItemsSource = loadMenuItems = new ObservableCollection<MenuItem>();
+            while (saveMenuItems.Count < MaxSnapshotCount)
+            {
+                var snapshotMenuItem = new MenuItem {Style = style, Tag = (uint)saveMenuItems.Count };
+                snapshotMenuItem.Click += SaveSnapshotMenuItem_OnClick;
+                saveMenuItems.Add(snapshotMenuItem);
+            } 
+            while (loadMenuItems.Count < MaxSnapshotCount)
+            {
+                var snapshotMenuItem = new MenuItem { Style = style, Tag = (uint)loadMenuItems.Count };
+                snapshotMenuItem.Click += LoadSnapshotMenuItem_OnClick;
+                loadMenuItems.Add(snapshotMenuItem);
+            }
+            for (var i = 0; i < MaxSnapshotCount; i++)
+            {
+                var path = GetConfigFilePath((uint) i);
+                saveMenuItems[i].Header = loadMenuItems[i].Header = !File.Exists(path) ? $"{i + 1}. Blank" : $"{i + 1}. {File.GetLastWriteTime(path)}";
+            }
+        }
+
+        private void RefreshRecentSessionsMenuItems()
+        {
+            var style = FindResource("MenuItem") as Style;
+            var menuItems = new LinkedList<MenuItem>();
+            using (_configReadWriteLock.AcquireReadLock())
+                if (_config.RecentSessions?.IsEmpty() ?? true)
+                    menuItems.AddLast(new MenuItem {Style = style, Header = "None", IsEnabled = false});
+                else
+                    foreach (var recentSession in _config.RecentSessions)
+                    {
+                        var menuItem = new MenuItem {Style = style, Header = recentSession};
+                        menuItem.Click += (sender, e) => SetSessionConfig(JsonUtils.DeserializeFromFile<SessionConfig>(recentSession + SessionConfig.FileSuffix));
+                        menuItems.AddLast(menuItem);
+                    }
+            RecentSessionsMenuItem.ItemsSource = menuItems.ToArray();
+        }
+
+        /// <summary>
+        /// Refresh menu for capabilities of current platform.
+        /// </summary>
+        public void RefreshPlatformCapabilityMenuItems()
+        {
+            var style = FindResource("MenuItem") as Style;
             var desktop = GraphicsUtils.DesktopHdc;
             var capMenuItems = new LinkedList<MenuItem>();
             foreach (var deviceCap in typeof(Gdi32.DeviceCap).GetEnumValues())
             {
-                var header = $"{typeof(Gdi32.DeviceCap).GetEnumName(deviceCap)}: {Gdi32.GetDeviceCaps(desktop, (int) deviceCap)}";
-                capMenuItems.AddLast(new MenuItem {Style = style, Header = header});
+                var header = $"{typeof(Gdi32.DeviceCap).GetEnumName(deviceCap)}: {Gdi32.GetDeviceCaps(desktop, (int)deviceCap)}";
+                capMenuItems.AddLast(new MenuItem { Style = style, Header = header });
             }
             PlatformCapsMenuItem.ItemsSource = capMenuItems.ToArray();
         }
 
-        private void RefreshRecentSessionMenuItems()
-        {
-            var style = (Style) FindResource("MenuItem");
-            var menuItems = new LinkedList<MenuItem>();
-            if (_config.RecentSessions?.IsEmpty() ?? true)
-                menuItems.AddLast(new MenuItem {Style = style, Header = "None", IsEnabled = false});
-            else
-                foreach (var recentSession in _config.RecentSessions)
-                {
-                    var menuItem = new MenuItem {Style = style, Header = recentSession};
-                    menuItem.Click += (sender, e) => SetSessionConfig(JsonUtils.DeserializeFromFile<SessionConfig>(recentSession + SessionConfig.FileSuffix));
-                    menuItems.AddLast(menuItem);
-                }
-            LoadFromRecentSessionMenuItem.ItemsSource = menuItems.ToArray();
-        }
-
         private void RefreshAppMenuItems()
         {
-            var style = (Style)FindResource("MenuItem");
+            var style = FindResource("MenuItem") as Style;
             var menuItems = new LinkedList<object>();
-            var appEntries = App.Instance.Registries.Registry<PluginAppEntry>().Registered;
+            var appEntries = App.Instance.Registries.Registry<AppEntryAddOn>().Registered;
             if (appEntries?.IsEmpty() ?? true)
-                menuItems.AddLast(new MenuItem { Style = style, Header = "None", IsEnabled = false });
+                menuItems.AddLast(new MenuItem {Style = style, Header = "None", IsEnabled = false});
             else
                 foreach (var appEntry in appEntries)
                 {
-                    var appEntryMenuItem = new MenuItem { Style = style, Header = $"{appEntry.Identifier} - ({appEntry.Plugin?.Name ?? "Embedded"})" };
+                    var appEntryMenuItem = new MenuItem {Style = style, Header = $"{appEntry.Identifier} - ({appEntry.Plugin?.Name ?? "Embedded"})"};
                     appEntryMenuItem.Click += (sender, e) => appEntry.Entry.Run();
                     menuItems.AddLast(appEntryMenuItem);
                 }
@@ -509,7 +637,7 @@ namespace SharpBCI.Windows
                     {
                         var devices = plugin.Devices.Where(d => d.DeviceType == deviceType).ToArray();
                         if (devices.Length <= 0)
-                            children.AddLast(new MenuItem { Style = style, Header = $"No {deviceType.DisplayName.ToLowerInvariant()} Implementations", IsEnabled = false });
+                            children.AddLast(new MenuItem {Style = style, Header = $"No {deviceType.DisplayName.ToLowerInvariant()} Implementations", IsEnabled = false});
                         else
                             foreach (var device in devices)
                             {
@@ -541,64 +669,68 @@ namespace SharpBCI.Windows
                             var paradigmAttribute = paradigm.Attribute;
                             var menuItemHeader = $"{paradigmAttribute.Name} ({paradigmAttribute.FullVersionName}) - {paradigm.Clz.FullName}";
                             var paradigmMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
-                            paradigmMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelectFirstByString(paradigmAttribute.Name, null);
+                            paradigmMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelectFirstByTag(paradigm, null);
                             children.AddLast(paradigmMenuItem);
                         }
                     children.AddLast(new Separator());
 
-                    if (!plugin.StreamConsumers.Any())
-                        children.AddLast(new MenuItem { Style = style, Header = "No Stream-Consumer Implementations", IsEnabled = false });
+                    if (!plugin.Consumers.Any())
+                        children.AddLast(new MenuItem {Style = style, Header = "No Stream-Consumer Implementations", IsEnabled = false});
                     else
-                        foreach (var streamConsumer in plugin.StreamConsumers)
+                        foreach (var consumer in plugin.Consumers)
                         {
-                            var consumerAttribute = streamConsumer.Attribute;
-                            var menuItemHeader = $"{consumerAttribute.Name} ({consumerAttribute.FullVersionName}) - {streamConsumer.Clz.FullName}";
+                            var consumerAttribute = consumer.Attribute;
+                            var menuItemHeader = $"{consumerAttribute.Name} ({consumerAttribute.FullVersionName}) - {consumer.Clz.FullName}";
                             var consumerMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
-                            consumerMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelectFirstByString(consumerAttribute.Name, null);
+                            //consumerMenuItem.Click += (sender, e) => _paradigmComboBox.FindAndSelectFirstByTag(consumerAttribute.Name, null);
                             children.AddLast(consumerMenuItem);
                         }
                     children.AddLast(new Separator());
 
                     if (!plugin.Paradigms.Any() && !plugin.CustomMarkers.Any())
-                        children.AddLast(new MenuItem { Style = style, Header = "No Custom Marker Definitions", IsEnabled = false });
-                    else 
+                        children.AddLast(new MenuItem {Style = style, Header = "No Custom Marker Definitions", IsEnabled = false});
+                    else
                         foreach (var keyValuePair in plugin.CustomMarkers.OrderBy(pair => pair.Key))
-                            children.AddLast(new MenuItem { Style = style, Header = $"{keyValuePair.Key} - {keyValuePair.Value}"});
+                            children.AddLast(new MenuItem {Style = style, Header = $"{keyValuePair.Key} - {keyValuePair.Value}"});
                     menuItem.ItemsSource = children;
                     menuItems.AddLast(menuItem);
                 }
             PluginsMenuItem.ItemsSource = menuItems.ToArray();
         }
 
-        private void ShowPopupConfigurationPanel(string title, [NotNull] IEnumerable<IDescriptor> descriptors,
-            IReadonlyContext context = null, IParameterPresentAdapter adapter = null)
+        // ReSharper disable once UnusedMember.Local
+        private void DisplayPopup(string title, FrameworkElement element)
         {
             PopupTitleTextBlock.Text = title;
-            PopupParameterPanel.SetDescriptors(adapter, descriptors);
-            PopupParameterPanel.Context = context ?? EmptyContext.Instance;
+            PopupHeaderGrid.Visibility = title == null ? Visibility.Collapsed : Visibility.Visible;
+            PopupContentControl.Content = element;
             PopupGrid.Visibility = Visibility.Visible;
+        }
+
+        private void AutoSaveTimer_OnTick(object state)
+        {
+            lock (_configAutoSaveTimer)
+            {
+                if (_configDirty)
+                    SaveConfig(0);
+                _configDirty = false;
+            }
         }
 
         private void Window_OnLoaded(object sender, RoutedEventArgs e)
         {
-            LoadPlatformCaps();
+            RefreshPlatformCapabilityMenuItems();
 
-            _paradigmComboBox.ItemsSource = App.Instance.Registries.Registry<PluginParadigm>().Registered.OrderBy(p => p.Identifier);
+            RefreshParadigmComboboxItems();
             _deviceConfigPanel.UpdateDevices();
 
             LoadConfig();
 
-            RefreshRecentSessionMenuItems();
+            RefreshSnapshotsMenuItems();
+            RefreshRecentSessionsMenuItems();
             RefreshAppMenuItems();
             RefreshPluginMenuItems();
         }
-
-        private void Window_OnKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyStates == Keyboard.GetKeyStates(Key.Return) && Keyboard.Modifiers == ModifierKeys.Alt) StartSession();
-        }
-
-        private void Window_OnClosed(object sender, EventArgs e) => App.Kill();
 
         private void Window_OnLayoutUpdated(object sender, EventArgs e)
         {
@@ -609,11 +741,19 @@ namespace SharpBCI.Windows
             _needResizeWindow = false;
         }
 
+        private void Window_OnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyStates == Keyboard.GetKeyStates(Key.Return) && Keyboard.Modifiers == ModifierKeys.Alt) StartSession();
+        }
+
+        private void Window_OnClosing(object sender, EventArgs e) => _configAutoSaveTimer.Dispose();
+
+        private void Window_OnClosed(object sender, EventArgs e) => App.Kill();
+
         private void ParadigmComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             SerializeParadigmConfig();
-            var paradigm = (PluginParadigm) _paradigmComboBox.SelectedItem;
-            InitializeParadigmConfigurationPanel(paradigm);
+            InitializeParadigmConfigurationPanel((ParadigmTemplate) ((FrameworkElement) _paradigmComboBox.SelectedItem)?.Tag);
             DeserializeParadigmConfig();
         }
 
@@ -622,32 +762,24 @@ namespace SharpBCI.Windows
             var paradigm = _currentParadigm;
             if (paradigm == null) return;
             ParadigmParamPanel.ResetToDefault();
-            OnParadigmParamsUpdated();
+            OnParadigmArgsUpdated();
         }
 
-        private void SaveMenuItem_OnClick(object sender, RoutedEventArgs e)
-        {
-            if (!ValidateParadigmParams()) return;
-            SaveConfig();
-        }
+        private void MenuItem_OnSubmenuOpened(object sender, RoutedEventArgs e) => RefreshSnapshotsMenuItems();
 
-        private void ReloadMenuItem_OnClick(object sender, RoutedEventArgs e) => LoadConfig();
-
-        private void NewMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e) => new MultiSessionConfigWindow(null).ShowDialog();
-
-        private void OpenMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void OpenFromMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
                 Title = "Open Config File",
                 Multiselect = false,
                 CheckFileExists = true,
-                DefaultExt = MultiSessionConfig.FileSuffix,
-                Filter = FileUtils.GetFileFilter("Multi-Session Config File", MultiSessionConfig.FileSuffix),
+                DefaultExt = SessionConfig.FileSuffix,
+                Filter = FileUtils.GetFileFilter("Session Config File", SessionConfig.FileSuffix),
                 InitialDirectory = Path.GetFullPath(ConfigDir)
             };
             if (!dialog.ShowDialog(this).Value) return;
-            new MultiSessionConfigWindow(dialog.FileName).ShowDialog();
+            SetSessionConfig(JsonUtils.DeserializeFromFile<SessionConfig>(dialog.FileName));
         }
 
         private void SaveAsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -668,19 +800,21 @@ namespace SharpBCI.Windows
             sessionConfig.JsonSerializeToFile(dialog.FileName, JsonUtils.PrettyFormat);
         }
 
-        private void LoadFromMenuItem_OnClick(object sender, RoutedEventArgs e)
+        private void NewMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e) => new MultiSessionLauncherWindow(null).ShowDialog();
+
+        private void OpenMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
                 Title = "Open Config File",
                 Multiselect = false,
                 CheckFileExists = true,
-                DefaultExt = SessionConfig.FileSuffix,
-                Filter = FileUtils.GetFileFilter("Session Config File" , SessionConfig.FileSuffix),
+                DefaultExt = MultiSessionConfig.FileSuffix,
+                Filter = FileUtils.GetFileFilter("Multi-Session Config File", MultiSessionConfig.FileSuffix),
                 InitialDirectory = Path.GetFullPath(ConfigDir)
             };
             if (!dialog.ShowDialog(this).Value) return;
-            SetSessionConfig(JsonUtils.DeserializeFromFile<SessionConfig>(dialog.FileName));
+            new MultiSessionLauncherWindow(dialog.FileName).ShowDialog();
         }
 
         private void ExitMenuItem_OnClick(object sender, RoutedEventArgs e) => Close();
@@ -688,8 +822,6 @@ namespace SharpBCI.Windows
         private void SystemVariablesMenuItem_OnClick(object sender, RoutedEventArgs e) => App.ConfigSystemVariables();
 
         private void DataFolderMenuItem_OnClick(object sender, RoutedEventArgs e) => Process.Start(Path.GetFullPath(App.DataDir));
-
-        private void MonitorMenuItem_OnClick(object sender, RoutedEventArgs e) => MonitorWindow.Show();
 
         private void AnalyzeMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
@@ -707,26 +839,37 @@ namespace SharpBCI.Windows
                 new AnalysisWindow(fileName.TrimEnd(Path.GetExtension(fileName))).Show();
         }
 
+        private void SaveSnapshotMenuItem_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (!CheckParadigmArgs()) return;
+            SaveConfig((uint)((MenuItem)sender).Tag);
+        }
+
+        private void LoadSnapshotMenuItem_OnClick(object sender, RoutedEventArgs e) => LoadConfig((uint)((MenuItem)sender).Tag);
+
         private void ParadigmParamPanel_OnLayoutChanged(object sender, LayoutChangedEventArgs e) => _needResizeWindow = true;
 
         private void ParadigmParamPanel_OnContextChanged(object sender, ContextChangedEventArgs e)
         {
-            if (!ValidateParadigmParams(false)) return;
-            OnParadigmParamsUpdated();
+            if (!CheckParadigmArgs(false)) return;
+            OnParadigmArgsUpdated();
         }
 
         private void StartBtn_OnClick(object sender, RoutedEventArgs e) => StartSession();
 
-        void Bootstrap.ISessionListener.BeforeStart(int index, Session session)
+        public void BeforeAllSessionsStart() { }
+
+        void Bootstrap.ISessionListener.BeforeSessionStart(int index, Session session)
         {
-            _config.AddRecentSession(session.DataFilePrefix);
-            RefreshRecentSessionMenuItems();
+            using (_configReadWriteLock.AcquireWriteLock())
+                _config.AddRecentSession(session.DataFilePrefix);
+            RefreshRecentSessionsMenuItems();
             SaveConfig();
         }
 
-        void Bootstrap.ISessionListener.AfterCompleted(int index, Session session) { }
+        void Bootstrap.ISessionListener.AfterSessionCompleted(int index, Session session) { }
 
-        void Bootstrap.ISessionListener.AfterAllCompleted(Session[] sessions)
+        void Bootstrap.ISessionListener.AfterAllSessionsCompleted(Session[] sessions)
         {
             foreach (var session in sessions)
                 if (session?.Result != null)

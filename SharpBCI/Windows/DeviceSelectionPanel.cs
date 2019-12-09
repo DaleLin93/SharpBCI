@@ -21,18 +21,18 @@ namespace SharpBCI.Windows
 
         public readonly DeviceType DeviceType;
 
-        public readonly PluginDevice OldDevice, NewDevice;
+        [CanBeNull] public readonly DeviceTemplate OldDevice, NewDevice;
 
-        public readonly IReadonlyContext OldDeviceParams;
+        [NotNull] public readonly IReadonlyContext OldDeviceArgs;
 
-        public IReadonlyContext NewDeviceParams;
+        public IReadonlyContext NewDeviceArgs;
 
-        public DeviceChangedEventArgs(DeviceType deviceType, PluginDevice oldDevice, PluginDevice newDevice, IReadonlyContext oldDeviceParams)
+        public DeviceChangedEventArgs(DeviceType deviceType, DeviceTemplate oldDevice, DeviceTemplate newDevice, IReadonlyContext oldDeviceArgs)
         {
             DeviceType = deviceType;
             OldDevice = oldDevice;
             NewDevice = newDevice;
-            OldDeviceParams = oldDeviceParams;
+            OldDeviceArgs = oldDeviceArgs ?? EmptyContext.Instance;
         }
 
     }
@@ -42,18 +42,18 @@ namespace SharpBCI.Windows
 
         public readonly DeviceType DeviceType;
 
-        public readonly PluginStreamConsumer OldConsumer, NewConsumer;
+        [CanBeNull] public readonly ConsumerTemplate OldConsumer, NewConsumer;
 
-        public readonly IReadonlyContext OldConsumerParams;
+        [NotNull] public readonly IReadonlyContext OldConsumerArgs;
 
-        public IReadonlyContext NewConsumerParams;
+        public IReadonlyContext NewConsumerArgs;
 
-        public ConsumerChangedEventArgs(DeviceType deviceType, PluginStreamConsumer oldConsumer, PluginStreamConsumer newConsumer, IReadonlyContext oldConsumerParams)
+        public ConsumerChangedEventArgs(DeviceType deviceType, ConsumerTemplate oldConsumer, ConsumerTemplate newConsumer, IReadonlyContext oldConsumerArgs)
         {
             DeviceType = deviceType;
             OldConsumer = oldConsumer;
             NewConsumer = newConsumer;
-            OldConsumerParams = oldConsumerParams;
+            OldConsumerArgs = oldConsumerArgs ?? EmptyContext.Instance;
         }
 
     }
@@ -82,7 +82,7 @@ namespace SharpBCI.Windows
 
             [NotNull] public readonly Button ConfigButton, PreviewButton;
 
-            [CanBeNull] private Constructable<PluginStreamConsumer>[] _currentConsumers;
+            [CanBeNull] private TemplateWithArgs<ConsumerTemplate>[] _currentConsumers;
 
             internal DeviceTypeViewModel(DeviceType deviceType)
             {
@@ -144,11 +144,11 @@ namespace SharpBCI.Windows
                 }
             }
 
-            public Constructable<PluginDevice> CurrentDevice { get; } = new Constructable<PluginDevice>();
+            [CanBeNull] public TemplateWithArgs<DeviceTemplate> CurrentDevice { get; set; }
 
-            public Constructable<PluginStreamConsumer>[] CurrentConsumers
+            public TemplateWithArgs<ConsumerTemplate>[] CurrentConsumers
             {
-                get => _currentConsumers ?? EmptyArray<Constructable<PluginStreamConsumer>>.Instance;
+                get => _currentConsumers ?? EmptyArray<TemplateWithArgs<ConsumerTemplate>>.Instance;
                 set
                 {
                     _currentConsumers = value;
@@ -162,24 +162,11 @@ namespace SharpBCI.Windows
                 ConsumerStateRectangle.ToolTip = message ?? (available ? "Consumer attached" : "No consumer attached");
             }
 
-            private void UpdateConsumerState(IReadOnlyCollection<Constructable<PluginStreamConsumer>> consumers)
+            private void UpdateConsumerState(IReadOnlyCollection<TemplateWithArgs<ConsumerTemplate>> consumers)
             {
                 var hasConsumers = consumers != null && consumers.Any();
-                SetConsumerState(hasConsumers ? consumers.Select(c => c.Target.Identifier).Join("\n") : null, hasConsumers);
+                SetConsumerState(hasConsumers ? consumers.Select(c => c.Template.Identifier).Join("\n") : null, hasConsumers);
             }
-
-        }
-
-        internal sealed class Constructable<T>
-        {
-
-            public T Target { get; set; }
-
-            public IReadonlyContext Params { get; set; } = EmptyContext.Instance;
-
-            public static Constructable<T> Of(Tuple<T, IReadonlyContext> tuple) => new Constructable<T> {Target = tuple.Item1, Params = tuple.Item2};
-
-            public static Tuple<T, IReadonlyContext> ToTuple(Constructable<T> c) => new Tuple<T, IReadonlyContext>(c.Target, c.Params);
 
         }
 
@@ -187,14 +174,14 @@ namespace SharpBCI.Windows
 
         public event EventHandler<ConsumerChangedEventArgs> ConsumerChanged;
 
-        private readonly ReferenceCounter _deviceParamsUpdateLock = new ReferenceCounter();
+        private readonly ReferenceCounter _deviceUpdateLock = new ReferenceCounter();
 
         private readonly IDictionary<DeviceType, DeviceTypeViewModel> _deviceControlGroups = new Dictionary<DeviceType, DeviceTypeViewModel>(16);
 
         public DeviceSelectionPanel()
         {
             if (App.Instance == null) return;
-            DeviceTypes = App.Instance.Registries.Registry<PluginDeviceType>().Registered.Select(el => el.DeviceType).ToArray();
+            DeviceTypes = App.Instance.Registries.Registry<DeviceTypeAddOn>().Registered.Select(el => el.DeviceType).ToArray();
             Children.Add(ViewHelper.CreateGroupHeader(DisplayHeader ? "Devices" : null, "Device Configuration"));
             foreach (var deviceType in DeviceTypes)
             {
@@ -227,34 +214,26 @@ namespace SharpBCI.Windows
             Source = new BitmapImage(new Uri(imageUri))
         };
 
-        public DeviceParams this[DeviceType deviceType]
+        public DeviceConfig this[DeviceType deviceType]
         {
             get
             {
-                var controlGroup = _deviceControlGroups[deviceType];
-                var currentDevice = controlGroup.CurrentDevice;
-                var device = PluginDevice.CreateParameterizedEntity(currentDevice.Target, currentDevice.Params);
-                var consumers = controlGroup.CurrentConsumers.Select(c => PluginStreamConsumer.CreateParameterizedEntity(c.Target, c.Params));
-                return new DeviceParams(deviceType.Name, device, consumers.ToArray());
+                if (!_deviceControlGroups.TryGetValue(deviceType, out var controlGroup) || controlGroup.CurrentDevice == null) return default;
+                var device = controlGroup.CurrentDevice.Serialize();
+                var consumers = controlGroup.CurrentConsumers.Select(c => c?.Serialize() ?? default);
+                return new DeviceConfig(deviceType.Name, device, consumers.ToArray());
             }
             set
             {
-                var controlGroup = _deviceControlGroups[deviceType];
-                if (controlGroup.DeviceComboBox.FindAndSelectFirstByString(value.Device.Id, 0))
+                if (!_deviceControlGroups.TryGetValue(deviceType, out var controlGroup)) return;
+                if (controlGroup.DeviceComboBox.FindAndSelectFirstByString(value.Device.Id, 0) && controlGroup.CurrentDevice != null)
+                    controlGroup.CurrentDevice = new TemplateWithArgs<DeviceTemplate>(controlGroup.CurrentDevice.Template, value.Device.Args);
+                var consumerRegistry = App.Instance.Registries.Registry<ConsumerTemplate>();
+                var consumers = new LinkedList<TemplateWithArgs<ConsumerTemplate>>();
+                foreach (var consumerEntity in value.Consumers?.Where(p => p.Id != null).ToArray() ?? EmptyArray<SerializedObject>.Instance)
                 {
-                    var cDevice = controlGroup.CurrentDevice;
-                    cDevice.Params = cDevice.Target?.DeserializeParams(value.Device.Params) ?? (IReadonlyContext)EmptyContext.Instance;
-                }
-                var consumerRegistry = App.Instance.Registries.Registry<PluginStreamConsumer>();
-                var consumers = new LinkedList<Constructable<PluginStreamConsumer>>();
-                foreach (var consumerEntity in value.Consumers?.Where(p => p.Id != null).ToArray() ?? EmptyArray<ParameterizedEntity>.Instance)
-                {
-                    if(!consumerRegistry.LookUp(consumerEntity.Id, out var streamConsumer)) continue;
-                    consumers.AddLast(new Constructable<PluginStreamConsumer>
-                    {
-                        Target = streamConsumer,
-                        Params = streamConsumer?.DeserializeParams(consumerEntity.Params) ?? (IReadonlyContext) EmptyContext.Instance
-                    });
+                    if(!consumerRegistry.LookUp(consumerEntity.Id, out var consumerTemplate)) continue;
+                    consumers.AddLast(new TemplateWithArgs<ConsumerTemplate>(consumerTemplate, consumerEntity.Args));
                 }
                 controlGroup.CurrentConsumers = consumers.ToArray();
             }
@@ -282,37 +261,57 @@ namespace SharpBCI.Windows
             }
         }
 
-        public DeviceParams[] DeviceConfig
+        public DeviceConfig[] DeviceConfigs
         {
             get
             {
-                var dict = new Dictionary<string, DeviceParams>();
+                var dict = new Dictionary<string, DeviceConfig>();
                 foreach (var deviceType in DeviceTypes)
                 {
-                    var deviceParams = this[deviceType];
-                    if (deviceParams.DeviceType != null)
+                    var deviceArgs = this[deviceType];
+                    if (deviceArgs.DeviceType != null)
                         dict[deviceType.Name] = this[deviceType];
                 }
                 return dict.Values.ToArray();
             }
             set
             {
-                var dict = new Dictionary<string, DeviceParams>();
-                foreach (var deviceParams in value)
-                    if (!dict.ContainsKey(deviceParams.DeviceType))
-                        dict[deviceParams.DeviceType] = deviceParams;
+                var dict = new Dictionary<string, DeviceConfig>();
+                foreach (var deviceArgs in value)
+                    if (!dict.ContainsKey(deviceArgs.DeviceType))
+                        dict[deviceArgs.DeviceType] = deviceArgs;
                 foreach (var deviceType in DeviceTypes)
-                    if (dict.TryGetValue(deviceType.Name, out var deviceParams))
-                        this[deviceType] = deviceParams;
+                    if (dict.TryGetValue(deviceType.Name, out var deviceArgs))
+                        this[deviceType] = deviceArgs;
             }
         }
 
         public bool FindAndSelectDevice(DeviceType type, string itemStr, int? defaultIndex = null) =>
             _deviceControlGroups[type].DeviceComboBox.FindAndSelectFirstByString(itemStr, defaultIndex);
 
+        [CanBeNull]
+        public TemplateWithArgs<DeviceTemplate> GetDeviceWithArgs(DeviceType deviceType) =>
+            _deviceControlGroups.TryGetValue(deviceType, out var controlGroup) ? controlGroup.CurrentDevice : null;
+
+        [NotNull]
+        public IEnumerable<TemplateWithArgs<ConsumerTemplate>> GetConsumersWithArgs(DeviceType deviceType) =>
+            _deviceControlGroups.TryGetValue(deviceType, out var controlGroup) ? controlGroup.CurrentConsumers : EmptyArray<TemplateWithArgs<ConsumerTemplate>>.Instance;
+
+        public void SetDeviceAndConsumers(DeviceType deviceType, TemplateWithArgs<DeviceTemplate> device, IEnumerable<TemplateWithArgs<ConsumerTemplate>> consumers)
+        {
+            if (!_deviceControlGroups.TryGetValue(deviceType, out var controlGroup)) return;
+            if (device.Template.DeviceType != deviceType) throw new ArgumentException("device type not match");
+            var streamingType = deviceType.StreamerFactory?.StreamingType;
+            var consumerArray = consumers?.ToArray() ?? EmptyArray<TemplateWithArgs<ConsumerTemplate>>.Instance;
+            if (consumerArray.Any(consumer => streamingType == null || !consumer.Template.AcceptType.IsAssignableFrom(streamingType)))
+                throw new ArgumentException("device's streaming type not match consumer's accept type");
+            controlGroup.CurrentDevice = device;
+            controlGroup.CurrentConsumers = consumerArray;
+        }
+
         public void UpdateDevices()
         {
-            var devices = App.Instance.Registries.Registry<PluginDevice>().Registered;
+            var devices = App.Instance.Registries.Registry<DeviceTemplate>().Registered;
             foreach (var deviceType in DeviceTypes)
             {
                 var list = new LinkedList<object>();
@@ -327,43 +326,38 @@ namespace SharpBCI.Windows
         private void DeviceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var controlGroup = (DeviceTypeViewModel) ((ComboBox) sender).Tag;
-            var newDevice = controlGroup.DeviceComboBox.SelectedItem as PluginDevice;
+            var newDevice = controlGroup.DeviceComboBox.SelectedItem as DeviceTemplate;
             controlGroup.PreviewButton.IsEnabled = newDevice?.Factory != null;
-            if (_deviceParamsUpdateLock.IsReferred) return;
+            if (_deviceUpdateLock.IsReferred) return;
             var cDevice = controlGroup.CurrentDevice;
-            var eventArgs = new DeviceChangedEventArgs(controlGroup.DeviceType, cDevice.Target, newDevice, cDevice.Params);
+            var eventArgs = new DeviceChangedEventArgs(controlGroup.DeviceType, cDevice?.Template, newDevice, cDevice?.Args);
             DeviceChanged?.Invoke(this, eventArgs);
-            cDevice.Target = newDevice;
-            cDevice.Params = eventArgs.NewDeviceParams ?? EmptyContext.Instance;
+            controlGroup.CurrentDevice = newDevice == null ? null : new TemplateWithArgs<DeviceTemplate>(newDevice, eventArgs.NewDeviceArgs);
         }
 
         private void DeviceConfigBtn_Click(object sender, RoutedEventArgs e)
         {
             var controlGroup = (DeviceTypeViewModel) ((Button) sender).Tag;
-            var selectedDevice = controlGroup.DeviceComboBox.SelectedItem as PluginDevice;
-            var deviceConfigWindow = new DeviceConfigWindow(controlGroup.DeviceType, selectedDevice, controlGroup.CurrentDevice.Params,
-                controlGroup.CurrentConsumers.Select(Constructable<PluginStreamConsumer>.ToTuple).ToArray()) {Width = 500};
+            var deviceConfigWindow = new DeviceConfigWindow(controlGroup.DeviceType, controlGroup.CurrentDevice,
+                controlGroup.CurrentConsumers.ToArray()) {Width = 500};
             deviceConfigWindow.DeviceChanged += (s0, e0) => DeviceChanged?.Invoke(this, e0);
             deviceConfigWindow.ConsumerChanged += (s0, e0) => ConsumerChanged?.Invoke(this, e0);
             if (!deviceConfigWindow.ShowDialog(out var device, out var consumers)) return;
-            if (controlGroup.CurrentDevice.Target != device.Item1)
-                using (_deviceParamsUpdateLock.Ref()) 
-                {
-                    controlGroup.CurrentDevice.Target = device.Item1;
-                    controlGroup.DeviceComboBox.FindAndSelectFirstByString(device.Item1?.Identifier, 0);
-                }
-            controlGroup.CurrentDevice.Params = device.Item2;
-            controlGroup.CurrentConsumers = consumers.Select(Constructable<PluginStreamConsumer>.Of).ToArray();
+            if (controlGroup.CurrentDevice?.Template != device?.Template)
+                using (_deviceUpdateLock.Ref()) 
+                    controlGroup.DeviceComboBox.FindAndSelectFirstByString(device?.Template.Identifier, 0);
+            controlGroup.CurrentDevice = device;
+            controlGroup.CurrentConsumers = consumers.ToArray();
         }
 
         private static void DevicePreviewBtn_Click(object sender, RoutedEventArgs e)
         {
             var controlGroup = (DeviceTypeViewModel) ((Button) sender).Tag;
             var deviceType = controlGroup.DeviceType;
-            var selectedDevice = (PluginDevice)controlGroup.DeviceComboBox.SelectedItem;
+            var selectedDevice = controlGroup.CurrentDevice?.Template;
             if (selectedDevice?.Factory == null) return;
             if (deviceType.DataVisualizer == null) return;
-            var device = selectedDevice.NewInstance(controlGroup.CurrentDevice.Params);
+            var device = selectedDevice.NewInstance(controlGroup.CurrentDevice.Args);
             deviceType.DataVisualizer.Visualize(device);
         }
 

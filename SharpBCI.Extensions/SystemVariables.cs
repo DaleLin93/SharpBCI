@@ -36,14 +36,14 @@ namespace SharpBCI.Extensions
         public static void Serialize([NotNull] string filePath) => Serialize().JsonSerializeToFile(filePath, JsonUtils.PrettyFormat);
 
         [NotNull]
-        public static IDictionary<string, string> Serialize() => AllParameters.SerializeParams(Context);
+        public static IDictionary<string, string> Serialize() => AllParameters.SerializeArgs(Context);
 
         public static void Deserialize([NotNull] string filePath) => Deserialize(JsonUtils.DeserializeFromFile<IDictionary<string, string>>(filePath));
 
         public static void Deserialize([CanBeNull] IDictionary<string, string> input)
         {
             if (input == null) return;
-            Apply(AllParameters.DeserializeParams(input));
+            Apply(AllParameters.DeserializeArgs(input));
         }
 
     }

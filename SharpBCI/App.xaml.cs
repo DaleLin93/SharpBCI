@@ -170,12 +170,12 @@ namespace SharpBCI
             if (args.IsEmpty())
                 new LauncherWindow().Show();
             else if (args[0].EndsWith(MultiSessionConfig.FileSuffix, StringComparison.OrdinalIgnoreCase))
-                new MultiSessionConfigWindow(args[0]){IsKillOnFinish = true}.Show();
+                new MultiSessionLauncherWindow(args[0]){IsKillOnFinish = true}.Show();
             else if (args[0].EndsWith(SessionConfig.FileSuffix, StringComparison.OrdinalIgnoreCase))
             {
                 if (!JsonUtils.TryDeserializeFromFile<SessionConfig>(args[0], out var config))
                     throw new IOException($"Failed to load session config file: {args[0]}");
-                Bootstrap.StartSession(config, false, Bootstrap.SuicideAfterCompletedListener.Instance);
+                Bootstrap.StartSession(config, Bootstrap.SuicideAfterCompletedListener.Instance);
             }
         }
 
@@ -214,43 +214,43 @@ namespace SharpBCI
 
             MarukoLib.DirectX.Direct2D.CreateIndependentResource();
 
-            Registries.Registry<PluginDeviceType>().RegisterAll(
-                new PluginDeviceType(null, DeviceType.Of(typeof(IMarkerSource))),
-                new PluginDeviceType(null, DeviceType.Of(typeof(IBiosignalSource))),
-                new PluginDeviceType(null, DeviceType.Of(typeof(IEyeTracker))),
-                new PluginDeviceType(null, DeviceType.Of(typeof(IVideoSource))));
+            Registries.Registry<DeviceTypeAddOn>().RegisterAll(
+                new DeviceTypeAddOn(null, DeviceType.Of(typeof(IMarkerSource))),
+                new DeviceTypeAddOn(null, DeviceType.Of(typeof(IBiosignalSource))),
+                new DeviceTypeAddOn(null, DeviceType.Of(typeof(IEyeTracker))),
+                new DeviceTypeAddOn(null, DeviceType.Of(typeof(IVideoSource))));
 
-            Registries.Registry<PluginAppEntry>().RegisterAll(
-                new PluginAppEntry(null, new FileRenamingToolAppEntry()));
+            Registries.Registry<AppEntryAddOn>().RegisterAll(
+                new AppEntryAddOn(null, new FileRenamingToolAppEntry()));
 
-            Registries.Registry<PluginParadigm>().RegisterAll(
-                Plugin.InitPluginParadigm(null, typeof(RestParadigm)),
-                Plugin.InitPluginParadigm(null, typeof(CountdownParadigm)),
-                Plugin.InitPluginParadigm(null, typeof(TextDisplayParadigm)));
+            Registries.Registry<ParadigmTemplate>().RegisterAll(
+                Plugin.ForParadigmTemplate(null, typeof(RestParadigm)),
+                Plugin.ForParadigmTemplate(null, typeof(CountdownParadigm)),
+                Plugin.ForParadigmTemplate(null, typeof(TextDisplayParadigm)));
 
-            Registries.Registry<PluginDevice>().RegisterAll(
-                Plugin.InitPluginDevice(null, typeof(KeyboardTrigger)),
-                Plugin.InitPluginDevice(null, typeof(HeartbeatGenerator)),
-                Plugin.InitPluginDevice(null, typeof(SerialPortMarkerSource)),
-                Plugin.InitPluginDevice(null, typeof(CursorTracker)),
-                Plugin.InitPluginDevice(null, typeof(GazeFileReader)),
-                Plugin.InitPluginDevice(null, typeof(GenericOscillator)),
-                Plugin.InitPluginDevice(null, typeof(DataFileReader)),
-                Plugin.InitPluginDevice(null, typeof(ScreenCaptureSource)));
+            Registries.Registry<DeviceTemplate>().RegisterAll(
+                Plugin.ForDeviceTemplate(null, typeof(KeyboardTrigger)),
+                Plugin.ForDeviceTemplate(null, typeof(HeartbeatGenerator)),
+                Plugin.ForDeviceTemplate(null, typeof(SerialPortMarkerSource)),
+                Plugin.ForDeviceTemplate(null, typeof(CursorTracker)),
+                Plugin.ForDeviceTemplate(null, typeof(GazeFileReader)),
+                Plugin.ForDeviceTemplate(null, typeof(GenericOscillator)),
+                Plugin.ForDeviceTemplate(null, typeof(DataFileReader)),
+                Plugin.ForDeviceTemplate(null, typeof(ScreenCaptureSource)));
 
-            Registries.Registry<PluginStreamConsumer>().RegisterAll(
-                Plugin.InitPluginStreamConsumer(null, typeof(MarkerAsciiFileWriter)),
-                Plugin.InitPluginStreamConsumer(null, typeof(MarkerParallelPortSetter)),
-                Plugin.InitPluginStreamConsumer(null, typeof(MarkerParallelPortWriter)),
-                Plugin.InitPluginStreamConsumer(null, typeof(BiosignalAsciiFileWriter)),
-                Plugin.InitPluginStreamConsumer(null, typeof(BiosignalBinaryFileWriter)),
-                Plugin.InitPluginStreamConsumer(null, typeof(GazePointAsciiFileWriter)),
-                Plugin.InitPluginStreamConsumer(null, typeof(GazePointBinaryFileWriter)),
-                Plugin.InitPluginStreamConsumer(null, typeof(VideoFramesFileWriter)));
+            Registries.Registry<ConsumerTemplate>().RegisterAll(
+                Plugin.ForConsumerTemplate(null, typeof(MarkerAsciiFileWriter)),
+                Plugin.ForConsumerTemplate(null, typeof(MarkerParallelPortSetter)),
+                Plugin.ForConsumerTemplate(null, typeof(MarkerParallelPortWriter)),
+                Plugin.ForConsumerTemplate(null, typeof(BiosignalAsciiFileWriter)),
+                Plugin.ForConsumerTemplate(null, typeof(BiosignalBinaryFileWriter)),
+                Plugin.ForConsumerTemplate(null, typeof(GazePointAsciiFileWriter)),
+                Plugin.ForConsumerTemplate(null, typeof(GazePointBinaryFileWriter)),
+                Plugin.ForConsumerTemplate(null, typeof(VideoFramesFileWriter)));
 
             foreach (var plugin in Plugin.ScanPlugins((file, ex) => ShowErrorMessage(ex, "Failed to load plugin: " + file))) plugin.Register(Registries);
 
-            foreach (var entry in Registries.Registry<PluginAppEntry>().Registered)
+            foreach (var entry in Registries.Registry<AppEntryAddOn>().Registered)
                 if (entry.IsAutoStart)
                     try
                     {

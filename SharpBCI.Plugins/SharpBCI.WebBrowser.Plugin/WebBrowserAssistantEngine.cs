@@ -16,7 +16,7 @@ using SharpBCI.Extensions.Patterns;
 namespace SharpBCI.Paradigms.WebBrowser
 {
 
-    internal class GazePointProvider : StreamConsumer<Timestamped<IGazePoint>>
+    internal class GazePointProvider : Core.IO.Consumer<Timestamped<IGazePoint>>
     {
 
         private static readonly Supplier<double> GraphicsScale = 

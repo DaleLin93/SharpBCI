@@ -13,7 +13,7 @@ using Color = SharpDX.Color;
 namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
 {
 
-    internal class GazePointVisualizationWindow : SimpleD2DForm, IStreamConsumer<Timestamped<IGazePoint>>
+    internal class GazePointVisualizationWindow : SimpleD2DForm, IConsumer<Timestamped<IGazePoint>>
     {
 
         private readonly GazePointStreamer _streamer;
@@ -100,11 +100,11 @@ namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
             if (e.KeyCode == Keys.Escape) Close();
         }
 
-        Type IStreamConsumer.AcceptType => typeof(Timestamped<IGazePoint>);
+        Type IConsumer.AcceptType => typeof(Timestamped<IGazePoint>);
 
-        StreamConsumerPriority IStreamConsumer.Priority => StreamConsumerPriority.Highest;
+        ConsumerPriority IConsumer.Priority => ConsumerPriority.Highest;
 
-        void IStreamConsumer.Accept(object value) => Accept((Timestamped<IGazePoint>)value);
+        void IConsumer.Accept(object value) => Accept((Timestamped<IGazePoint>)value);
 
     }
 }

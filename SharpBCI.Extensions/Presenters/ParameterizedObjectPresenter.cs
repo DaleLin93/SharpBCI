@@ -27,7 +27,7 @@ namespace SharpBCI.Extensions.Presenters
                 Value = value;
             }
 
-            public object GetValue() => _parameter.IsValid(Value);
+            public object GetValue() => _parameter.IsValidOrThrow(Value);
 
             public void SetValue(object value) => Value = (IParameterizedObject)value;
 

@@ -10,14 +10,14 @@ using SharpBCI.Extensions.IO.Devices.VideoSources;
 
 namespace SharpBCI.Extensions.IO.Consumers.VideoFrame
 {
-    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
+    [Consumer(ConsumerName, typeof(Factory), "1.0")]
     public class VideoFramesFileWriter : TimestampedFileWriter<IVideoFrame>
     {
 
-        public sealed class Factory : StreamConsumerFactory<Timestamped<IVideoFrame>>
+        public sealed class Factory : ConsumerFactory<Timestamped<IVideoFrame>>
         {
 
-            public override IStreamConsumer<Timestamped<IVideoFrame>> Create(Session session, IReadonlyContext context, byte? num) =>
+            public override IConsumer<Timestamped<IVideoFrame>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new VideoFramesFileWriter(session.GetDataFileName(FileSuffix), session.CreateTimestamp);
 
         }

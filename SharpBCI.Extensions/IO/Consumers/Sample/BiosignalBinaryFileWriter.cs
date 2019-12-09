@@ -15,14 +15,14 @@ namespace SharpBCI.Extensions.IO.Consumers.Sample
     /// Format:  (N channels (doubles) + 1 time (long))
     /// Time is relative to session create time.
     /// </summary>
-    [StreamConsumer(ConsumerName, typeof(Factory), "1.0")]
+    [Consumer(ConsumerName, typeof(Factory), "1.0")]
     public class BiosignalBinaryFileWriter : TimestampedFileWriter<ISample>
     {
 
-        public sealed class Factory : StreamConsumerFactory<Timestamped<ISample>>
+        public sealed class Factory : ConsumerFactory<Timestamped<ISample>>
         {
 
-            public override IStreamConsumer<Timestamped<ISample>> Create(Session session, IReadonlyContext context, byte? num) =>
+            public override IConsumer<Timestamped<ISample>> Create(Session session, IReadonlyContext context, byte? num) =>
                 new BiosignalBinaryFileWriter(session.GetDataFileName(FileSuffix, num), session.CreateTimestamp);
 
         }

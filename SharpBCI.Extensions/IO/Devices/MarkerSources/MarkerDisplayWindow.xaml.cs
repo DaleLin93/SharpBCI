@@ -15,7 +15,7 @@ namespace SharpBCI.Extensions.IO.Devices.MarkerSources
     /// <summary>
     /// Interaction logic for MarkerDisplayWindow.xaml
     /// </summary>
-    internal partial class MarkerDisplayWindow : IStreamConsumer<Timestamped<IMarker>>
+    internal partial class MarkerDisplayWindow : IConsumer<Timestamped<IMarker>>
     {
 
         private readonly ObservableCollection<Timestamped<IMarker>> _marks = new ObservableCollection<Timestamped<IMarker>>();
@@ -48,13 +48,13 @@ namespace SharpBCI.Extensions.IO.Devices.MarkerSources
             if (e.Key == Key.Escape) Close();
         }
 
-        Type IStreamConsumer.AcceptType => typeof(Timestamped<IMarker>);
+        Type IConsumer.AcceptType => typeof(Timestamped<IMarker>);
 
-        StreamConsumerPriority IStreamConsumer.Priority => StreamConsumerPriority.Lowest;
+        ConsumerPriority IConsumer.Priority => ConsumerPriority.Lowest;
 
-        void IStreamConsumer.Accept(object value) => ((IStreamConsumer<Timestamped<IMarker>>) this).Accept((Timestamped<IMarker>) value);
+        void IConsumer.Accept(object value) => ((IConsumer<Timestamped<IMarker>>) this).Accept((Timestamped<IMarker>) value);
 
-        void IStreamConsumer<Timestamped<IMarker>>.Accept(Timestamped<IMarker> value)
+        void IConsumer<Timestamped<IMarker>>.Accept(Timestamped<IMarker> value)
         {
             this.DispatcherInvoke(() =>
             {
