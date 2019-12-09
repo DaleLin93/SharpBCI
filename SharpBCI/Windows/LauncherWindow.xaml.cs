@@ -17,6 +17,7 @@ using System.Windows.Media.Imaging;
 using JetBrains.Annotations;
 using MarukoLib.Interop;
 using MarukoLib.IO;
+using MarukoLib.Lang.Concurrent;
 using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions;
 using SharpBCI.Plugins;
@@ -139,7 +140,7 @@ namespace SharpBCI.Windows
 
         private readonly Timer _configAutoSaveTimer;
 
-        private bool _configDirty;
+        private readonly AtomicBool _configDirty = new AtomicBool(false);
 
         private WindowConfig _config = new WindowConfig();
 
@@ -152,7 +153,7 @@ namespace SharpBCI.Windows
         public LauncherWindow()
         {
             _configReadWriteLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-            _configAutoSaveTimer = new Timer(AutoSaveTimer_OnTick, null, 5000, 5000);
+            _configAutoSaveTimer = new Timer(AutoSaveTimer_OnTick, null, 60000, 60000);
             if (App.IsRealtimePriority) Title += " (Realtime)"; 
             InitializeComponent();
             InitializeHeaderPanel();
@@ -296,6 +297,7 @@ namespace SharpBCI.Windows
             UpdateFullSessionName(paradigmTemplate, context);
             Bootstrap.TryInitiateParadigm(paradigmTemplate, context, out var paradigm, false);
             ParadigmSummaryPanel.Update(context, paradigm);
+            _configDirty.Set();
         }
 
         private void InitializeHeaderPanel()
@@ -367,6 +369,7 @@ namespace SharpBCI.Windows
                 _config.SetParadigm(new SerializedObject(paradigm.Identifier,
                     paradigm.Attribute.Version?.ToString(),
                     paradigm.SerializeArgs(ParadigmParamPanel.Context)));
+                _configDirty.Set();
             }
         }
 
@@ -378,7 +381,8 @@ namespace SharpBCI.Windows
             var paradigm = _currentParadigm;
             if (paradigm == null) return;
             SerializedObject serializedParadigm;
-            using (_configReadWriteLock.AcquireReadLock()) serializedParadigm = _config.GetParadigm(paradigm.Identifier);
+            using (_configReadWriteLock.AcquireReadLock())
+                serializedParadigm = _config.GetParadigm(paradigm.Identifier);
             ParadigmParamPanel.Context = (IReadonlyContext) paradigm.DeserializeArgs(serializedParadigm.Args) ?? EmptyContext.Instance;
         }
 
@@ -398,6 +402,7 @@ namespace SharpBCI.Windows
                     if (deviceArgs.Consumers != null)
                         foreach (var consumerEntity in deviceArgs.Consumers)
                             _config.SetConsumer(consumerEntity);
+                    _configDirty.Set();
                 }
             }
         }
@@ -412,7 +417,10 @@ namespace SharpBCI.Windows
         {
             if (device == null) return;
             using (_configReadWriteLock.AcquireWriteLock())
+            {
                 _config.SetDevice(new SerializedObject(device.Identifier, device.SerializeArgs(args)));
+                _configDirty.Set();
+            }
         }
 
         /// <summary>
@@ -453,7 +461,10 @@ namespace SharpBCI.Windows
         {
             if (consumer == null) return;
             using (_configReadWriteLock.AcquireWriteLock())
+            {
                 _config.SetConsumer(new SerializedObject(consumer.Identifier, consumer.SerializeArgs(args)));
+                _configDirty.Set();
+            }
         }
 
         /// <summary>
@@ -711,9 +722,16 @@ namespace SharpBCI.Windows
         {
             lock (_configAutoSaveTimer)
             {
-                if (_configDirty)
-                    SaveConfig(0);
-                _configDirty = false;
+                if (_configDirty.Value)
+                    try
+                    {
+                        this.DispatcherInvoke(() => SaveConfig(0));
+                    }
+                    catch (Exception)
+                    {
+                        // ignored
+                    }
+                _configDirty.Reset();
             }
         }
 
@@ -746,7 +764,18 @@ namespace SharpBCI.Windows
             if (e.KeyStates == Keyboard.GetKeyStates(Key.Return) && Keyboard.Modifiers == ModifierKeys.Alt) StartSession();
         }
 
-        private void Window_OnClosing(object sender, EventArgs e) => _configAutoSaveTimer.Dispose();
+        private void Window_OnClosing(object sender, EventArgs e)
+        {
+            _configAutoSaveTimer.Dispose();
+            try
+            {
+                SaveConfig(0);
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+        }
 
         private void Window_OnClosed(object sender, EventArgs e) => App.Kill();
 
@@ -862,7 +891,10 @@ namespace SharpBCI.Windows
         void Bootstrap.ISessionListener.BeforeSessionStart(int index, Session session)
         {
             using (_configReadWriteLock.AcquireWriteLock())
+            {
                 _config.AddRecentSession(session.DataFilePrefix);
+                _configDirty.Set();
+            }
             RefreshRecentSessionsMenuItems();
             SaveConfig();
         }
