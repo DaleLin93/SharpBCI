@@ -569,14 +569,11 @@ namespace SharpBCI.Paradigms.MI
         }
 
         internal void OnMediaControlCommandReceived(bool pause)
-        {
+        {   
+            //media control
             this.DispatcherInvoke(() =>
             {
-<<<<<<< HEAD
-                if (stop) _activeVisualElement.Pause();
-=======
                 if (pause) _activeVisualElement.Pause();
->>>>>>> origin/dev
                 else _activeVisualElement.Play();
             });
         }
