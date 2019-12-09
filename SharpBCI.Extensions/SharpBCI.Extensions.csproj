@@ -149,6 +149,10 @@
     <Compile Include="IO\Devices\VideoSources\VideoFrameStreamer.cs" />
     <Compile Include="IO\Devices\VideoSources\VideoSource.cs" />
     <Compile Include="IO\ConsumerFactory.cs" />
+    <Compile Include="Paradigms\Profiler\ProfilerWindow.xaml.cs">
+      <DependentUpon>ProfilerWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Paradigms\Profiler\ProfilerParadigm.cs" />
     <Compile Include="Paradigms\TextDisplay\TextDisplayParadigm.cs" />
     <Compile Include="Paradigms\TextDisplay\TextDisplayExperimentWindow.xaml.cs">
       <DependentUpon>TextDisplayExperimentWindow.xaml</DependentUpon>
@@ -271,6 +275,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="IO\Devices\MarkerSources\MarkerDisplayWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Paradigms\Profiler\ProfilerWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
