@@ -20,6 +20,11 @@ namespace SharpBCI.Paradigms.MI
     {
 
 #pragma warning disable 0649
+        public enum ControlCommand
+        {
+            Play, Pause
+        }
+
         public class IncomingMessage
         {
 
@@ -67,7 +72,7 @@ namespace SharpBCI.Paradigms.MI
 
         internal event EventHandler<float> ProgressChanged;
 
-        internal event EventHandler<bool> PlayChanged;
+        internal event EventHandler<ControlCommand> ControlCommandReceived;
 
         internal event EventHandler<IncomingMessage> MessageReceived;
 
@@ -241,7 +246,7 @@ namespace SharpBCI.Paradigms.MI
                     FocusRequested?.Invoke(this, EventArgs.Empty);
                     break;
                 case "animation_ctrl":
-                    PlayChanged?.Invoke(this, message.IsStopCtrl);
+                    ControlCommandReceived?.Invoke(this, message.IsStopCtrl ? ControlCommand.Pause : ControlCommand.Play);
                     break;
                 default:
                     Logger.Warn("HandleIncomingMessage - unsupported message", "type", message.Type);
