@@ -513,7 +513,7 @@ namespace SharpBCI.Paradigms.MI
             {
                 // ReSharper disable once PossibleNullReferenceException
                 _miStimClient.ProgressChanged += (sender, progress) => this.DispatcherInvoke(() => ProgressBar.Value = progress);
-                _miStimClient.FocusRequested += (sender, e) => EnterRequestForFocusMode();
+                _miStimClient.FocusRequested += (sender, gazePosition) => EnterRequestForFocusMode(gazePosition);
                 _miStimClient.ControlCommandReceived += (sender, cmd) => OnControlCommandReceived(cmd);
             }
 
@@ -546,7 +546,7 @@ namespace SharpBCI.Paradigms.MI
 
         internal void UpdateTargetCircle() => _gazeFocusDetector?.SetTargetCircle(new Point(ActualWidth / 2, ActualHeight / 2), FocusCircle.Width / 2);
 
-        internal void EnterRequestForFocusMode()
+        internal void EnterRequestForFocusMode(MiStimClient.GazePositionSet gazePosition)
         {
             this.DispatcherInvoke(() =>
             {

@@ -24,6 +24,10 @@ namespace SharpBCI.Paradigms.MI
         {
             Play, Pause
         }
+        public enum GazePositionSet
+        {
+            Center, Left, Right
+        }
 
         public class IncomingMessage
         {
@@ -50,6 +54,14 @@ namespace SharpBCI.Paradigms.MI
 
             public float Progress;
 
+            /* Focus */
+
+            public string GazePositionStr;
+
+            public GazePositionSet GazePosition;
+
+            /* Animation Ctrl */
+
             public bool IsStopCtrl = false;
 
         }
@@ -68,7 +80,7 @@ namespace SharpBCI.Paradigms.MI
         
         private static readonly Encoding TransmissionEncoding = Encoding.UTF8;
 
-        internal event EventHandler FocusRequested;
+        internal event EventHandler <GazePositionSet>FocusRequested;
 
         internal event EventHandler<float> ProgressChanged;
 
@@ -243,7 +255,13 @@ namespace SharpBCI.Paradigms.MI
                     ProgressChanged?.Invoke(this, message.Progress);
                     break;
                 case "focus":
-                    FocusRequested?.Invoke(this, EventArgs.Empty);
+                    switch (message.GazePositionStr)
+                    {
+                        case "center": message.GazePosition = GazePositionSet.Center; break;
+                        case "left": message.GazePosition = GazePositionSet.Left; break;
+                        case "right": message.GazePosition = GazePositionSet.Right; break;
+                    }
+                    FocusRequested?.Invoke(this, message.GazePosition);
                     break;
                 case "animation_ctrl":
                     ControlCommandReceived?.Invoke(this, message.IsStopCtrl ? ControlCommand.Pause : ControlCommand.Play);
