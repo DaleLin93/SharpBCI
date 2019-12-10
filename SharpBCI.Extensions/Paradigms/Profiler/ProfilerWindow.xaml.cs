@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -117,6 +118,27 @@ namespace SharpBCI.Extensions.Paradigms.Profiler
             return valueType;
         }
 
+        private void Stop(bool userInterrupted = false)
+        {
+            _session.Finish(null, userInterrupted);
+            _timer?.Dispose();
+            _timer = null;
+        }
+
+        private void Timer_OnTick(object state)
+        {
+            this.DispatcherInvoke(() =>
+            {
+                var secs = (DateTimeUtils.CurrentTimeMillis - _startTimestamp) / 1000.0;
+                foreach (var profileViewModel in _profileViewModels)
+                {
+                    profileViewModel.InputSpeedTextBlock.Text = $"{profileViewModel.Watcher.InputCount / secs:N2}/s";
+                    profileViewModel.ProcessingSpeedTextBlock.Text = $"{profileViewModel.Watcher.ProcessCount / secs:N2}/s";
+                    profileViewModel.CountTextBlock.Text = $"{profileViewModel.Watcher.ProcessCount}/{profileViewModel.Watcher.InputCount}";
+                }
+            });
+        }
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _session.Start();
@@ -142,28 +164,8 @@ namespace SharpBCI.Extensions.Paradigms.Profiler
             _timer = new Timer(Timer_OnTick, null, 1000, 1000);
         }
 
-        private void Timer_OnTick(object state)
-        {
-            this.DispatcherInvoke(() =>
-            {
-                var secs = (DateTimeUtils.CurrentTimeMillis - _startTimestamp) / 1000.0;
-                foreach (var profileViewModel in _profileViewModels)
-                {
-                    profileViewModel.InputSpeedTextBlock.Text = $"{profileViewModel.Watcher.InputCount / secs:N2}/s";
-                    profileViewModel.ProcessingSpeedTextBlock.Text = $"{profileViewModel.Watcher.ProcessCount / secs:N2}/s";
-                    profileViewModel.CountTextBlock.Text = $"{profileViewModel.Watcher.ProcessCount}/{profileViewModel.Watcher.InputCount}";
-                }
-            });
-        }
-
-        private void Stop(bool userInterrupted = false)
-        {
-            Close();
-            _session.Finish(null, userInterrupted);
-            _timer?.Dispose();
-            _timer = null;
-        }
-
+        private void ProfilerWindow_OnClosing(object sender, CancelEventArgs e) => Stop(true);
+        
         private void ResetButton_OnClick(object sender, RoutedEventArgs e)
         {
             _startTimestamp = DateTimeUtils.CurrentTimeMillis;
@@ -171,7 +173,7 @@ namespace SharpBCI.Extensions.Paradigms.Profiler
                 profileViewModel.Watcher.Reset();
         }
 
-        private void StopButton_OnClick(object sender, RoutedEventArgs e) => Stop(true);
+        private void StopButton_OnClick(object sender, RoutedEventArgs e) => Close();
 
     }
 

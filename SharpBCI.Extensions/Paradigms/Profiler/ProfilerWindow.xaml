@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         x:ClassModifier="internal" Title="Data Watcher"
-        mc:Ignorable="d" Height="400" Width="600" Loaded="Window_Loaded" >
+        mc:Ignorable="d" Height="400" Width="600" Loaded="Window_Loaded" Closing="ProfilerWindow_OnClosing" >
     <DockPanel>
         <Grid DockPanel.Dock="Bottom">
             <Rectangle Height="1" VerticalAlignment="Top" Fill="DarkGray"/>

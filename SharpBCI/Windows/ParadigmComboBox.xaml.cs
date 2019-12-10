@@ -1,15 +1,12 @@
-﻿using System.Windows.Controls;
-
-namespace SharpBCI.Windows
+﻿namespace SharpBCI.Windows
 {
+
     /// <summary>
     /// Interaction logic for ParadigmComboBox.xaml
     /// </summary>
-    public partial class ParadigmComboBox : ComboBox
+    public partial class ParadigmComboBox 
     {
-        public ParadigmComboBox()
-        {
-            InitializeComponent();
-        }
+        public ParadigmComboBox() => InitializeComponent();
     }
+
 }
