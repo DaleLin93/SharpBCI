@@ -420,7 +420,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
             return index < half ? half + index + reminder : index - half;
         }
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override Priority Priority => Priority.Lowest;
 
         public IInitializer CreateInitializer() => new NoOpInitializer();//new DistributionInitializer(this);
 

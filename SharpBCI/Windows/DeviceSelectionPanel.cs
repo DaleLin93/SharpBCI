@@ -189,7 +189,7 @@ namespace SharpBCI.Windows
                 controlGroup.DeviceComboBox.SelectionChanged += DeviceComboBox_SelectionChanged;
                 controlGroup.ConfigButton.Click += DeviceConfigBtn_Click;
                 controlGroup.PreviewButton.Click += DevicePreviewBtn_Click;
-                this.AddRow(deviceType.DisplayName, controlGroup.Container);
+                this.AddLabeledRow(deviceType.DisplayName, controlGroup.Container);
             }
             UpdateDevices();
         }

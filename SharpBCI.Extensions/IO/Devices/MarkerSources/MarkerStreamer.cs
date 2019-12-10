@@ -35,7 +35,7 @@ namespace SharpBCI.Extensions.IO.Devices.MarkerSources
 
         [SuppressMessage("ReSharper", "SuggestBaseTypeForParameter")]
         public MarkerStreamer([CanBeNull] IMarkerSource markerSource, [NotNull] IClock clock, [NotNull] IConsumer<Timestamped<IMarker>> consumer)
-            : this(markerSource, clock) => Attach(consumer);
+            : this(markerSource, clock) => AttachConsumer(consumer);
 
         public long Mark(string label, int marker)
         {

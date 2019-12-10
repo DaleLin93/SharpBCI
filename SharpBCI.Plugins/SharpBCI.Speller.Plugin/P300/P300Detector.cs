@@ -53,7 +53,7 @@ namespace SharpBCI.Paradigms.Speller.P300
             }
         }
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override Priority Priority => Priority.Lowest;
 
         public override void Accept(Timestamped<ISample> data)
         {

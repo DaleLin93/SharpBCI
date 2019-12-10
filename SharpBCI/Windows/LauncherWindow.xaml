@@ -34,6 +34,7 @@
                     <MenuItem x:Name="PlatformCapsMenuItem" Header="Platform Caps" />
                 </MenuItem>
                 <MenuItem Header="Data" >
+                    <MenuItem Header="Config Folder" Click="ConfigFolderMenuItem_OnClick" />
                     <MenuItem Header="Data Folder" Click="DataFolderMenuItem_OnClick" />
                     <Separator/>
                     <MenuItem Header="Analyze" Click="AnalyzeMenuItem_OnClick" />

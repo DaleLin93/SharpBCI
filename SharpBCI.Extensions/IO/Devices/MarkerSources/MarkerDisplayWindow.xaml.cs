@@ -34,7 +34,7 @@ namespace SharpBCI.Extensions.IO.Devices.MarkerSources
             KeyUp += Window_OnKeyUp;
 
             _streamer = streamer;
-            _streamer.Attach(this);
+            _streamer.AttachConsumer(this);
 
             _maxRecordCount = maxRecordCount;
         }
@@ -48,9 +48,9 @@ namespace SharpBCI.Extensions.IO.Devices.MarkerSources
             if (e.Key == Key.Escape) Close();
         }
 
-        Type IConsumer.AcceptType => typeof(Timestamped<IMarker>);
+        Type IComponent.AcceptType => typeof(Timestamped<IMarker>);
 
-        ConsumerPriority IConsumer.Priority => ConsumerPriority.Lowest;
+        Priority IPriority.Priority => Priority.Lowest;
 
         void IConsumer.Accept(object value) => ((IConsumer<Timestamped<IMarker>>) this).Accept((Timestamped<IMarker>) value);
 

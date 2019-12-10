@@ -31,6 +31,7 @@ using SharpBCI.Extensions.IO.Consumers.GazePoint;
 using SharpBCI.Extensions.IO.Consumers.Marker;
 using SharpBCI.Extensions.IO.Consumers.Sample;
 using SharpBCI.Extensions.IO.Consumers.VideoFrame;
+using SharpBCI.Extensions.Paradigms.Profiler;
 
 namespace SharpBCI
 {
@@ -226,7 +227,8 @@ namespace SharpBCI
             Registries.Registry<ParadigmTemplate>().RegisterAll(
                 Plugin.ForParadigmTemplate(null, typeof(RestParadigm)),
                 Plugin.ForParadigmTemplate(null, typeof(CountdownParadigm)),
-                Plugin.ForParadigmTemplate(null, typeof(TextDisplayParadigm)));
+                Plugin.ForParadigmTemplate(null, typeof(TextDisplayParadigm)),
+                Plugin.ForParadigmTemplate(null, typeof(ProfilerParadigm)));
 
             Registries.Registry<DeviceTemplate>().RegisterAll(
                 Plugin.ForDeviceTemplate(null, typeof(KeyboardTrigger)),

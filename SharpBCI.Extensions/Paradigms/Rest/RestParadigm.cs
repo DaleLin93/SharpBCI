@@ -9,7 +9,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Extensions.Paradigms.Rest
 {
 
-    [Paradigm(ParadigmName, typeof(Factory), "1.0", Description = "A simple resting state paradigm with specific cue.")]
+    [Paradigm(ParadigmName, typeof(Factory), "Basic", "1.0", Description = "A simple resting state paradigm with specific cue.")]
     public class RestParadigm : StagedParadigm.Basic
     {
 

@@ -31,7 +31,7 @@ namespace SharpBCI.Extensions.IO.Devices.VideoSources
             Stopped += (sender, e) => videoSource.Shutdown();
         }
 
-        public VideoFrameStreamer(IVideoSource videoSource, IClock clock, IConsumer<Timestamped<IVideoFrame>> consumer) : this(videoSource, clock) => Attach(consumer);
+        public VideoFrameStreamer(IVideoSource videoSource, IClock clock, IConsumer<Timestamped<IVideoFrame>> consumer) : this(videoSource, clock) => AttachConsumer(consumer);
 
         protected override Timestamped<IVideoFrame> Acquire() => WithTimestamp(VideoSource.Read() ?? throw new EndOfStreamException());
 

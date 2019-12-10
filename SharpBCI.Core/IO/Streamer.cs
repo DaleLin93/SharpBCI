@@ -4,8 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Threading;
+using MarukoLib.Threading;
 
 namespace SharpBCI.Core.IO
 {
@@ -22,7 +22,9 @@ namespace SharpBCI.Core.IO
 
         Type ValueType { get; }
 
-        int AttachedConsumerCount { get; }
+        int FilterCount { get; }
+
+        int ConsumerCount { get; }
 
         StreamerState State { get; }
 
@@ -30,18 +32,28 @@ namespace SharpBCI.Core.IO
 
         void Stop();
 
-        void Attach(IConsumer consumer);
+        void AttachFilter(IFilter filter);
 
-        bool Detach(IConsumer consumer);
+        bool DetachFilter(IFilter filter);
 
-        IEnumerable<T> FindConsumers<T>() where T : IConsumer;
+        IEnumerable<T> QueryFilters<T>();
+
+        void AttachConsumer(IConsumer consumer);
+
+        bool DetachConsumer(IConsumer consumer);
+
+        IEnumerable<T> QueryConsumers<T>();
 
     }
 
     public abstract class Streamer : IStreamer
     {
 
+        private readonly LinkedList<IFilter> _filters = new LinkedList<IFilter>();
+
         private readonly LinkedList<IConsumer> _consumers = new LinkedList<IConsumer>();
+
+        private readonly ReaderWriterLockSlim _filtersLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
         private readonly ReaderWriterLockSlim _consumersLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
@@ -51,11 +63,34 @@ namespace SharpBCI.Core.IO
             ValueType = valueType ?? throw new ArgumentNullException(nameof(valueType));
         }
 
+        private static bool Insert<T>(LinkedList<T> list, T value) where T : IPriority
+        {
+            if (!list.IsEmpty())
+            {
+                if (list.Contains(value)) return false;
+                var priority = value.Priority;
+                var node = list.First;
+                while (node != null)
+                {
+                    if (node.Value.Priority > priority)
+                    {
+                        list.AddBefore(node, value);
+                        return true;
+                    }
+                    node = node.Next;
+                }
+            }
+            list.AddLast(value);
+            return true;
+        }
+
         public string StreamId { get; }
 
         public Type ValueType { get; }
 
-        public int AttachedConsumerCount => _consumers.Count;
+        public int FilterCount => _filters.Count;
+
+        public int ConsumerCount => _consumers.Count;
 
         public abstract StreamerState State { get; }
 
@@ -63,68 +98,77 @@ namespace SharpBCI.Core.IO
 
         public abstract void Stop();
 
-        public void Attach(IConsumer consumer)
+        public void AttachFilter(IFilter filter)
+        {
+            if (!filter.AcceptType.IsAssignableFrom(ValueType))
+                throw new ArgumentException($"Type not match, streamer value type: {ValueType}, filter accept type: {filter.AcceptType}");
+            using (_filtersLock.AcquireWriteLock())
+                if (!Insert(_filters, filter))
+                    throw new ArgumentException("The given filter is already attached");
+        }
+
+        public bool DetachFilter(IFilter filter)
+        {
+            if (!filter.AcceptType.IsAssignableFrom(ValueType)) return false;
+            using (_filtersLock.AcquireWriteLock())
+                return _filters.Remove(filter);
+        }
+
+        public IEnumerable<TFilter> QueryFilters<TFilter>()
+        {
+            var result = new LinkedList<TFilter>();
+            using (_filtersLock.AcquireReadLock())
+                foreach (var filter in _filters)
+                    if (filter is TFilter tFilter)
+                        result.AddLast(tFilter);
+            return result;
+        }
+
+        public void AttachConsumer(IConsumer consumer)
         {
             if (!consumer.AcceptType.IsAssignableFrom(ValueType)) 
                 throw new ArgumentException($"Type not match, streamer value type: {ValueType}, consumer accept type: {consumer.AcceptType}");
             var priority = consumer.Priority;
-            try
-            {
-                _consumersLock.EnterWriteLock();
-                if (!_consumers.IsEmpty())
-                {
-                    if (_consumers.Contains(consumer)) throw new ArgumentException("The given consumer is already attached");
-                    var node = _consumers.First;
-                    while (node != null)
-                    {
-                        if (node.Value.Priority > priority)
-                        {
-                            _consumers.AddBefore(node, consumer);
-                            return;
-                        }
-                        node = node.Next;
-                    }
-                }
-                _consumers.AddLast(consumer);
-            }
-            finally
-            {
-                _consumersLock.ExitWriteLock();
-            }
+            using (_consumersLock.AcquireWriteLock())
+                if (!Insert(_consumers, consumer))
+                    throw new ArgumentException("The given consumer is already attached");
         }
 
-        public bool Detach(IConsumer consumer)
+        public bool DetachConsumer(IConsumer consumer)
         {
             if (!consumer.AcceptType.IsAssignableFrom(ValueType)) return false;
-            try
-            {
-                _consumersLock.EnterWriteLock();
+            using (_consumersLock.AcquireWriteLock())
                 return _consumers.Remove(consumer);
-            }
-            finally
-            {
-                _consumersLock.ExitWriteLock();
-            }
         }
 
-        public IEnumerable<TC> FindConsumers<TC>() where TC : IConsumer
+        public IEnumerable<TConsumer> QueryConsumers<TConsumer>()
         {
-            var consumers = new LinkedList<TC>();
-            var type = typeof(TC);
+            var result = new LinkedList<TConsumer>();
+            using (_consumersLock.AcquireReadLock())
+                foreach (var consumer in _consumers)
+                    if (consumer is TConsumer tConsumer)
+                        result.AddLast(tConsumer);
+            return result;
+        }
+
+        protected bool Accept(object value)
+        {
             try
             {
-                _consumersLock.EnterReadLock();
-                foreach (var consumer in _consumers.Where(consumer => type.IsInstanceOfType(consumer)))
-                    consumers.AddLast((TC)consumer);
+                _filtersLock.EnterWriteLock();
+                // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
+                foreach (var filter in _filters)
+                    if (!filter.Accept(value))
+                        return false;
+                return true;
             }
             finally
             {
-                _consumersLock.ExitReadLock();
+                _filtersLock.ExitWriteLock();
             }
-            return consumers;
         }
 
-        protected void Consume(object value)
+        protected void Dispatch(object value)
         {
             try
             {
@@ -238,7 +282,11 @@ namespace SharpBCI.Core.IO
             try
             {
                 while (_state == StreamerState.Started)
-                    Enqueue0(Acquire());
+                {
+                    var value = Acquire();
+                    if (Accept(value)) 
+                        Enqueue0(value);
+                }
             }
             catch (ThreadInterruptedException) { }
             catch (EndOfStreamException) { }
@@ -267,7 +315,7 @@ namespace SharpBCI.Core.IO
                         value = _queued.First.Value;
                         _queued.RemoveFirst();
                     }
-                    Consume(value);
+                    Dispatch(value);
                 }
             }
             catch (ThreadInterruptedException) { }

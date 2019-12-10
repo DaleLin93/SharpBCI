@@ -9,7 +9,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Extensions.Paradigms.Countdown
 {
 
-    [Paradigm(ParadigmName, typeof(Factory), "1.0", Description = "A basic count down program.")]
+    [Paradigm(ParadigmName, typeof(Factory), "Basic", "1.0", Description = "A basic count down program.")]
     public class CountdownParadigm : StagedParadigm.Basic
     {
 

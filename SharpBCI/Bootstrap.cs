@@ -140,8 +140,8 @@ namespace SharpBCI
                                 Debug.Assert(consumerWithParams.Template != null, "consumerWithParams.Template != null");
                                 var consumer = consumerWithParams.Template.NewInstance(session, consumerWithParams.Args, indexed ? num++ : (byte?)null);
                                 disposablePool.AddIfDisposable(consumer);
-                                deviceStreamer.Attach(consumer);
-                                disposablePool.Add(new DelegatedDisposable(() => deviceStreamer.Detach(consumer)));
+                                deviceStreamer.AttachConsumer(consumer);
+                                disposablePool.Add(new DelegatedDisposable(() => deviceStreamer.DetachConsumer(consumer)));
                             }
                         }
 

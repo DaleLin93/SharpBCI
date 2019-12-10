@@ -37,7 +37,7 @@ namespace SharpBCI.Extensions.IO.Devices.VideoSources
             KeyUp += Window_OnKeyUp;
 
             _streamer = streamer;
-            streamer.Attach(this);
+            streamer.AttachConsumer(this);
         }
 
         public void Accept(Timestamped<IVideoFrame> value)
@@ -88,9 +88,9 @@ namespace SharpBCI.Extensions.IO.Devices.VideoSources
             if (e.KeyCode == Keys.Escape) Close();
         }
 
-        Type IConsumer.AcceptType => typeof(Timestamped<IVideoFrame>);
+        Type IComponent.AcceptType => typeof(Timestamped<IVideoFrame>);
 
-        ConsumerPriority IConsumer.Priority => ConsumerPriority.Highest;
+        Priority IPriority.Priority => Priority.Highest;
 
         void IConsumer.Accept(object value) => Accept((Timestamped<IVideoFrame>)value);
 
