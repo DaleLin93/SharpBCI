@@ -22,7 +22,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         Square01, SineGradient, SquareCheckerboard, SquareCheckerboardRadical
     }
 
-    [Paradigm(ParadigmName, typeof(Factory), "1.0")]
+    [Paradigm(ParadigmName, typeof(Factory), "EEG", "1.0")]
     public class SsvepParadigm : Paradigm
     {
 

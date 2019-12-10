@@ -68,7 +68,7 @@ namespace SharpBCI.Paradigms.Speller.P300
             };
 
             if (session.StreamerCollection.TryFindFirst<BiosignalStreamer>(out var biosignalStreamer))
-                biosignalStreamer.Attach(_p300Detector = new P300Detector(
+                biosignalStreamer.AttachConsumer(_p300Detector = new P300Detector(
                     Paradigm.Config.Test.Channels.Enumerate(1, biosignalStreamer.BiosignalSource.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
                     biosignalStreamer.BiosignalSource.Frequency, (uint)biosignalStreamer.BiosignalSource.Frequency, 0.5F));
         }

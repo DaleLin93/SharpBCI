@@ -514,7 +514,7 @@ namespace SharpBCI.Paradigms.MI
                 // ReSharper disable once PossibleNullReferenceException
                 _miStimClient.ProgressChanged += (sender, progress) => this.DispatcherInvoke(() => ProgressBar.Value = progress);
                 _miStimClient.FocusRequested += (sender, e) => EnterRequestForFocusMode();
-                _miStimClient.ControlCommandReceived += (sender, cmd) => OnControlCommandReceived(cmd);
+                _miStimClient.PlayChanged += (sender, stop) => OnPlayChanged(stop);
             }
 
             /* Initialize GazeFocusDetector to enable 'request for focus' */
@@ -524,7 +524,7 @@ namespace SharpBCI.Paradigms.MI
                 _gazeFocusDetector.Focused += (sender, e) => OnFocused();
                 _gazeFocusDetector.Enter += (sender, e) => this.DispatcherInvoke(() => FocusCircle.Fill = Brushes.Pink);
                 _gazeFocusDetector.Leave += (sender, e) => this.DispatcherInvoke(() => FocusCircle.Fill = Brushes.Red);
-                gazePointStreamer.Attach(_gazeFocusDetector);
+                gazePointStreamer.AttachConsumer(_gazeFocusDetector);
                 if (gazePointStreamer.EyeTracker.GetType() != typeof(CursorTracker)) this.HideCursorInside();
             }
             else
@@ -568,10 +568,11 @@ namespace SharpBCI.Paradigms.MI
             });
         }
 
-        internal void OnControlCommandReceived(MiStimClient.ControlCommand command)
+        internal void OnPlayChanged(bool stop)
         {
             this.DispatcherInvoke(() =>
             {
+<<<<<<< HEAD
                 switch (command)
                 {
                     case MiStimClient.ControlCommand.Play:
@@ -584,6 +585,10 @@ namespace SharpBCI.Paradigms.MI
                         Log.Warn("OnControlCommandReceived - unknown command", "command", command);
                         break;
                 }
+=======
+                if (stop) _activeVisualElement.Pause();
+                else _activeVisualElement.Play();
+>>>>>>> master
             });
         }
 

@@ -81,10 +81,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Experiment\Paradigm.cs" />
+    <Compile Include="IO\Component.cs" />
+    <Compile Include="IO\Filter.cs" />
     <Compile Include="IO\Markable.cs" />
     <Compile Include="Experiment\Result.cs" />
     <Compile Include="Experiment\Session.cs" />
-    <Compile Include="IO\StreamConsumer.cs" />
+    <Compile Include="IO\Consumer.cs" />
+    <Compile Include="IO\Priority.cs" />
     <Compile Include="IO\Streamer.cs" />
     <Compile Include="IO\StreamerCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

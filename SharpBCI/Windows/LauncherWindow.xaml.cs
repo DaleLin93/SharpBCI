@@ -3,14 +3,17 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -97,6 +100,14 @@ namespace SharpBCI.Windows
 
         }
 
+        private class ParadigmItemGroupDescription : GroupDescription
+        {
+
+            public override object GroupNameFromItem(object item, int level, CultureInfo culture) => 
+                ((item as FrameworkElement)?.Tag as ParadigmTemplate)?.Category;
+
+        }
+
         private struct ParamValidationResult
         {
 
@@ -128,7 +139,7 @@ namespace SharpBCI.Windows
 
         private TextBlock _sessionFullNameTextBlock, _paradigmDescriptionTextBlock;
 
-        private ComboBox _paradigmComboBox;
+        private ParadigmComboBox _paradigmComboBox;
 
         private DeviceSelectionPanel _deviceConfigPanel;
 
@@ -303,15 +314,15 @@ namespace SharpBCI.Windows
         private void InitializeHeaderPanel()
         {
             var sessionPanel = HeaderPanel.AddGroupStackPanel("Session", "General Session Information");
-            sessionPanel.AddRow("Subject", _subjectTextBox = new TextBox { Text = "Anonymous", MaxLength = 32});
-            sessionPanel.AddRow("Session Descriptor", _sessionDescriptorTextBox = new TextBox {Text = "Unnamed", MaxLength = 64});
-            sessionPanel.AddRow("", _sessionFullNameTextBlock = new TextBlock {FontSize = 10, Foreground = Brushes.DarkGray, Margin = new Thickness {Top = 3}});
+            sessionPanel.AddLabeledRow("Subject", _subjectTextBox = new TextBox { Text = "Anonymous", MaxLength = 32});
+            sessionPanel.AddLabeledRow("Session Descriptor", _sessionDescriptorTextBox = new TextBox {Text = "Unnamed", MaxLength = 64});
+            sessionPanel.AddLabeledRow("", _sessionFullNameTextBlock = new TextBlock {FontSize = 10, Foreground = Brushes.DarkGray, Margin = new Thickness {Top = 3}});
             void OnSessionInfoChanged(object sender, TextChangedEventArgs e) => UpdateFullSessionName(_currentParadigm, ParadigmParamPanel.Context);
             _subjectTextBox.TextChanged += OnSessionInfoChanged;
             _sessionDescriptorTextBox.TextChanged += OnSessionInfoChanged;
             var paradigmPanel = HeaderPanel.AddGroupStackPanel("Paradigm", "Paradigm Selection");
             var paradigmComboBoxContainer = new Grid();
-            _paradigmComboBox = new ComboBox {Margin = new Thickness {Right = ViewConstants.DefaultRowHeight + ViewConstants.MinorSpacing}};
+            _paradigmComboBox = new ParadigmComboBox {Margin = new Thickness {Right = ViewConstants.DefaultRowHeight + ViewConstants.MinorSpacing}};
             _paradigmComboBox.SelectionChanged += ParadigmComboBox_OnSelectionChanged;
             paradigmComboBoxContainer.Children.Add(_paradigmComboBox);
             var loadDefaultCfgBtnImageSource = new BitmapImage(new Uri(ViewConstants.ResetImageUri, UriKind.Absolute));
@@ -319,8 +330,8 @@ namespace SharpBCI.Windows
             var loadDefaultCfgBtn = new Button {ToolTip = "Load Default Config", HorizontalAlignment = HorizontalAlignment.Right, Width = ViewConstants.DefaultRowHeight, Content = loadDefaultCfgImage};
             loadDefaultCfgBtn.Click += ParadigmResetBtn_OnClick;
             paradigmComboBoxContainer.Children.Add(loadDefaultCfgBtn);
-            paradigmPanel.AddRow("Paradigm", paradigmComboBoxContainer);
-            _paradigmDescriptionRow = paradigmPanel.AddRow("", _paradigmDescriptionTextBlock = new TextBlock {FontSize = 10, Foreground = Brushes.DarkGray});
+            paradigmPanel.AddLabeledRow("Paradigm", paradigmComboBoxContainer);
+            _paradigmDescriptionRow = paradigmPanel.AddLabeledRow("", _paradigmDescriptionTextBlock = new TextBlock {FontSize = 10, Foreground = Brushes.DarkGray});
             _paradigmDescriptionRow.Visibility = Visibility.Collapsed;
         }
 
@@ -504,7 +515,7 @@ namespace SharpBCI.Windows
                         var valid = ValidationResult.Failed();
                         try { valid = factory.CheckValid(paradigm.Clz, context, pd); }
                         catch (Exception e) { Logger.Warn("CheckParadigmArgs", e, "parameter", pd.Key); }
-                        var row = ParadigmParamPanel[pd]?.Container;
+                        var row = ParadigmParamPanel[pd]?.Row;
                         if (row != null && (row.IsError = valid.IsFailed)) row.ErrorMessage = valid.Message?.Trim();
                         return new ParamValidationResult(pd, valid);
                     })
@@ -534,8 +545,17 @@ namespace SharpBCI.Windows
         /// </summary>
         private void RefreshParadigmComboboxItems()
         {
+            var categoryParadigms = new SortedDictionary<string, LinkedList<ParadigmTemplate>>();
+            foreach (var paradigm in App.Instance.Registries.Registry<ParadigmTemplate>().Registered)
+            {
+                var category = paradigm.Category ?? "Default";
+                (categoryParadigms.TryGetValue(category, out var list) 
+                    ? list : categoryParadigms[category] = list = new LinkedList<ParadigmTemplate>()).AddLast(paradigm);
+            }
             var paradigmItems = new LinkedList<object>();
-            foreach (var paradigm in App.Instance.Registries.Registry<ParadigmTemplate>().Registered.OrderBy(p => p.Identifier))
+            // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+            foreach (var paradigms in categoryParadigms.Values)
+            foreach (var paradigm in paradigms)
             {
                 var stackPanel = new StackPanel {Orientation = Orientation.Horizontal, Tag = paradigm};
                 stackPanel.Children.Add(new TextBlock {Text = paradigm.Identifier, VerticalAlignment = VerticalAlignment.Center});
@@ -552,7 +572,9 @@ namespace SharpBCI.Windows
                 }
                 paradigmItems.AddLast(stackPanel);
             }
-            _paradigmComboBox.ItemsSource = paradigmItems;
+            var listCollectionView = new ListCollectionView(paradigmItems.ToArray());
+            listCollectionView.GroupDescriptions.Add(new ParadigmItemGroupDescription());
+            _paradigmComboBox.ItemsSource = listCollectionView;
         }
 
         private void RefreshSnapshotsMenuItems()
@@ -564,20 +586,20 @@ namespace SharpBCI.Windows
                 LoadSnapshotMenuItem.ItemsSource = loadMenuItems = new ObservableCollection<MenuItem>();
             while (saveMenuItems.Count < MaxSnapshotCount)
             {
-                var snapshotMenuItem = new MenuItem {Style = style, Tag = (uint)saveMenuItems.Count };
+                var snapshotMenuItem = new MenuItem {Style = style, Tag = (uint) saveMenuItems.Count};
                 snapshotMenuItem.Click += SaveSnapshotMenuItem_OnClick;
                 saveMenuItems.Add(snapshotMenuItem);
             } 
             while (loadMenuItems.Count < MaxSnapshotCount)
             {
-                var snapshotMenuItem = new MenuItem { Style = style, Tag = (uint)loadMenuItems.Count };
+                var snapshotMenuItem = new MenuItem {Style = style, Tag = (uint) loadMenuItems.Count};
                 snapshotMenuItem.Click += LoadSnapshotMenuItem_OnClick;
                 loadMenuItems.Add(snapshotMenuItem);
             }
             for (var i = 0; i < MaxSnapshotCount; i++)
             {
                 var path = GetConfigFilePath((uint) i);
-                saveMenuItems[i].Header = loadMenuItems[i].Header = !File.Exists(path) ? $"{i + 1}. Blank" : $"{i + 1}. {File.GetLastWriteTime(path)}";
+                saveMenuItems[i].Header = loadMenuItems[i].Header = !File.Exists(path) ? $"{i + 1}. (Blank)" : $"{i + 1}. {File.GetLastWriteTime(path)}";
             }
         }
 
@@ -591,7 +613,7 @@ namespace SharpBCI.Windows
                 else
                     foreach (var recentSession in _config.RecentSessions)
                     {
-                        var menuItem = new MenuItem {Style = style, Header = recentSession};
+                        var menuItem = new MenuItem {Style = style, Header = $"{menuItems.Count + 1}. {recentSession}{SessionConfig.FileSuffix}"};
                         menuItem.Click += (sender, e) => SetSessionConfig(JsonUtils.DeserializeFromFile<SessionConfig>(recentSession + SessionConfig.FileSuffix));
                         menuItems.AddLast(menuItem);
                     }
@@ -849,6 +871,8 @@ namespace SharpBCI.Windows
         private void ExitMenuItem_OnClick(object sender, RoutedEventArgs e) => Close();
 
         private void SystemVariablesMenuItem_OnClick(object sender, RoutedEventArgs e) => App.ConfigSystemVariables();
+
+        private void ConfigFolderMenuItem_OnClick(object sender, RoutedEventArgs e) => Process.Start(Path.GetFullPath(ConfigDir));
 
         private void DataFolderMenuItem_OnClick(object sender, RoutedEventArgs e) => Process.Start(Path.GetFullPath(App.DataDir));
 

@@ -27,7 +27,7 @@ namespace SharpBCI.Paradigms.Speller.EyeTracking
 
         public EyeTrackingDetector() : base(t => t.Value) { }
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override Priority Priority => Priority.Lowest;
 
         public void Active(RawRectangleF container)
         {

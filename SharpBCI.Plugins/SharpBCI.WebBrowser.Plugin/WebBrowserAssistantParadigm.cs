@@ -12,7 +12,7 @@ using Rectangle = SharpBCI.Extensions.Data.Rectangle;
 namespace SharpBCI.Paradigms.WebBrowser
 {
 
-    [Paradigm(ParadigmName, typeof(Factory), "1.0")]
+    [Paradigm(ParadigmName, typeof(Factory), "EEG", "1.0")]
     public class WebBrowserAssistantParadigm : Paradigm
     {
 

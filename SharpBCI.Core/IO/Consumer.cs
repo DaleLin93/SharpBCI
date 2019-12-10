@@ -9,24 +9,11 @@ using MarukoLib.Logging;
 namespace SharpBCI.Core.IO
 {
 
-    public enum ConsumerPriority : byte
-    {
-        Highest = 0,
-        High = 1,
-        Normal = 2,
-        Low = 3,
-        Lowest = 4
-    }
-
     /// <summary>
     /// Base interface of consumer.
     /// </summary>
-    public interface IConsumer
+    public interface IConsumer : IPriorityComponent
     {
-
-        Type AcceptType { get; }
-
-        ConsumerPriority Priority { get; }
 
         void Accept(object value);
 
@@ -47,7 +34,7 @@ namespace SharpBCI.Core.IO
 
         public Type AcceptType => typeof(T);
 
-        public virtual ConsumerPriority Priority { get; } = ConsumerPriority.Normal;
+        public virtual Priority Priority { get; } = Priority.Normal;
 
         public abstract void Accept(T value);
 
@@ -65,7 +52,7 @@ namespace SharpBCI.Core.IO
 
         public Type AcceptType => typeof(TIn);
 
-        public virtual ConsumerPriority Priority { get; } = ConsumerPriority.Normal;
+        public virtual Priority Priority { get; } = Priority.Normal;
 
         public abstract void Accept(TOut value);
 
@@ -80,13 +67,13 @@ namespace SharpBCI.Core.IO
 
         [NotNull] private readonly Action<T> _delegate;
 
-        public DelegatedConsumer([NotNull] Action<T> @delegate, ConsumerPriority priority = ConsumerPriority.Normal)
+        public DelegatedConsumer([NotNull] Action<T> @delegate, Priority priority = IO.Priority.Normal)
         {
             _delegate = @delegate ?? throw new ArgumentNullException(nameof(@delegate));
             Priority = priority;
         }
 
-        public override ConsumerPriority Priority { get; }
+        public override Priority Priority { get; }
 
         public override void Accept(T value) => _delegate(value);
 
@@ -97,11 +84,11 @@ namespace SharpBCI.Core.IO
     public class CachedConsumer<T> : Consumer<T>
     {
 
-        public CachedConsumer(ConsumerPriority priority = ConsumerPriority.Lowest) => Priority = priority;
+        public CachedConsumer(Priority priority = IO.Priority.Lowest) => Priority = priority;
 
         public T Value { get; set; }
 
-        public override ConsumerPriority Priority { get; }
+        public override Priority Priority { get; }
 
         public override void Accept(T value) => Value = value;
 
@@ -112,7 +99,7 @@ namespace SharpBCI.Core.IO
 
         private readonly LinkedList<T> _list = new LinkedList<T>();
 
-        public RecordingConsumer(uint capacity, ConsumerPriority priority = ConsumerPriority.Lowest)
+        public RecordingConsumer(uint capacity, Priority priority = IO.Priority.Lowest)
         {
             if (capacity == 0) throw new ArgumentException("'capacity' must be positive");
             Capacity = capacity;
@@ -121,7 +108,7 @@ namespace SharpBCI.Core.IO
 
         public uint Capacity { get; }
 
-        public override ConsumerPriority Priority { get; }
+        public override Priority Priority { get; }
 
         public T[] Values
         {
@@ -173,7 +160,7 @@ namespace SharpBCI.Core.IO
 
         public LogWriter([NotNull] Func<T, string> serializer) => _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override Priority Priority => Priority.Lowest;
 
         public override void Accept(T data) => Logger.Info("Accept", "data", _serializer(data));
 
@@ -188,7 +175,7 @@ namespace SharpBCI.Core.IO
 
         protected FileWriter([NotNull] string fileName, int bufferSize) => _stream = new BufferedStream(File.OpenWrite(fileName), bufferSize);
 
-        public override ConsumerPriority Priority => ConsumerPriority.Lowest;
+        public override Priority Priority => Priority.Lowest;
 
         public override void Accept(T data)
         {

@@ -13,7 +13,7 @@ using SharpBCI.Extensions.StageProviders;
 namespace SharpBCI.Paradigms.CPT
 {
 
-    [Paradigm(ParadigmName, typeof(Factory), "1.0")]
+    [Paradigm(ParadigmName, typeof(Factory), "EEG", "1.0")]
     public class CptParadigm : StagedParadigm.Basic
     {
 

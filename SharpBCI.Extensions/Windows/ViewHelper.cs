@@ -145,7 +145,7 @@ namespace SharpBCI.Extensions.Windows
             return dockPanel;
         }
 
-        public static StackPanel AddGroupStackPanel(this Panel parent, string header, string description)
+        public static StackPanel AddGroupStackPanel(this Panel parent, string header, string description = null)
         {
             var stackPanel = new StackPanel();
             stackPanel.Children.Add(CreateGroupHeader(header, description));
@@ -176,12 +176,12 @@ namespace SharpBCI.Extensions.Windows
             return viewModel;
         }
 
-        public static KeyValueRow AddRow(this Panel parent, string label, UIElement rightPart, uint rowHeight = 0) =>
-            AddRow(parent, label == null ? null : new TextBlock { Text = label, Style = GetResource("LabelText") as Style }, rightPart, rowHeight);
+        public static LabeledRow AddLabeledRow(this Panel parent, string label, UIElement contentPart, uint rowHeight = 0) =>
+            AddLabeledRow(parent, label == null ? null : new TextBlock { Text = label, Style = GetResource("LabelText") as Style }, contentPart, rowHeight);
 
-        public static KeyValueRow AddRow(this Panel parent, UIElement leftPart, UIElement rightPart, uint rowHeight = 0)
+        public static LabeledRow AddLabeledRow(this Panel parent, TextBlock labelPart, UIElement contentPart, uint rowHeight = 0)
         {
-            var row = new KeyValueRow(leftPart, rightPart);
+            var row = new LabeledRow(labelPart, contentPart);
             if (rowHeight > 0) row.Height = rowHeight;
             parent.Children.Add(row);
             return row; 
