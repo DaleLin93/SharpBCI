@@ -1,0 +1,35 @@
+﻿<ComboBox x:Class="SharpBCI.Windows.ParadigmComboBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="25" d:DesignWidth="100">
+    <ComboBox.Resources>
+        <Style x:Key="ContainerStyle" TargetType="{x:Type GroupItem}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type GroupItem}">
+                        <!--Here, we tell that each group of item will be placed under Expander control, and this expander control will by default will have style we defined in above code.-->
+                        <Expander IsExpanded="True" x:Name="ComboExpander"
+                                  Header="{TemplateBinding Content}" 
+                                  HeaderTemplate="{TemplateBinding ContentTemplate}"
+                                  HorizontalAlignment="Stretch">
+                            <ItemsPresenter />
+                        </Expander>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </ComboBox.Resources>
+    <ComboBox.GroupStyle>
+        <GroupStyle ContainerStyle="{StaticResource ContainerStyle}">
+            <GroupStyle.HeaderTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name}" FontSize="14" FontStyle="Italic" FontWeight="DemiBold" Foreground="LightSlateGray" VerticalAlignment="Center" />
+                </DataTemplate>
+            </GroupStyle.HeaderTemplate>
+        </GroupStyle>
+    </ComboBox.GroupStyle>
+</ComboBox>
