@@ -21,7 +21,7 @@
         </Grid>
 
         <Grid x:Name="FocusIndicationContainer" Margin="20" Visibility="Hidden">
-            <Rectangle x:Name="FocusCircle" Width="200" Height="200" RadiusX="100" RadiusY="100" Fill="Red" />
+            <Rectangle x:Name="FocusCircle" Width="200" Height="200" RadiusX="100" RadiusY="100" Fill="Red" HorizontalAlignment="Left" VerticalAlignment="Top" />
             <TextBlock Text="请将视线放在圆球中。" VerticalAlignment="Bottom" HorizontalAlignment="Center" Foreground="Red" />
         </Grid>
 

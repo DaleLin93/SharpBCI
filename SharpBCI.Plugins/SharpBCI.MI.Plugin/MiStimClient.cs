@@ -24,7 +24,7 @@ namespace SharpBCI.Paradigms.MI
         {
             Play, Pause
         }
-        public enum GazePositionSet
+        public enum GazePosition
         {
             Center, Left, Right
         }
@@ -56,9 +56,8 @@ namespace SharpBCI.Paradigms.MI
 
             /* Focus */
 
-            public string GazePositionStr;
+            public string GazePosition;
 
-            public GazePositionSet GazePosition;
 
             /* Animation Ctrl */
 
@@ -80,7 +79,7 @@ namespace SharpBCI.Paradigms.MI
         
         private static readonly Encoding TransmissionEncoding = Encoding.UTF8;
 
-        internal event EventHandler <GazePositionSet>FocusRequested;
+        internal event EventHandler<GazePosition> FocusRequested;
 
         internal event EventHandler<float> ProgressChanged;
 
@@ -255,13 +254,15 @@ namespace SharpBCI.Paradigms.MI
                     ProgressChanged?.Invoke(this, message.Progress);
                     break;
                 case "focus":
-                    switch (message.GazePositionStr)
+                    GazePosition gazePosition = GazePosition.Center; ;
+                    switch (message.GazePosition.ToLowerInvariant())
                     {
-                        case "center": message.GazePosition = GazePositionSet.Center; break;
-                        case "left": message.GazePosition = GazePositionSet.Left; break;
-                        case "right": message.GazePosition = GazePositionSet.Right; break;
+                        case "center": gazePosition = GazePosition.Center; break;
+                        case "left": gazePosition = GazePosition.Left; break;
+                        case "right": gazePosition = GazePosition.Right; break;
+                        default: Logger.Warn("GazePosition is wrong."); break;
                     }
-                    FocusRequested?.Invoke(this, message.GazePosition);
+                    FocusRequested?.Invoke(this, gazePosition);
                     break;
                 case "animation_ctrl":
                     ControlCommandReceived?.Invoke(this, message.IsStopCtrl ? ControlCommand.Pause : ControlCommand.Play);
