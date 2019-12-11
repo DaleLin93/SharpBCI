@@ -289,12 +289,12 @@ namespace SharpBCI.Paradigms.MI
                 var imageUri = new Uri(content);
                 return _elements.GetOrCreate(imageUri, uri =>
                 {
-                    var image = new Image {Visibility = Visibility.Hidden};
+                    var image = new Image { Visibility = Visibility.Hidden };
                     ImageBehavior.SetAnimatedSource(image, new BitmapImage(uri));
                     ImageBehavior.SetAutoStart(image, true);
                     ImageBehavior.SetRepeatBehavior(image, Repeat ? RepeatBehavior.Forever : new RepeatBehavior(1));
                     ImageContainer.Children.Add(image);
-                    return new Element {Control = image};
+                    return new Element { Control = image };
                 });
             }
 
@@ -458,6 +458,8 @@ namespace SharpBCI.Paradigms.MI
 
         private readonly IList<IAuditoryStimulusPresenter> _auditoryStimulusPresenters;
 
+        private Point _gazeCenterRatio = new Point(0.5, 0.5);
+
         private IVisualElement _activeVisualElement;
 
         private IAuditoryElement _activeAuditoryElement;
@@ -513,7 +515,7 @@ namespace SharpBCI.Paradigms.MI
             {
                 // ReSharper disable once PossibleNullReferenceException
                 _miStimClient.ProgressChanged += (sender, progress) => this.DispatcherInvoke(() => ProgressBar.Value = progress);
-                _miStimClient.FocusRequested += (sender, e) => EnterRequestForFocusMode();
+                _miStimClient.FocusRequested += (sender, gazePosition) => EnterRequestForFocusMode(gazePosition);
                 _miStimClient.ControlCommandReceived += (sender, cmd) => OnControlCommandReceived(cmd);
             }
 
@@ -544,15 +546,34 @@ namespace SharpBCI.Paradigms.MI
 
         public IntPtr Handle => new WindowInteropHelper(this).Handle;
 
-        internal void UpdateTargetCircle() => _gazeFocusDetector?.SetTargetCircle(new Point(ActualWidth / 2, ActualHeight / 2), FocusCircle.Width / 2);
+        internal void UpdateFocusTarget()
+        {
+            var radius = FocusCircle.Width / 2;
+            var gazeCenter = new Point(ActualWidth * _gazeCenterRatio.X, ActualHeight * _gazeCenterRatio.Y);
+            _gazeFocusDetector?.SetTargetCircle(gazeCenter, radius);
+            FocusCircle.Fill = Brushes.Red;
+            FocusCircle.Margin = new Thickness(gazeCenter.X - radius, gazeCenter.Y - radius, 0, 0);
+        }
 
-        internal void EnterRequestForFocusMode()
+        internal void EnterRequestForFocusMode(MiStimClient.GazePosition gazePosition)
         {
             this.DispatcherInvoke(() =>
             {
                 MainGrid.Visibility = Visibility.Hidden;
                 FocusIndicationContainer.Visibility = Visibility.Visible;
-                FocusCircle.Fill = Brushes.Red;
+                switch (gazePosition)
+                {
+                    case MiStimClient.GazePosition.Center:
+                        _gazeCenterRatio = new Point(0.5, 0.5);
+                        break;
+                    case MiStimClient.GazePosition.Left:
+                        _gazeCenterRatio = new Point(1 / 3.0, 2 / 3.0);
+                        break;
+                    case MiStimClient.GazePosition.Right:
+                        _gazeCenterRatio = new Point(2 / 3.0, 2 / 3.0);
+                        break;
+                }
+                UpdateFocusTarget();
             });
             if (_gazeFocusDetector != null) _gazeFocusDetector.IsEnabled = true;
         }
@@ -651,10 +672,10 @@ namespace SharpBCI.Paradigms.MI
             _session.Start();
             _stageProgram.Start();
             _miStimClient?.SendStartSignal();
-            UpdateTargetCircle();
+            UpdateFocusTarget();
         }
 
-        private void Window_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateTargetCircle();
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateFocusTarget();
 
         private void Window_KeyUp(object sender, KeyEventArgs e)
         {
