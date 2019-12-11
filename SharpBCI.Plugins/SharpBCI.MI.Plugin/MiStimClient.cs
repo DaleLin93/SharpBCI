@@ -24,6 +24,7 @@ namespace SharpBCI.Paradigms.MI
         {
             Play, Pause
         }
+
         public enum GazePosition
         {
             Center, Left, Right
@@ -56,7 +57,7 @@ namespace SharpBCI.Paradigms.MI
 
             /* Focus */
 
-            public string GazePosition;
+            public GazePosition GazePosition;
 
 
             /* Animation Ctrl */
@@ -254,15 +255,7 @@ namespace SharpBCI.Paradigms.MI
                     ProgressChanged?.Invoke(this, message.Progress);
                     break;
                 case "focus":
-                    GazePosition gazePosition = GazePosition.Center; ;
-                    switch (message.GazePosition.ToLowerInvariant())
-                    {
-                        case "center": gazePosition = GazePosition.Center; break;
-                        case "left": gazePosition = GazePosition.Left; break;
-                        case "right": gazePosition = GazePosition.Right; break;
-                        default: Logger.Warn("GazePosition is wrong."); break;
-                    }
-                    FocusRequested?.Invoke(this, gazePosition);
+                    FocusRequested?.Invoke(this, message.GazePosition);
                     break;
                 case "animation_ctrl":
                     ControlCommandReceived?.Invoke(this, message.IsStopCtrl ? ControlCommand.Pause : ControlCommand.Play);
