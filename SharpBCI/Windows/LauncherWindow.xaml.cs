@@ -550,7 +550,7 @@ namespace SharpBCI.Windows
             {
                 var category = paradigm.Category ?? "Default";
                 (categoryParadigms.TryGetValue(category, out var list) 
-                    ? list : categoryParadigms[category] = list = new LinkedList<ParadigmTemplate>()).AddLast(paradigm);
+                    ? list : categoryParadigms[category] = new LinkedList<ParadigmTemplate>()).AddLast(paradigm);
             }
             var paradigmItems = new LinkedList<object>();
             // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
@@ -641,7 +641,7 @@ namespace SharpBCI.Windows
             var style = FindResource("MenuItem") as Style;
             var menuItems = new LinkedList<object>();
             var appEntries = App.Instance.Registries.Registry<AppEntryAddOn>().Registered;
-            if (appEntries?.IsEmpty() ?? true)
+            if (appEntries.IsEmpty())
                 menuItems.AddLast(new MenuItem {Style = style, Header = "None", IsEnabled = false});
             else
                 foreach (var appEntry in appEntries)
@@ -658,7 +658,7 @@ namespace SharpBCI.Windows
             var style = (Style)FindResource("MenuItem");
             var menuItems = new LinkedList<object>();
             var plugins = App.Instance.Registries.Registry<Plugin>().Registered;
-            if (plugins?.IsEmpty() ?? true)
+            if (plugins.IsEmpty())
                 menuItems.AddLast(new MenuItem { Style = style, Header = "None", IsEnabled = false});
             else
                 foreach (var plugin in plugins)

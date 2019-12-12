@@ -227,7 +227,7 @@ namespace SharpBCI.Windows
             {
                 if (!_deviceControlGroups.TryGetValue(deviceType, out var controlGroup)) return;
                 if (controlGroup.DeviceComboBox.FindAndSelectFirstByString(value.Device.Id, 0) && controlGroup.CurrentDevice != null)
-                    controlGroup.CurrentDevice = new TemplateWithArgs<DeviceTemplate>(controlGroup.CurrentDevice.Template, value.Device.Args);
+                    controlGroup.CurrentDevice = controlGroup.CurrentDevice.ReplaceArgs(value.Device.Args);
                 var consumerRegistry = App.Instance.Registries.Registry<ConsumerTemplate>();
                 var consumers = new LinkedList<TemplateWithArgs<ConsumerTemplate>>();
                 foreach (var consumerEntity in value.Consumers?.Where(p => p.Id != null).ToArray() ?? EmptyArray<SerializedObject>.Instance)
@@ -332,7 +332,7 @@ namespace SharpBCI.Windows
             var cDevice = controlGroup.CurrentDevice;
             var eventArgs = new DeviceChangedEventArgs(controlGroup.DeviceType, cDevice?.Template, newDevice, cDevice?.Args);
             DeviceChanged?.Invoke(this, eventArgs);
-            controlGroup.CurrentDevice = newDevice == null ? null : new TemplateWithArgs<DeviceTemplate>(newDevice, eventArgs.NewDeviceArgs);
+            controlGroup.CurrentDevice = TemplateWithArgs<DeviceTemplate>.OfNullable(newDevice, eventArgs.NewDeviceArgs);
         }
 
         private void DeviceConfigBtn_Click(object sender, RoutedEventArgs e)

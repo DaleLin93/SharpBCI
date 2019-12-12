@@ -181,7 +181,7 @@ namespace SharpBCI
                 }
                 if (!App.Instance.Registries.Registry<DeviceTemplate>().LookUp(entity.Device.Id, out var deviceTemplate))
                     throw new ArgumentException($"Cannot find device by id: {entity.Device.Id}");
-                deviceLookups[deviceType] = new TemplateWithArgs<DeviceTemplate>(deviceTemplate, deviceTemplate.DeserializeArgs(entity.Device.Args));
+                deviceLookups[deviceType] = TemplateWithArgs<DeviceTemplate>.OfNullable(deviceTemplate, deviceTemplate.DeserializeArgs(entity.Device.Args));
             }
             var deviceInstances = new Dictionary<DeviceType, IDevice>();
             var success = false;

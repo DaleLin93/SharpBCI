@@ -175,7 +175,7 @@ namespace SharpBCI.Windows
             var invalidConsumerParamsArray = _consumerViewModels.Select(vm => vm.ParamPanel.GetInvalidParams().ToArray()).ToArray();
             if (invalidDeviceParams.Any() || (invalidConsumerParamsArray.Sum(p => (int?)p.Length) ?? 0) > 0)
                 throw new InvalidParametersException(invalidDeviceParams, invalidConsumerParamsArray);
-            device = new TemplateWithArgs<DeviceTemplate>(_deviceViewModel.Current, _deviceViewModel.ParamPanel.Context);
+            device = TemplateWithArgs<DeviceTemplate>.OfNullable(_deviceViewModel.Current, _deviceViewModel.ParamPanel.Context);
             var consumerList = new List<TemplateWithArgs<ConsumerTemplate>>(_consumerViewModels.Count);
             consumerList.AddRange(from viewModel in _consumerViewModels
                 where viewModel.Current != null

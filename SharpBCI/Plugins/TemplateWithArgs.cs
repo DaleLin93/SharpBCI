@@ -27,8 +27,17 @@ namespace SharpBCI.Plugins
             Args = args ?? EmptyContext.Instance;
         }
 
-        [CanBeNull] public static TemplateWithArgs<T> OfNullable([CanBeNull] T template, [CanBeNull] IReadonlyContext args) =>
+        [CanBeNull]
+        public static TemplateWithArgs<T> OfNullable([CanBeNull] T template, [CanBeNull] IReadonlyContext args) =>
             template == null ? null : new TemplateWithArgs<T>(template, args);
+
+        [CanBeNull]
+        public static TemplateWithArgs<T> OfNullable([CanBeNull] T template, [CanBeNull] IDictionary<string, string> serializedArgs) =>
+            template == null ? null : new TemplateWithArgs<T>(template, serializedArgs);
+
+        public TemplateWithArgs<T> ReplaceArgs([CanBeNull] IDictionary<string, string> serializedArgs) => new TemplateWithArgs<T>(Template, serializedArgs);
+
+        public TemplateWithArgs<T> ReplaceArgs([CanBeNull] IReadonlyContext args) => new TemplateWithArgs<T>(Template, args);
 
         public SerializedObject Serialize() => new SerializedObject(Template.Identifier, Template.SerializeArgs(Args));
 
