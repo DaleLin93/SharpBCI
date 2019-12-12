@@ -8,11 +8,7 @@
              Height="15" Background="{StaticResource GroupHeaderBackgroundBrush}" Margin="10 0"
              d:DataContext="{d:DesignInstance windows:GroupHeader}">
     <Grid.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/SharpBCI.Extensions;component/Resources/SharedResourceDictionary.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
+        <ResourceDictionary Source="pack://application:,,,/SharpBCI.Extensions;component/Resources/SharedResourceDictionary.xaml"/>
     </Grid.Resources>
     <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
