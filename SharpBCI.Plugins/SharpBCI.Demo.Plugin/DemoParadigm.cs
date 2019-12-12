@@ -2,6 +2,7 @@
 using System.Reflection;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
+using SharpBCI.Extensions.Paradigms;
 
 namespace SharpBCI.Paradigms.Demo
 {

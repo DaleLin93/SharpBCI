@@ -105,14 +105,14 @@ namespace SharpBCI.Core.Staging
         /// </summary>
         /// <param name="clock">Clock for timing</param>
         /// <param name="stages">Stages of program</param>
-        public StageProgram(IClock clock, params Stage[] stages) : this(clock, new StageProvider(stages), false) { }
+        public StageProgram([NotNull] IClock clock, [NotNull] params Stage[] stages) : this(clock, new StageProvider(stages), false) { }
 
         /// <summary>
         /// Create a stage program.
         /// </summary>
         /// <param name="clock">Clock for timing</param>
         /// <param name="providers">Stage providers to provide stages</param>
-        public StageProgram(IClock clock, params IStageProvider[] providers) : this(clock, new CompositeStageProvider(providers)) { }
+        public StageProgram([NotNull] IClock clock, [NotNull] params IStageProvider[] providers) : this(clock, new CompositeStageProvider(providers)) { }
 
         /// <summary>
         /// Create a stage program.
@@ -120,7 +120,7 @@ namespace SharpBCI.Core.Staging
         /// <param name="clock">Clock for timing</param>
         /// <param name="providers">Stage providers to provide stages</param>
         /// <param name="preferPreloaded">Prefer pre-loaded stages if possible</param>
-        public StageProgram(IClock clock, IEnumerable<IStageProvider> providers, bool preferPreloaded = true) : this(clock, new CompositeStageProvider(providers), preferPreloaded) { }
+        public StageProgram([NotNull] IClock clock, [NotNull] IEnumerable<IStageProvider> providers, bool preferPreloaded = true) : this(clock, new CompositeStageProvider(providers), preferPreloaded) { }
 
         /// <summary>
         /// Create a stage program.
@@ -128,7 +128,7 @@ namespace SharpBCI.Core.Staging
         /// <param name="clock">Clock for timing</param>
         /// <param name="stageProvider">Stage provider that providing stages</param>
         /// <param name="preferPreloaded">Prefer pre-loaded stages if possible</param>
-        public StageProgram(IClock clock, IStageProvider stageProvider, bool preferPreloaded = true)
+        public StageProgram([NotNull] IClock clock, [NotNull] IStageProvider stageProvider, bool preferPreloaded = true)
         {
             if (stageProvider == null) throw new ArgumentNullException(nameof(stageProvider));
             OriginalClock = clock ?? throw new ArgumentNullException(nameof(clock));

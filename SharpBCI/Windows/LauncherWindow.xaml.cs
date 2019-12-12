@@ -30,7 +30,7 @@ using MarukoLib.Persistence;
 using MarukoLib.Threading;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
-using ValidationResult = SharpBCI.Extensions.ValidationResult;
+using ValidationResult = SharpBCI.Extensions.Paradigms.ValidationResult;
 
 namespace SharpBCI.Windows
 {

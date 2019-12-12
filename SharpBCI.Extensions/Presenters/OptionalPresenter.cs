@@ -33,9 +33,9 @@ namespace SharpBCI.Extensions.Presenters
                 _container = container;
                 _checkBox = checkBox;
                 _presented = presented;
-                _constructor = _parameter.ValueType.GetConstructor(new [] {typeof(bool), valueType});
-                _hasValueProperty = _parameter.ValueType.GetProperty("HasValue");
-                _valueProperty = _parameter.ValueType.GetProperty("Value");
+                _constructor = _parameter.ValueType.GetConstructor(new [] {typeof(bool), valueType}) ?? throw new Exception("cannot found optional constructor");
+                _hasValueProperty = _parameter.ValueType.GetProperty(nameof(Optional<object>.HasValue)) ?? throw new Exception("cannot found 'HasValue' property");
+                _valueProperty = _parameter.ValueType.GetProperty(nameof(Optional<object>.Value)) ?? throw new Exception("cannot found 'Value' property");
             }
 
             public object GetValue() => _parameter.IsValidOrThrow(_constructor.Invoke(new[] { _checkBox.IsChecked ?? false, _presented.GetValue() }));

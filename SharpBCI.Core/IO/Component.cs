@@ -1,4 +1,5 @@
 ﻿using System;
+using JetBrains.Annotations;
 
 namespace SharpBCI.Core.IO
 {
@@ -6,7 +7,7 @@ namespace SharpBCI.Core.IO
     public interface IComponent
     {
 
-        Type AcceptType { get; }
+        [NotNull] Type AcceptType { get; }
 
     }
 

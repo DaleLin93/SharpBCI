@@ -8,7 +8,7 @@ using MarukoLib.Lang;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions.Windows;
 
-namespace SharpBCI.Extensions
+namespace SharpBCI.Extensions.Paradigms
 {
 
     public struct ValidationResult

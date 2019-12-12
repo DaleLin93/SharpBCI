@@ -8,6 +8,7 @@ using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
+using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions.StageProviders;
 
 namespace SharpBCI.Paradigms.CPT

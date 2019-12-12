@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
+using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using Newtonsoft.Json;
@@ -24,8 +25,10 @@ namespace SharpBCI.Extensions
         private const string ColorKey = nameof(Color);
 
         [JsonConstructor]
-        internal MarkerDefinition([JsonProperty(CodeKey)] int code, [JsonProperty(OwnerKey)] string owner,
-            [JsonProperty(NamespaceKey)] string @namespace, [JsonProperty(NameKey)] string name, 
+        internal MarkerDefinition([JsonProperty(CodeKey)] int code,
+            [JsonProperty(OwnerKey), NotNull] string owner,
+            [JsonProperty(NamespaceKey), NotNull] string @namespace, 
+            [JsonProperty(NameKey), NotNull] string name, 
             [JsonProperty(ColorKey)] uint color)
         {
             Code = code;
@@ -38,13 +41,13 @@ namespace SharpBCI.Extensions
         [JsonProperty(CodeKey)]
         public int Code { get; }
 
-        [JsonProperty(OwnerKey)]
+        [JsonProperty(OwnerKey), NotNull]
         public string Owner { get; }
 
-        [JsonProperty(NamespaceKey)]
+        [JsonProperty(NamespaceKey), NotNull]
         public string Namespace { get; }
 
-        [JsonProperty(NameKey)]
+        [JsonProperty(NameKey), NotNull]
         public string Name { get; }
 
         [JsonProperty(ColorKey)]
@@ -64,22 +67,22 @@ namespace SharpBCI.Extensions
 
         public const uint DefaultColor = 0xFF000000;
 
-        public MarkerDefinitionAttribute(string groupName) : this(groupName, null, DefaultColor) { }
+        public MarkerDefinitionAttribute([NotNull] string groupName) : this(groupName, null, DefaultColor) { }
 
-        public MarkerDefinitionAttribute(string groupName, string name) : this(groupName, name, DefaultColor) { }
+        public MarkerDefinitionAttribute([NotNull] string groupName, [CanBeNull] string name) : this(groupName, name, DefaultColor) { }
 
-        public MarkerDefinitionAttribute(string groupName, uint color) : this(groupName, null, color) { }
+        public MarkerDefinitionAttribute([NotNull] string groupName, uint color) : this(groupName, null, color) { }
 
-        public MarkerDefinitionAttribute(string groupName, string name, uint color)
+        public MarkerDefinitionAttribute([NotNull] string groupName, [CanBeNull] string name, uint color)
         {
-            GroupName = groupName.Trim2Null() ?? throw new ArgumentException("'groupName' cannot be blank or null");
+            GroupName = groupName.Trim2Null() ?? throw new ArgumentException($"'{nameof(groupName)}' cannot be blank or null");
             Name = name?.Trim2Null();
             Color = color;
         }
 
-        public string GroupName { get; }
+        [NotNull] public string GroupName { get; }
 
-        public string Name { get; set; }
+        [CanBeNull] public string Name { get; set; }
 
         public uint Color { get; set; }
 
@@ -167,7 +170,7 @@ namespace SharpBCI.Extensions
                 var attr = field.GetCustomAttribute<MarkerDefinitionAttribute>();
                 if (attr == null) continue;
                 var marker = (int)field.GetValue(null);
-                var typeFullName = type.FullName;
+                var typeFullName = type.FullName ?? "<null>";
                 var groupName = attr.GroupName.TrimEnd(':');
                 var name = attr.Name ?? field.Name.TrimEnd("Marker");
                 if (marker < CustomMarkerBase && !groupName.StartsWith($"{GlobalGroupName}:") && !groupName.Equals(GlobalGroupName))

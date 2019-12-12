@@ -18,9 +18,9 @@ namespace SharpBCI.Core.IO
     public interface IStreamer
     {
 
-        string StreamId { get; }
+        [NotNull] string StreamId { get; }
 
-        Type ValueType { get; }
+        [NotNull] Type ValueType { get; }
 
         int FilterCount { get; }
 
@@ -32,17 +32,17 @@ namespace SharpBCI.Core.IO
 
         void Stop();
 
-        void AttachFilter(IFilter filter);
+        void AttachFilter([NotNull] IFilter filter);
 
-        bool DetachFilter(IFilter filter);
+        bool DetachFilter([NotNull] IFilter filter);
 
-        IEnumerable<T> QueryFilters<T>();
+        [NotNull] IEnumerable<T> QueryFilters<T>();
 
-        void AttachConsumer(IConsumer consumer);
+        void AttachConsumer([NotNull] IConsumer consumer);
 
-        bool DetachConsumer(IConsumer consumer);
+        bool DetachConsumer([NotNull] IConsumer consumer);
 
-        IEnumerable<T> QueryConsumers<T>();
+        [NotNull] IEnumerable<T> QueryConsumers<T>();
 
     }
 
@@ -128,7 +128,6 @@ namespace SharpBCI.Core.IO
         {
             if (!consumer.AcceptType.IsAssignableFrom(ValueType)) 
                 throw new ArgumentException($"Type not match, streamer value type: {ValueType}, consumer accept type: {consumer.AcceptType}");
-            var priority = consumer.Priority;
             using (_consumersLock.AcquireWriteLock())
                 if (!Insert(_consumers, consumer))
                     throw new ArgumentException("The given consumer is already attached");

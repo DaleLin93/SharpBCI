@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 using MarukoLib.Lang.Exceptions;
 
 namespace SharpBCI.Core.Staging
@@ -15,6 +16,7 @@ namespace SharpBCI.Core.Staging
 
         public StageProgram AttachedProgram { get; private set; }
 
+        [NotNull]
         public Stage[] Stages
         {
             get
@@ -24,7 +26,7 @@ namespace SharpBCI.Core.Staging
             }
         }
 
-        public void Attach(StageProgram program)
+        public void Attach([NotNull] StageProgram program)
         {
             if (AttachedProgram == null) throw new ArgumentNullException(nameof(program));
             lock (_lock)

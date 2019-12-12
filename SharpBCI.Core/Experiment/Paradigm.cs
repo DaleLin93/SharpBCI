@@ -1,4 +1,5 @@
-﻿using MarukoLib.Lang;
+﻿using JetBrains.Annotations;
+using MarukoLib.Lang;
 using Newtonsoft.Json;
 using SharpBCI.Core.Staging;
 
@@ -14,18 +15,18 @@ namespace SharpBCI.Core.Experiment
         /// <summary>
         /// Name of paradigm.
         /// </summary>
-        string Name { get; }
+        [NotNull] string Name { get; }
 
         /// <summary>
         /// Paradigm related metadata for interop.
         /// </summary>
-        IReadonlyContext Metadata { get; }
+        [NotNull] IReadonlyContext Metadata { get; }
 
         /// <summary>
         /// Run paradigm.
         /// </summary>
         /// <param name="session">Current session object.</param>
-        void Run(Session session);
+        void Run([NotNull] Session session);
 
     }
 
@@ -35,7 +36,7 @@ namespace SharpBCI.Core.Experiment
     public abstract class Paradigm : IParadigm
     {
 
-        protected Paradigm(string name) => Name = name;
+        protected Paradigm([NotNull] string name) => Name = name;
 
         public string Name { get; }
 
@@ -55,18 +56,20 @@ namespace SharpBCI.Core.Experiment
         public abstract class Basic : StagedParadigm
         {
 
-            protected Basic(string name) : base(name) { }
+            protected Basic([NotNull] string name) : base(name) { }
 
+            [NotNull]
             public sealed override StageProgram CreateStagedProgram(Session session) => new StageProgram(session.Clock, StageProviders);
 
+            [NotNull]
             [JsonIgnore]
             protected abstract IStageProvider[] StageProviders { get; }
 
         }
 
-        protected StagedParadigm(string name) : base(name) { }
+        protected StagedParadigm([NotNull] string name) : base(name) { }
 
-        public abstract StageProgram CreateStagedProgram(Session session);
+        public abstract StageProgram CreateStagedProgram([NotNull] Session session);
 
     }
 

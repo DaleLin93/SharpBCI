@@ -12,6 +12,7 @@ using SharpBCI.Core.IO;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.IO;
 using SharpBCI.Extensions.IO.Devices;
+using SharpBCI.Extensions.Paradigms;
 
 namespace SharpBCI.Plugins
 {

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.Staging;
 using SharpBCI.Extensions;
+using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions.StageProviders;
 
 namespace SharpBCI.Paradigms.MRCP

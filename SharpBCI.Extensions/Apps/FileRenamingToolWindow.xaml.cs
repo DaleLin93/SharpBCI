@@ -79,7 +79,7 @@ namespace SharpBCI.Extensions.Apps
             }
         }
 
-        private Regex _regex = null;
+        private Regex _regex;
 
         public FileRenamingToolWindow() => InitializeComponent();
 

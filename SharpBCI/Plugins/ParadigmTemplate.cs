@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using SharpBCI.Extensions;
+using SharpBCI.Extensions.Paradigms;
 
 namespace SharpBCI.Plugins
 {

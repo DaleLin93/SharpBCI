@@ -71,10 +71,11 @@ namespace SharpBCI.Core.Experiment
         /// Else
         ///     Format: baseFolder\time-subject-descriptor
         /// </summary>
-        public static string GetFullSessionName(long? time, string subject, string descriptor) => 
+        [NotNull] 
+        public static string GetFullSessionName([CanBeNull] long? time, [NotNull] string subject, [NotNull] string descriptor) => 
             (time == null ? $"{subject}-{descriptor}" : $"{time}-{subject}-{descriptor}").RemoveInvalidCharacterForFileName();
 
-        private static void StartSession(Session session)
+        private static void StartSession([NotNull] Session session)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             lock (SessionInstanceLock)
@@ -84,7 +85,7 @@ namespace SharpBCI.Core.Experiment
             }
         }
 
-        private static void CloseSession(Session session)
+        private static void CloseSession([NotNull] Session session)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             lock (SessionInstanceLock)
@@ -156,7 +157,7 @@ namespace SharpBCI.Core.Experiment
         /// <summary>
         /// Whether the session is stopped by the user manually or not.
         /// </summary>
-        public bool UserInterrupted { get; private set; } = false;
+        public bool UserInterrupted { get; private set; }
 
         /// <summary>
         /// Get data file name by given file extension.
@@ -164,7 +165,8 @@ namespace SharpBCI.Core.Experiment
         /// <param name="extension">file extension, e.g. '.exe' or 'exe'</param>
         /// <param name="num">file order num</param>
         /// <returns>Full path of target file</returns>
-        public string GetDataFileName(string extension, byte? num = null)
+        [NotNull]
+        public string GetDataFileName([CanBeNull] string extension, [CanBeNull] byte? num = null)
         {
             var filePathWithoutExt = num == null ? DataFilePrefix : $"{DataFilePrefix}#{num}";
             if ((extension = extension?.Trim())?.IsEmpty() ?? true) return $"{filePathWithoutExt}";

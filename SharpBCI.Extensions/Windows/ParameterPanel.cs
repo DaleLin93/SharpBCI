@@ -52,7 +52,7 @@ namespace SharpBCI.Extensions.Windows
 
         [CanBeNull] public ParamViewModel this[IParameterDescriptor parameter] => _paramViewModels.TryGetValue(parameter, out var viewModel) ? viewModel : null;
 
-        public bool AllowCollapse { get; set; } = true;
+        public bool CanCollapse { get; set; } = true;
 
         [CanBeNull] public IParameterPresentAdapter Adapter { get; private set; }
 
@@ -143,7 +143,8 @@ namespace SharpBCI.Extensions.Windows
                                 if (e.ClickCount != 2) return;
                                 if (MessageBox.Show($"Set param '{paramItem.Name}' to default?", "Set to default", MessageBoxButton.YesNo,
                                         MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes)
-                                    presentedParameter.SetValue(paramItem.DefaultValue);
+                                    using (_updateLock.Ref())
+                                        presentedParameter.SetValue(paramItem.DefaultValue);
                                 OnParamChanged(paramItem);
                             };
                         var rowGrid = groupMeta.Container.AddLabeledRow(nameTextBlock, presentedParameter.Element);
@@ -155,7 +156,7 @@ namespace SharpBCI.Extensions.Windows
                         if (_groupViewModels.ContainsKey(groupItem)) throw new UserException($"Invalid paradigm, parameter group duplicated: {groupItem.Name}");
                         var depth = stack.Count - 1;
                         var canCollapse = Adapter?.CanCollapse(groupItem, depth) ?? false;
-                        var groupViewModel = ViewHelper.CreateGroupViewModel(groupItem, depth, canCollapse, () => AllowCollapse);
+                        var groupViewModel = ViewHelper.CreateGroupViewModel(groupItem, depth, canCollapse, () => CanCollapse);
                         groupViewModel.AnimationCompleted += (sender, e) => LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
                         groupMeta.Container.Children.Add(groupViewModel.GroupPanel);
                         stack.Push(new GroupMeta(groupViewModel, groupViewModel.ItemsPanel, groupViewModel.Group.Items.GetEnumerator()));

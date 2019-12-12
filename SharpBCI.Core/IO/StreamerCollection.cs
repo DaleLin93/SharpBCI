@@ -17,17 +17,17 @@ namespace SharpBCI.Core.IO
 
         private readonly AtomicInt _state = new AtomicInt(0);
 
-        public StreamerCollection(params IStreamer[] streamers) => Add(streamers);
+        public StreamerCollection([NotNull] params IStreamer[] streamers) => Add(streamers);
 
         public int Count => _streamers.Count;
 
-        public IStreamer[] Values => _streamers.ToArray();
+        [NotNull] public IStreamer[] Values => _streamers.ToArray();
 
         /// <summary>
         /// Add streamers into current StreamerCollection.
         /// </summary>
         /// <param name="streamers">The given streamers to add into current collection.</param>
-        public void Add(params IStreamer[] streamers)
+        public void Add([NotNull] params IStreamer[] streamers)
         {
             if (streamers.Length == 0) return;
             if (_state.Value != 0) throw new Exception("The StreamerCollection can only be modified while it is un-started.");

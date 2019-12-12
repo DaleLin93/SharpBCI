@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
+using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Persistence;
 
@@ -36,26 +38,26 @@ namespace SharpBCI.Core.Experiment
 
             public static readonly Item Separator = null;
 
-            public readonly string Title;
+            [NotNull] public readonly string Title;
 
-            public readonly string Value;
+            [CanBeNull] public readonly string Value;
 
-            public Item(string title, string value)
+            public Item([NotNull] string title, [CanBeNull] string value)
             {
-                Title = title;
+                Title = title ?? throw new ArgumentNullException(nameof(title));
                 Value = value;
             }
 
-            public static bool IsSeparator(Item item) => item == Separator;
+            public static bool IsSeparator([CanBeNull] Item item) => item == Separator;
 
         }
 
         /// <summary>
         /// The result items.
         /// </summary>
-        public abstract IEnumerable<Item> Items { get; }
+        [NotNull] public abstract IEnumerable<Item> Items { get; }
 
-        public virtual void Save(Session session)
+        public virtual void Save([NotNull] Session session)
         {
             if (SkipSaveProperty.GetOrDefault(session, false)) return;
             this.JsonSerializeToFile(session.GetDataFileName(FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);

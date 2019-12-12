@@ -178,7 +178,7 @@ namespace SharpBCI.Extensions.Windows
 
         public bool IsVisible { get; private set; } = true;
 
-        public bool IsCollapsed { get; private set; }
+        public bool IsCollapsed => !GroupHeader.IsExpanded;
 
         public void SetVisible(bool value, bool animate = true)
         {
@@ -192,20 +192,9 @@ namespace SharpBCI.Extensions.Windows
             SetCollapsed0(value, animate);
         }
 
-        private void SetVisible0(bool value, bool animate = true)
-        {
-            if (IsVisible == value) return;
-            IsVisible = value;
-            UpdateVisibility(GroupPanel, IsVisible, animate);
-        }
+        private void SetVisible0(bool value, bool animate = true) => UpdateVisibility(GroupPanel, IsVisible = value, animate);
 
-        private void SetCollapsed0(bool value, bool animate = true)
-        {
-            if (IsCollapsed == value) return;
-            IsCollapsed = value;
-            GroupHeader.IsExpanded = !value;
-            UpdateVisibility(ItemsPanel, !IsCollapsed, animate);
-        }
+        private void SetCollapsed0(bool value, bool animate = true) => UpdateVisibility(ItemsPanel, GroupHeader.IsExpanded = !value, animate);
 
     }
 
@@ -239,20 +228,6 @@ namespace SharpBCI.Extensions.Windows
             IsVisible = value;
             UpdateVisibility(Row, IsVisible, animate);
         }
-
-        public bool CheckValid()
-        {
-            try
-            {
-                PresentedParameter.GetValue();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
 
     }
 

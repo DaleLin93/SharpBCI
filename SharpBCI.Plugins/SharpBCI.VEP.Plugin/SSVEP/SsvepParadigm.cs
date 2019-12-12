@@ -10,6 +10,7 @@ using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
+using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions.Patterns;
 using SharpBCI.Extensions.Presenters;
 using SharpBCI.Extensions.StageProviders;

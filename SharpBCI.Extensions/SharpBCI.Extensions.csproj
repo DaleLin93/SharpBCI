@@ -161,7 +161,7 @@
     <Compile Include="Paradigms\Countdown\CountdownExperimentWindow.xaml.cs">
       <DependentUpon>CountdownExperimentWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ParadigmFactory.cs" />
+    <Compile Include="Paradigms\ParadigmFactory.cs" />
     <Compile Include="MarkerDefinitions.cs" />
     <Compile Include="Presenters\DateTimePresenter.cs" />
     <Compile Include="Presenters\RangePresenter.cs" />
