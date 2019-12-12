@@ -12,41 +12,6 @@ using SharpBCI.Extensions.Presenters;
 namespace SharpBCI.Extensions.Windows
 {
 
-    public class GroupHeader : Grid
-    {
-
-        public GroupHeader()
-        {
-            Children.Add(SeparatorRectangle = new Rectangle {Margin = new Thickness {Left = 10, Right = 10, Top = 7}});
-            Children.Add(HeaderTextBlock = new TextBlock {Margin = new Thickness {Left = 15, Top = 2}, IsHitTestVisible = false, Visibility = Visibility.Hidden});
-
-            Style = ViewHelper.GetResource("ParamGroupHeader") as Style;
-            SeparatorRectangle.Style = ViewHelper.GetResource("ParamGroupHeaderLine") as Style;
-            HeaderTextBlock.Style = ViewHelper.GetResource("ParamGroupHeaderText") as Style;
-        }
-
-        public Rectangle SeparatorRectangle { get; }
-
-        public TextBlock HeaderTextBlock { get; }
-
-        public string Header
-        {
-            get => HeaderTextBlock.Text;
-            set
-            {
-                HeaderTextBlock.Text = value;
-                HeaderTextBlock.Visibility = string.IsNullOrWhiteSpace(value) ? Visibility.Hidden : Visibility.Visible;
-            }
-        }
-
-        public string Description
-        {
-            get => ToolTip?.ToString();
-            set => ToolTip = value;
-        }
-
-    }
-
     public class LabeledRow : Grid
     {
 
@@ -192,18 +157,23 @@ namespace SharpBCI.Extensions.Windows
 
         [NotNull] public readonly IGroupDescriptor Group;
 
+        [NotNull] public readonly GroupHeader GroupHeader;
+
         [NotNull] public readonly DockPanel GroupPanel;
         
         [NotNull] public readonly StackPanel ItemsPanel;
 
         public readonly int Depth;
 
-        public GroupViewModel(IGroupDescriptor group, DockPanel groupPanel, StackPanel itemsPanel, int depth)
+        public GroupViewModel(IGroupDescriptor group, GroupHeader groupHeader, DockPanel groupPanel, StackPanel itemsPanel, int depth)
         {
             Group = group;
+            GroupHeader = groupHeader;
             GroupPanel = groupPanel;
             ItemsPanel = itemsPanel;
             Depth = depth;
+            SetVisible0(true, false);
+            SetCollapsed0(false, false);
         }
 
         public bool IsVisible { get; private set; } = true;
@@ -213,14 +183,27 @@ namespace SharpBCI.Extensions.Windows
         public void SetVisible(bool value, bool animate = true)
         {
             if (IsVisible == value) return;
-            IsVisible = value;
-            UpdateVisibility(GroupPanel, IsVisible, animate);
+            SetVisible0(value, animate);
         }
 
         public void SetCollapsed(bool value, bool animate = true)
         {
             if (IsCollapsed == value) return;
+            SetCollapsed0(value, animate);
+        }
+
+        private void SetVisible0(bool value, bool animate = true)
+        {
+            if (IsVisible == value) return;
+            IsVisible = value;
+            UpdateVisibility(GroupPanel, IsVisible, animate);
+        }
+
+        private void SetCollapsed0(bool value, bool animate = true)
+        {
+            if (IsCollapsed == value) return;
             IsCollapsed = value;
+            GroupHeader.IsExpanded = !value;
             UpdateVisibility(ItemsPanel, !IsCollapsed, animate);
         }
 

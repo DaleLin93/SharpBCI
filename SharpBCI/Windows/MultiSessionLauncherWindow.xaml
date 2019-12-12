@@ -27,7 +27,7 @@
                     <MenuItem Header="Variables" Click="SystemVariablesMenuItem_OnClick" />
                 </MenuItem>
             </Menu>
-            <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
+            <Rectangle Style="{StaticResource HorizontalSeparatorLine}" Fill="#FFE2E2E2" />
             <windows:GroupHeader Header="Subject"/>
             <TextBox x:Name="SubjectTextBox" Margin="2 3 2 3" />
             <windows:GroupHeader Header="Paradigms"/>

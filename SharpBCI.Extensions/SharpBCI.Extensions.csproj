@@ -209,6 +209,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="TypeConverters.cs" />
+    <Compile Include="Windows\GroupHeader.xaml.cs">
+      <DependentUpon>GroupHeader.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Windows\ViewConstants.cs" />
     <Compile Include="Windows\ContextChangedEventArgs.cs" />
     <Compile Include="Windows\LayoutChangedEventArgs.cs" />
@@ -301,6 +304,10 @@
     <Page Include="Windows\ParameterizedConfigWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Windows\GroupHeader.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>

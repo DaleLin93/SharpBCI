@@ -65,7 +65,7 @@ namespace SharpBCI.Extensions.Presenters
         public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             var isSdColor = param.ValueType == typeof(System.Drawing.Color) || param.ValueType == typeof(System.Drawing.Color?);
-            var rectangle = new Rectangle {Stroke = (Brush) ViewHelper.GetResource("SeparatorColorBrush"), MinHeight = 15};
+            var rectangle = new Rectangle {Stroke = (Brush) ViewHelper.GetResource("SeparatorFillBrush"), MinHeight = 15};
             Grid grid = null;
             TextBlock textBlock = null;
             if (ShowArgbProperty.Get(param.Metadata))

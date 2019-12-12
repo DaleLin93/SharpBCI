@@ -101,13 +101,11 @@ namespace SharpBCI.Extensions.Windows
             var tooltipBuilder = new StringBuilder(64).Append(header);
             if (!string.IsNullOrEmpty(description)) tooltipBuilder.AppendIfEmpty('\n').Append(description);
             if (click2Collapse) tooltipBuilder.AppendIfEmpty('\n').Append("(Click to Collapse/Expand)");
-            return new GroupHeader
-            {
-                Header = header,
-                Description = description,
-                ToolTip = tooltipBuilder.ToString()
-            };
+            return new GroupHeader {Header = header, Description = tooltipBuilder.ToString(), IsExpandable = click2Collapse};
         }
+
+        private static TextBlock CreateLabelTextBlock(string text, string tooltip = null) =>
+            new TextBlock {Style = (Style) GetResource("LabelText"), Text = text, ToolTip = tooltip};
 
         public static TextBlock CreateParamNameTextBlock(IParameterDescriptor param, bool dbClick2Reset = false)
         {
@@ -116,12 +114,7 @@ namespace SharpBCI.Extensions.Windows
             tooltipBuilder.Append("\nValue Type: ").Append(param.ValueType.GetFriendlyName());
             if (!string.IsNullOrEmpty(param.Description)) tooltipBuilder.Append('\n').Append(param.Description);
             if (dbClick2Reset) tooltipBuilder.Append("\n(Double-Click to Reset)");
-            return new TextBlock
-            {
-                Style = (Style) GetResource("LabelText"),
-                Text = param.Name + (param.Unit == null ? "" : $" ({param.Unit})"),
-                ToolTip = tooltipBuilder.ToString()
-            };
+            return CreateLabelTextBlock(param.Name + (param.Unit == null ? "" : $" ({param.Unit})"), tooltipBuilder.ToString());
         }
 
         public static DockPanel CreateGroupPanel([NotNull] GroupHeader groupHeader, int depth = 0)
@@ -166,7 +159,7 @@ namespace SharpBCI.Extensions.Windows
             var dockPanel = CreateGroupPanel(groupHeader, depth);
             var itemsPanel = new StackPanel();
             dockPanel.Children.Add(itemsPanel);
-            var viewModel = new GroupViewModel(group, dockPanel, itemsPanel, depth);
+            var viewModel = new GroupViewModel(group, groupHeader, dockPanel, itemsPanel, depth);
             if (click2Collapse) groupHeader.MouseLeftButtonUp += (sender, e) =>
             {
                 var collapse = !viewModel.IsCollapsed;
@@ -177,7 +170,7 @@ namespace SharpBCI.Extensions.Windows
         }
 
         public static LabeledRow AddLabeledRow(this Panel parent, string label, UIElement contentPart, uint rowHeight = 0) =>
-            AddLabeledRow(parent, label == null ? null : new TextBlock { Text = label, Style = GetResource("LabelText") as Style }, contentPart, rowHeight);
+            AddLabeledRow(parent, label == null ? null : CreateLabelTextBlock(label), contentPart, rowHeight);
 
         public static LabeledRow AddLabeledRow(this Panel parent, TextBlock labelPart, UIElement contentPart, uint rowHeight = 0)
         {

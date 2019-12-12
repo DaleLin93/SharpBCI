@@ -10,10 +10,9 @@
         Height="350" Width="600" MinHeight="350" MinWidth="550" ResizeMode="CanResize"
         Loaded="Window_OnLoaded" LayoutUpdated="Window_OnLayoutUpdated" KeyDown="Window_OnKeyDown" Closing="Window_OnClosing" Closed="Window_OnClosed">
     <DockPanel>
-
         <!-- Menu -->
         <StackPanel DockPanel.Dock="Top">
-            <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
+            <Rectangle Style="{StaticResource HorizontalSeparatorLine}" Fill="#FFE2E2E2" />
             <Menu Background="#88FAFAFA">
                 <MenuItem Header="File" SubmenuOpened="MenuItem_OnSubmenuOpened">
                     <MenuItem Header="Open Session Config from..." Click="OpenFromMenuItem_OnClick" />
@@ -42,7 +41,7 @@
                 <MenuItem x:Name="AppsMenuItem" Header="Apps" />
                 <MenuItem x:Name="PluginsMenuItem" Header="Plugins" />
             </Menu>
-            <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFE2E2E2" />
+            <Rectangle Style="{StaticResource HorizontalSeparatorLine}" Fill="#FFE2E2E2" />
         </StackPanel>
 
         <!-- Action Panel: Error Message, Start Button -->
@@ -95,7 +94,7 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <Grid x:Name="PopupGrid" Visibility="Hidden" Background="{StaticResource BackgroundBrush}">
+            <Grid x:Name="PopupGrid" Visibility="Hidden" Background="{StaticResource BackgroundBrush}" >
                 <Rectangle x:Name="PopupBackgroundRectangle">
                     <Rectangle.Fill>
                         <VisualBrush Visual="{Binding ElementName=ScrollView}" Stretch="None" AlignmentY="Top" AlignmentX="Left"/>
@@ -115,7 +114,7 @@
                             <StackPanel>
                                 <Grid x:Name="PopupHeaderGrid" Visibility="Collapsed" Margin="0 0 0 12">
                                     <TextBlock x:Name="PopupTitleTextBlock" FontSize="17" Margin="0 6" FontWeight="Bold" HorizontalAlignment="Stretch" TextAlignment="Center" />
-                                    <Rectangle Style="{StaticResource ParamGroupHeaderLine}" Fill="#FFAEAEAE" VerticalAlignment="Bottom"/>
+                                    <Rectangle Style="{StaticResource HorizontalSeparatorLine}" Fill="#FFAEAEAE" VerticalAlignment="Bottom"/>
                                 </Grid>
                                 <Grid x:Name="PopupCustomGrid"/>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Height="35">

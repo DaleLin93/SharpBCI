@@ -1,0 +1,76 @@
+﻿<Grid x:Name="Root" x:Class="SharpBCI.Extensions.Windows.GroupHeader"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:windows="clr-namespace:SharpBCI.Extensions.Windows"
+             mc:Ignorable="d" d:DesignHeight="15" d:DesignWidth="500" 
+             Height="15" Background="{StaticResource GroupHeaderBackgroundBrush}" Margin="10 0"
+             d:DataContext="{d:DesignInstance windows:GroupHeader}">
+    <Grid.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/SharpBCI.Extensions;component/Resources/SharedResourceDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Grid.Resources>
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+    <Rectangle Grid.Column="0" x:Name="LeftPartSeparator" IsHitTestVisible="False">
+        <Rectangle.Style>
+            <Style TargetType="Rectangle" BasedOn="{StaticResource HorizontalSeparatorLine}">
+                <Setter Property="Visibility" Value="Hidden" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ElementName=Root, Path=IsExpandable}" Value="False">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Rectangle.Style>
+    </Rectangle>
+    <Path Grid.Column="0" x:Name="ArrowPath" Data="M 1,2.5 L 4,5.5 7,2.5" Width="8" Height="8" Stroke="#D4D4D4" StrokeThickness="1" IsHitTestVisible="False"
+          HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+        <Path.RenderTransform>
+            <RotateTransform Angle="0"/>
+        </Path.RenderTransform>
+        <Path.Style>
+            <Style TargetType="Path">
+                <Setter Property="Visibility" Value="Visible" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ElementName=Root, Path=IsExpandable}" Value="False">
+                        <Setter Property="Visibility" Value="Hidden" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ElementName=Root, Path=IsExpanded}" Value="False">
+                        <DataTrigger.EnterActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="(Path.RenderTransform).(RotateTransform.Angle)" To="-90" Duration="0:0:0.4">
+                                        <DoubleAnimation.EasingFunction>
+                                            <SineEase/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </DataTrigger.EnterActions>
+                        <DataTrigger.ExitActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="(Path.RenderTransform).(RotateTransform.Angle)" To="0" Duration="0:0:0.4">
+                                        <DoubleAnimation.EasingFunction>
+                                            <SineEase/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </DataTrigger.ExitActions>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Path.Style>
+    </Path>
+    <TextBlock Grid.Column="1" x:Name="HeaderTextBlock" Foreground="#C3C3C3" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="1 0" TextWrapping="Wrap" FontSize="8" FontWeight="Bold" />
+    <Rectangle Grid.Column="2" Style="{StaticResource HorizontalSeparatorLine}" IsHitTestVisible="False"/>
+</Grid>
