@@ -4,8 +4,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System;
 using System.Speech.Synthesis;
-using System.Windows.Media.Imaging;
-using WpfAnimatedGif;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
@@ -28,6 +26,7 @@ using SharpBCI.Extensions.IO.Devices.EyeTrackers;
 using Brushes = System.Windows.Media.Brushes;
 using Point = System.Windows.Point;
 using System.IO;
+using XamlAnimatedGif;
 
 namespace SharpBCI.Paradigms.MI
 {
@@ -242,29 +241,29 @@ namespace SharpBCI.Paradigms.MI
 
                 public void Play()
                 {
-                    var controller = ImageBehavior.GetAnimationController(Control);
-                    if (controller != null && controller.FrameCount > 1) controller.Play();
+                    var animator = AnimationBehavior.GetAnimator(Control);
+                    if (animator != null && animator.FrameCount > 1) animator.Play();
                 }
 
                 public void Pause()
                 {
-                    var controller = ImageBehavior.GetAnimationController(Control);
-                    if (controller != null && controller.FrameCount > 1) controller.Pause();
+                    var animator = AnimationBehavior.GetAnimator(Control);
+                    if (animator != null && animator.FrameCount > 1) animator.Pause();
                 }
 
                 public void Rewind()
                 {
-                    var controller = ImageBehavior.GetAnimationController(Control);
-                    if (controller != null && controller.FrameCount > 1) controller.GotoFrame(0);
+                    var animator = AnimationBehavior.GetAnimator(Control);
+                    if (animator != null && animator.FrameCount > 1) animator.Rewind();
                 }
 
                 public void Restart()
                 {
-                    var controller = ImageBehavior.GetAnimationController(Control);
-                    if (controller != null && controller.FrameCount > 1)
+                    var animator = AnimationBehavior.GetAnimator(Control);
+                    if (animator != null && animator.FrameCount > 1)
                     {
-                        controller.GotoFrame(0);
-                        controller.Play();
+                        animator.Rewind();
+                        animator.Play();
                     }
                 }
 
@@ -290,9 +289,9 @@ namespace SharpBCI.Paradigms.MI
                 return _elements.GetOrCreate(imageUri, uri =>
                 {
                     var image = new Image { Visibility = Visibility.Hidden };
-                    ImageBehavior.SetAnimatedSource(image, new BitmapImage(uri));
-                    ImageBehavior.SetAutoStart(image, true);
-                    ImageBehavior.SetRepeatBehavior(image, Repeat ? RepeatBehavior.Forever : new RepeatBehavior(1));
+                    AnimationBehavior.SetSourceUri(image, uri);
+                    AnimationBehavior.SetAutoStart(image, false);
+                    AnimationBehavior.SetRepeatBehavior(image, Repeat ? RepeatBehavior.Forever : new RepeatBehavior(1));
                     ImageContainer.Children.Add(image);
                     return new Element { Control = image };
                 });

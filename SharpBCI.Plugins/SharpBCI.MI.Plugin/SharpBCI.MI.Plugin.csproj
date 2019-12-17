@@ -127,8 +127,8 @@
     <PackageReference Include="ToastNotifications.Messages">
       <Version>2.5.1</Version>
     </PackageReference>
-    <PackageReference Include="WpfAnimatedGif">
-      <Version>1.4.18</Version>
+    <PackageReference Include="XamlAnimatedGif">
+      <Version>1.2.2</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

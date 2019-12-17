@@ -192,12 +192,11 @@ namespace SharpBCI.Paradigms.MI
 #if DEBUG
         private static IStageProvider[] InternalProgramStageProviders => new IStageProvider[]
         {
-            new DelayStageProvider(1000),
+            new DelayStageProvider(100),
             new MarkedStageProvider(MarkerDefinitions.ParadigmStartMarker),
             new RepeatingStageProvider.Simple(new Stage[]
             {
-                new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://F:/A.gif"), Duration = 3000, IsPreload = false},
-                new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://F:/B.gif"), Duration = 3000, IsPreload = false},
+                new MiStage {VisualStimulus = MiStage.Stimulus<MiStage.VisualStimulusType>.Parse("image:file://F:/mi materials/elbow_up_4s.gif"), Duration = 3000, IsPreload = false},
                 new MiStage {Duration = 3000, IsPreload = false}
             }, 50), 
             new MarkedStageProvider(MarkerDefinitions.ParadigmEndMarker),
