@@ -11,6 +11,7 @@ using JetBrains.Annotations;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Windows;
+using Border = System.Windows.Controls.Border;
 
 namespace SharpBCI.Extensions.Presenters
 {
@@ -18,38 +19,45 @@ namespace SharpBCI.Extensions.Presenters
     public interface IPresentedParameterAccessor
     {
 
-        object GetValue();
-
-        void SetValue(object value);
+        object Value { get; set; }
 
     }
 
     public interface IPresentedParameterStateHandler
     {
 
-        void SetEnabled(bool value);
+        bool IsEnabled { get; set; }
 
-        void SetValid(bool value);
+        bool IsValid { get; set; }
 
     }
 
     public interface IPresentedParameterAdapter : IPresentedParameterAccessor, IPresentedParameterStateHandler { }
 
+    public class ControlStateHandler : IPresentedParameterStateHandler
+    {
+
+        private readonly Control _control;
+
+        public ControlStateHandler(Control control) => _control = control;
+
+        public bool IsEnabled
+        {
+            get => _control.IsEnabled;
+            set => _control.IsEnabled = value;
+        }
+
+        public bool IsValid
+        {
+            get => _control.Background != ViewConstants.InvalidColorBrush;
+            set => _control.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
+        }
+
+    }
+    
     public sealed class PresentedParameter : IPresentedParameterAdapter
     {
 
-        private class SimpleStateHandler : IPresentedParameterStateHandler
-        {
-
-            private readonly Control _control;
-
-            public SimpleStateHandler(Control control) => _control = control;
-
-            public void SetEnabled(bool value) => _control.IsEnabled = value;
-
-            public void SetValid(bool value) => _control.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
-
-        }
 
         [NotNull] public readonly IParameterDescriptor ParameterDescriptor;
 
@@ -59,16 +67,12 @@ namespace SharpBCI.Extensions.Presenters
 
         [CanBeNull] private readonly IPresentedParameterStateHandler _stateHandler;
 
-        private bool _isEnabled = true;
-
-        private bool _isValid = true;
-
-        public PresentedParameter([NotNull] IParameterDescriptor parameterDescriptor, [NotNull] UIElement element, [NotNull] IPresentedParameterAdapter adapter) 
+        public PresentedParameter([NotNull] IParameterDescriptor parameterDescriptor, [NotNull] UIElement element, [NotNull] IPresentedParameterAdapter adapter)
             : this(parameterDescriptor, element, adapter, adapter) { }
 
         public PresentedParameter([NotNull] IParameterDescriptor parameterDescriptor, [NotNull] UIElement element,
-            [NotNull] IPresentedParameterAccessor accessor, [CanBeNull] Control control = null) 
-            : this(parameterDescriptor, element, accessor, control == null ? null : new SimpleStateHandler(control)) { }
+            [NotNull] IPresentedParameterAccessor accessor, [CanBeNull] Control control = null)
+            : this(parameterDescriptor, element, accessor, control == null ? null : new ControlStateHandler(control)) { }
 
         public PresentedParameter([NotNull] IParameterDescriptor parameterDescriptor, [NotNull] UIElement element,
             [NotNull] IPresentedParameterAccessor accessor, [CanBeNull] IPresentedParameterStateHandler handler = null)
@@ -81,48 +85,45 @@ namespace SharpBCI.Extensions.Presenters
 
         public bool IsEnabled
         {
-            get => _isEnabled;
+            get => _stateHandler?.IsEnabled ?? true;
             set
             {
-                if (_isEnabled == value) return;
-                _isEnabled = value;
-                _stateHandler?.SetEnabled(_isEnabled);
+                if (_stateHandler == null) return;
+                _stateHandler.IsEnabled = value;
             }
         }
 
         public bool IsValid
         {
-            get => _isValid;
+            get => _stateHandler?.IsValid ?? true;
             set
             {
-                if (_isValid == value) return;
-                _isValid = value;
-                _stateHandler?.SetValid(_isValid);
+                if (_stateHandler == null) return;
+                _stateHandler.IsValid = value;
             }
+        }
+
+        public object Value
+        {
+            get
+            {
+                object value;
+                try
+                {
+                    value = _accessor.Value;
+                    IsValid = true;
+                }
+                catch (Exception)
+                {
+                    IsValid = false;
+                    throw;
+                }
+
+                return value;
+            }
+            set => _accessor.Value = value;
         }
         
-        public object GetValue()
-        {
-            object value;
-            try
-            {
-                value = _accessor.GetValue();
-                IsValid = true;
-            }
-            catch (Exception)
-            {
-                IsValid = false;
-                throw;
-            }
-            return value;
-        }
-
-        public void SetValue(object value) => _accessor.SetValue(value);
-
-        public void SetEnabled(bool value) => IsEnabled = value;
-
-        public void SetValid(bool value) => IsValid = value;
-
     }
 
     public interface IPresenter

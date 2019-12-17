@@ -22,9 +22,11 @@ namespace SharpBCI.Extensions.Presenters
                 _checkBox = checkBox;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(_checkBox.IsChecked ?? false);
-
-            public void SetValue(object value) => _checkBox.IsChecked = (bool?)value ?? false;
+            public object Value
+            {
+                get => _parameter.IsValidOrThrow(_checkBox.IsChecked ?? false);
+                set => _checkBox.IsChecked = (bool?) value ?? false;
+            }
 
         }
 

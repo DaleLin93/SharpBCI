@@ -46,39 +46,45 @@ namespace SharpBCI.Extensions.Presenters
                 _removeLastRow = removeLastRow;
             }
 
-            public object GetValue()
+            public bool IsEnabled
             {
-                IList result = Array.CreateInstance(_elementType, _list.Count);
-                for (var i = 0; i < _list.Count && i < _maxElementCount; i++)
-                    result[i] = _list[i].Item1.GetValue();
-                if (_isDistinct)
-                    for (var i = 1; i < result.Count; i++)
-                    {
-                        var primary = result[i];
-                        for (var j = 0; j < i; j++)
-                            if (Equals(primary, result[i]))
-                                throw new Exception("duplicated value");
-                    }
-                return _parameter.IsValidOrThrow(result);
+                get => _container.IsEnabled;
+                set => _container.IsEnabled = value;
             }
 
-            public void SetValue(object value)
+            public bool IsValid { get; set; }
+
+            public object Value
             {
-                if (value is IList list)
+                get
                 {
-                    if (!_isFixed)
+                    IList result = Array.CreateInstance(_elementType, _list.Count);
+                    for (var i = 0; i < _list.Count && i < _maxElementCount; i++)
+                        result[i] = _list[i].Item1.Value;
+                    if (_isDistinct)
+                        for (var i = 1; i < result.Count; i++)
+                        {
+                            var primary = result[i];
+                            for (var j = 0; j < i; j++)
+                                if (Equals(primary, result[i]))
+                                    throw new Exception("duplicated value");
+                        }
+                    return _parameter.IsValidOrThrow(result);
+                }
+                set
+                {
+                    if (value is IList list)
                     {
-                        while (_list.Count < list.Count && _list.Count < _maxElementCount) _addRow();
-                        while (_list.Count > list.Count || _list.Count > _maxElementCount) _removeLastRow();
+                        if (!_isFixed)
+                        {
+                            while (_list.Count < list.Count && _list.Count < _maxElementCount) _addRow();
+                            while (_list.Count > list.Count || _list.Count > _maxElementCount) _removeLastRow();
+                        }
+                        for (var i = 0; i < list.Count && i < _list.Count; i++)
+                            _list[i].Item1.Value = list[i];
                     }
-                    for (var i = 0; i < list.Count && i < _list.Count; i++)
-                        _list[i].Item1.SetValue(list[i]);
                 }
             }
-
-            public void SetEnabled(bool value) => _container.IsEnabled = value;
-
-            public void SetValid(bool value) { }
 
         }
 

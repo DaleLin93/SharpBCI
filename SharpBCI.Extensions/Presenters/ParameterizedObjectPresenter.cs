@@ -17,19 +17,21 @@ namespace SharpBCI.Extensions.Presenters
         private class PopupAccessor : IPresentedParameterAccessor
         {
 
-            internal IParameterizedObject Value;
-
             private readonly IParameterDescriptor _parameter;
+
+            private IParameterizedObject _value;
 
             public PopupAccessor(IParameterDescriptor parameter, IParameterizedObject value)
             {
                 _parameter = parameter;
-                Value = value;
+                _value = value;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(Value);
-
-            public void SetValue(object value) => Value = (IParameterizedObject)value;
+            public object Value
+            {
+                get => _parameter.IsValidOrThrow(_value);
+                set => _value = (IParameterizedObject) value;
+            }
 
         }
 
@@ -40,54 +42,68 @@ namespace SharpBCI.Extensions.Presenters
 
             private readonly IParameterizedObjectFactory _factory;
 
+            private readonly Panel _container;
+
             private readonly PresentedParameter[] _subParameters;
 
-            public InlineAdapter(IParameterDescriptor parameter, IParameterizedObjectFactory factory, PresentedParameter[] subParameters)
+            public InlineAdapter(IParameterDescriptor parameter, IParameterizedObjectFactory factory, Panel container, PresentedParameter[] subParameters)
             {
                 _parameter = parameter;
                 _factory = factory;
+                _container = container;
                 _subParameters = subParameters;
             }
 
-            public object GetValue()
+            public bool IsEnabled
             {
-                var context = new Context();
-                var errors = new LinkedList<PresentedParameter>();
-                foreach (var subParam in _subParameters)
-                    try
-                    {
-                        context.Set(subParam.ParameterDescriptor, subParam.GetValue());
-                    }
-                    catch (Exception)
-                    {
-                        subParam.SetValid(false);
-                        errors.AddLast(subParam);
-                    }
-                if (errors.Any()) throw new Exception();
-                return _factory.Create(_parameter, context);
-            }
-
-            public void SetValue(object value)
-            {
-                var context = _factory.Parse(_parameter, (IParameterizedObject)value);
-                foreach (var subParam in _subParameters)
-                    if (context.TryGet(subParam.ParameterDescriptor, out var val)) subParam.SetValue(val);
-            }
-
-            public void SetEnabled(bool value)
-            {
-                if (value)
+                get => _container.IsEnabled;
+                set
                 {
-                    var context = _factory.Parse(_parameter, (IParameterizedObject)GetValue());
-                    foreach (var presentedParam in _subParameters)
-                        presentedParam.SetEnabled(_factory.IsEnabled(context, presentedParam.ParameterDescriptor));
+                    _container.IsEnabled = value;
+                    if (value)
+                    {
+                        var context = _factory.Parse(_parameter, (IParameterizedObject)Value);
+                        foreach (var presentedParam in _subParameters)
+                            presentedParam.IsEnabled = _factory.IsEnabled(context, presentedParam.ParameterDescriptor);
+                    }
+                    else
+                        foreach (var presentedSubParam in _subParameters)
+                            presentedSubParam.IsEnabled = false;
                 }
-                else
-                    foreach (var presentedSubParam in _subParameters)
-                        presentedSubParam.SetEnabled(false);
             }
 
-            public void SetValid(bool value) { }
+            public bool IsValid
+            {
+                get => _container.Background != ViewConstants.InvalidColorBrush;
+                set => _container.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
+            }
+
+            public object Value
+            {
+                get
+                {
+                    var context = new Context();
+                    var errors = new LinkedList<PresentedParameter>();
+                    foreach (var subParam in _subParameters)
+                        try
+                        {
+                            context.Set(subParam.ParameterDescriptor, subParam.Value);
+                        }
+                        catch (Exception)
+                        {
+                            subParam.IsValid = false;
+                            errors.AddLast(subParam);
+                        }
+                    if (errors.Any()) throw new Exception();
+                    return _factory.Create(_parameter, context);
+                }
+                set
+                {
+                    var context = _factory.Parse(_parameter, (IParameterizedObject)value);
+                    foreach (var subParam in _subParameters)
+                        if (context.TryGet(subParam.ParameterDescriptor, out var val)) subParam.Value = val;
+                }
+            }
 
         }
 
@@ -130,7 +146,16 @@ namespace SharpBCI.Extensions.Presenters
             button.Click += (sender, e) =>
             {
                 var subParams = factory.GetParameters(param);
-                var context = factory.Parse(param, accessor.Value);
+                object value;
+                try
+                {
+                    value = accessor.Value;
+                }
+                catch (Exception)
+                {
+                    value = param.DefaultValue;
+                }
+                var context = factory.Parse(param, value as IParameterizedObject);
                 var configWindow = new ParameterizedConfigWindow(param.Name ?? "Parameter", subParams, context) {Width = 400};
                 if (!configWindow.ShowDialog(out var @params)) return;
                 accessor.Value = factory.Create(param, @params);
@@ -147,7 +172,7 @@ namespace SharpBCI.Extensions.Presenters
             var subParameterCount = subParameters.Length;
             var presentedSubParams = new PresentedParameter[subParameterCount];
 
-            UIElement container;
+            Panel container;
             if (subParameterCount == 0)
             {
                 var grid = new Grid();
@@ -232,7 +257,7 @@ namespace SharpBCI.Extensions.Presenters
                         throw new NotSupportedException(orientation.ToString());
                 }
             }
-            return new PresentedParameter(param, container, new InlineAdapter(param, factory, presentedSubParams));
+            return new PresentedParameter(param, container, new InlineAdapter(param, factory, container, presentedSubParams));
         }
     }
 }

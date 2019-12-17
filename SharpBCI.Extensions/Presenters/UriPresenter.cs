@@ -37,24 +37,34 @@ namespace SharpBCI.Extensions.Presenters
                 _browseButton = browseButton;
             }
 
-            public object GetValue()
+            public bool IsEnabled
             {
-                var uri = new Uri(_uriTextBox.Text);
-                if (!_supportedSchemes.Any() && !_supportedSchemes.Contains(uri.Scheme.ToLowerInvariant())) throw new Exception("unsupported scheme");
-                if (string.Equals(uri.Scheme, "file", StringComparison.OrdinalIgnoreCase) && _checkFileExistence && !File.Exists(uri.LocalPath)) throw new Exception("file not exists");
-                return _parameter.IsValidOrThrow(uri);
+                get => _uriTextBox.IsEnabled;
+                set
+                {
+                    _uriTextBox.IsEnabled = value;
+                    if (_browseButton != null) _browseButton.IsEnabled = value;
+                }
             }
 
-            public void SetValue(object value) => _uriTextBox.Text = value?.ToString() ?? "";
-
-            public void SetEnabled(bool value)
+            public bool IsValid
             {
-                _uriTextBox.IsEnabled = value;
-                if (_browseButton != null) _browseButton.IsEnabled = value;
+                get => _uriTextBox.Background != ViewConstants.InvalidColorBrush;
+                set => _uriTextBox.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
             }
 
-            public void SetValid(bool value) => _uriTextBox.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
-
+            public object Value
+            {
+                get
+                {
+                    var uri = new Uri(_uriTextBox.Text);
+                    if (!_supportedSchemes.Any() && !_supportedSchemes.Contains(uri.Scheme.ToLowerInvariant())) throw new Exception("unsupported scheme");
+                    if (string.Equals(uri.Scheme, "file", StringComparison.OrdinalIgnoreCase) && _checkFileExistence && !File.Exists(uri.LocalPath)) throw new Exception("file not exists");
+                    return _parameter.IsValidOrThrow(uri);
+                }
+                set => _uriTextBox.Text = value?.ToString() ?? "";
+            }
+            
         }
 
         public static readonly NamedProperty<string[]> SupportedSchemesProperty = new NamedProperty<string[]>("SupportedSchemes");

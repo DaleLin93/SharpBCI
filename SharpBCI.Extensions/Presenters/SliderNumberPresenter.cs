@@ -28,9 +28,11 @@ namespace SharpBCI.Extensions.Presenters
                 _slider = slider;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(_slider.Value);
-
-            public void SetValue(object value) => _slider.Value = (double)value;
+            public object Value
+            {
+                get => _parameter.IsValidOrThrow(_slider.Value);
+                set => _slider.Value = (double) value;
+            }
 
         }
 

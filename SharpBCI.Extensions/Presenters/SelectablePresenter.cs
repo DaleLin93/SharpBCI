@@ -35,12 +35,14 @@ namespace SharpBCI.Extensions.Presenters
 
             private Border _textBoxBorder;
 
-            public ComboBoxAdapter(IParameterDescriptor parameter, Func<object, string> toStringFunc, ComboBox comboBox, Action updateAction)
+            private bool _isValid = true;
+
+            public ComboBoxAdapter(IParameterDescriptor parameter, Func<object, string> toStringFunc, ComboBox comboBox, Action updateCallback)
             {
                 _parameter = parameter;
                 _toStringFunc = toStringFunc;
                 _comboBox = comboBox;
-                _updateAction = updateAction;
+                _updateAction = updateCallback;
                 if (comboBox.IsEditable)
                 {
                     _textCallbackLock = new ReferenceCounter();
@@ -51,35 +53,47 @@ namespace SharpBCI.Extensions.Presenters
                     _textCallbackLock = null;
             }
 
-            public object GetValue()
+            public bool IsEnabled
             {
-                var value = _comboBox.IsEditable ? _comboBox.Text : ToStringOverridenWrapper.TryUnwrap(_comboBox.SelectedValue);
-                if (ReferenceEquals(NullValue, value)) value = null;
-                return _parameter.IsValidOrThrow(value);
+                get => _comboBox.IsEnabled;
+                set => _comboBox.IsEnabled = value;
             }
 
-            public void SetValue(object value)
+            public bool IsValid
             {
-                if (_comboBox.IsEditable)
-                    _comboBox.Text = value.ToString();
-                else
-                    _comboBox.FindAndSelectFirstByString(_toStringFunc(value), 0);
-            }
-
-            public void SetEnabled(bool value) => _comboBox.IsEnabled = value;
-
-            public void SetValid(bool value)
-            {
-                var brush = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
-                if (_comboBox.IsEditable)
+                get => _isValid;
+                set
                 {
-                    if (_textBoxBorder != null)
-                        _textBoxBorder.Background = brush;
-                    else if (_textBox != null)
-                        _textBox.Background = brush;
+                    if (_isValid == value) return;
+                    _isValid = value;
+                    var brush = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
+                    if (_comboBox.IsEditable)
+                    {
+                        if (_textBoxBorder != null)
+                            _textBoxBorder.Background = brush;
+                        else if (_textBox != null)
+                            _textBox.Background = brush;
+                    }
+                    else
+                        _comboBox.Background = brush;
                 }
-                else
-                    _comboBox.Background = brush;
+            }
+
+            public object Value
+            {
+                get
+                {
+                    var value = _comboBox.IsEditable ? _comboBox.Text : ToStringOverridenWrapper.TryUnwrap(_comboBox.SelectedValue);
+                    if (ReferenceEquals(NullValue, value)) value = null;
+                    return _parameter.IsValidOrThrow(value);
+                }
+                set
+                {
+                    if (_comboBox.IsEditable)
+                        _comboBox.Text = value.ToString();
+                    else
+                        _comboBox.FindAndSelectFirstByString(_toStringFunc(value), 0);
+                }
             }
 
             private void ComboBox_OnLoaded(object sender, RoutedEventArgs args)
@@ -95,7 +109,7 @@ namespace SharpBCI.Extensions.Presenters
             private void ComboBoxTextBox_TextChanged(object sender, TextChangedEventArgs args)
             {
                 if (!_textCallbackLock.IsReferred)
-                    _updateAction();
+                    _updateAction?.Invoke();
             }
 
         }
@@ -119,28 +133,38 @@ namespace SharpBCI.Extensions.Presenters
                 _radioButtons = radioButtons;
             }
 
-            public object GetValue()
+            public bool IsEnabled
             {
-                var value = ToStringOverridenWrapper.TryUnwrap(_radioButtons.First(rb => rb.IsChecked ?? false).Content);
-                if (ReferenceEquals(NullValue, value)) value = null;
-                return _parameter.IsValidOrThrow(value);
+                get => _container.IsEnabled;
+                set => _container.IsEnabled = value;
             }
 
-            public void SetValue(object value)
+            public bool IsValid
             {
-                var @checked = false;
-                foreach (var radioButton in _radioButtons)
+                get => _rectangle.Fill != ViewConstants.InvalidColorBrush;
+                set => _rectangle.Fill = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
+            }
+
+            public object Value
+            {
+                get
                 {
-                    var equal = Equals(ToStringOverridenWrapper.TryUnwrap(radioButton.Content), value);
-                    if (equal) @checked = true;
-                    radioButton.IsChecked = equal;
+                    var value = ToStringOverridenWrapper.TryUnwrap(_radioButtons.First(rb => rb.IsChecked ?? false).Content);
+                    if (ReferenceEquals(NullValue, value)) value = null;
+                    return _parameter.IsValidOrThrow(value);
                 }
-                if (!@checked && _radioButtons.Any()) _radioButtons[0].IsChecked = true;
+                set
+                {
+                    var @checked = false;
+                    foreach (var radioButton in _radioButtons)
+                    {
+                        var equal = Equals(ToStringOverridenWrapper.TryUnwrap(radioButton.Content), value);
+                        if (equal) @checked = true;
+                        radioButton.IsChecked = equal;
+                    }
+                    if (!@checked && _radioButtons.Any()) _radioButtons[0].IsChecked = true;
+                }
             }
-
-            public void SetEnabled(bool value) => _container.IsEnabled = value;
-
-            public void SetValid(bool value) => _rectangle.Fill = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
 
         }
 
@@ -206,9 +230,9 @@ namespace SharpBCI.Extensions.Presenters
             comboBox.SelectionChanged += (sender, args) => updateCallback();
             comboBox.ItemsSource = ToStringOverridenWrapper.Of(GetSelectableValues(param), toStringFunc);
             comboBox.IsEditable = customizable;
-            var comboBoxAdapter = new ComboBoxAdapter(param, toStringFunc, comboBox, updateCallback);
+            var adapter = new ComboBoxAdapter(param, toStringFunc, comboBox, updateCallback);
 
-            if (!refreshable) return new PresentedParameter(param, comboBox, comboBoxAdapter);
+            if (!refreshable) return new PresentedParameter(param, comboBox, adapter);
 
             /* Create 3 columns grid for 'ComboBox-Spacing-RefreshButton' */
             var grid = new Grid();
@@ -232,13 +256,13 @@ namespace SharpBCI.Extensions.Presenters
             {
                 var selected = comboBox.SelectedItem;
                 comboBox.ItemsSource = ToStringOverridenWrapper.Of(GetSelectableValues(param), toStringFunc);
-                if (selected != null) comboBoxAdapter.SetValue(selected);
+                if (selected != null) adapter.Value = selected;
                 updateCallback();
             };
             grid.Children.Add(refreshValuesBtn);
             Grid.SetColumn(refreshValuesBtn, 2);
 
-            return new PresentedParameter(param, grid, comboBoxAdapter);
+            return new PresentedParameter(param, grid, adapter);
         }
 
         public PresentedParameter PresentRadioButtons(IParameterDescriptor param, Func<object, string> toStringFunc, Action updateCallback)

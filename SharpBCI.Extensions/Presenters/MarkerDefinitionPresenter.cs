@@ -33,6 +33,8 @@ namespace SharpBCI.Extensions.Presenters
 
             private Border _textBoxBorder;
 
+            private bool _isValid = true;
+
             public ComboBoxAdapter(IParameterDescriptor parameter, Type actualValueType, ComboBox comboBox, Action updateAction)
             {
                 _parameter = parameter;
@@ -53,75 +55,87 @@ namespace SharpBCI.Extensions.Presenters
                 comboBox.SelectionChanged += ComboBoxComboBoxOnSelectionChanged;
             }
 
-            public object GetValue()
+            public bool IsEnabled
             {
-                object finalValue;
-                if (_comboBox.IsEditable)
-                    finalValue = string.IsNullOrEmpty(_comboBox.Text) ? (int?) null : int.Parse(_comboBox.Text);
-                else
+                get => _comboBox.IsEnabled;
+                set => _comboBox.IsEnabled = value;
+            }
+
+            public bool IsValid
+            {
+                get => _isValid;
+                set
                 {
-                    var markerDef = (_comboBox.SelectedValue as FrameworkElement)?.Tag as MarkerDefinition?;
-                    if (_actualValueType == typeof(int))
-                        finalValue = markerDef?.Code;
-                    else if (_actualValueType == typeof(MarkerDefinition))
-                        finalValue = markerDef;
+                    if (_isValid == value) return;
+                    _isValid = value;
+                    var brush = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
+                    if (_comboBox.IsEditable)
+                    {
+                        if (_textBoxBorder != null)
+                            _textBoxBorder.Background = brush;
+                        else if (_textBox != null)
+                            _textBox.Background = brush;
+                    }
                     else
-                        throw new NotSupportedException(_actualValueType.FullName);
-                }
-                return _parameter.IsValidOrThrow(finalValue);
-            }
-
-            public void SetValue(object value)
-            {
-                if (_comboBox.IsEditable)
-                    switch (value)
-                    {
-                        case int code:
-                            _comboBox.Text = code.ToString();
-                            break;
-                        case MarkerDefinition markerDefinition:
-                            _comboBox.Text = markerDefinition.Code.ToString();
-                            break;
-                        default:
-                            _comboBox.Text = "";
-                            break;
-                    }
-                else
-                {
-                    var success = false;
-                    switch (value)
-                    {
-                        case int code:
-                            success = _comboBox.FindAndSelectFirst(item =>
-                            {
-                                if (!(item is FrameworkElement el) || !(el.Tag is MarkerDefinition def)) return false;
-                                return def.Code == code;
-                            });
-                            break;
-                        case MarkerDefinition markerDefinition:
-                            success = _comboBox.FindAndSelectFirstByTag(markerDefinition);
-                            break;
-                    }
-                    if (!success)
-                        _comboBox.SelectedIndex = 0;
-                    _comboBox.UpdateLayout();
+                        _comboBox.Background = brush;
                 }
             }
 
-            public void SetEnabled(bool value) => _comboBox.IsEnabled = value;
-
-            public void SetValid(bool value)
+            public object Value
             {
-                var brush = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
-                if (_comboBox.IsEditable)
+                get
                 {
-                    if (_textBoxBorder != null)
-                        _textBoxBorder.Background = brush;
-                    else if (_textBox != null)
-                        _textBox.Background = brush;
+                    object value;
+                    if (_comboBox.IsEditable)
+                        value = string.IsNullOrEmpty(_comboBox.Text) ? (int?)null : int.Parse(_comboBox.Text);
+                    else
+                    {
+                        var markerDef = (_comboBox.SelectedValue as FrameworkElement)?.Tag as MarkerDefinition?;
+                        if (_actualValueType == typeof(int))
+                            value = markerDef?.Code;
+                        else if (_actualValueType == typeof(MarkerDefinition))
+                            value = markerDef;
+                        else
+                            throw new NotSupportedException(_actualValueType.FullName);
+                    }
+                    return _parameter.IsValidOrThrow(value);
                 }
-                else
-                    _comboBox.Background = brush;
+                set
+                {
+                    if (_comboBox.IsEditable)
+                        switch (value)
+                        {
+                            case int code:
+                                _comboBox.Text = code.ToString();
+                                break;
+                            case MarkerDefinition markerDefinition:
+                                _comboBox.Text = markerDefinition.Code.ToString();
+                                break;
+                            default:
+                                _comboBox.Text = "";
+                                break;
+                        }
+                    else
+                    {
+                        var success = false;
+                        switch (value)
+                        {
+                            case int code:
+                                success = _comboBox.FindAndSelectFirst(item =>
+                                {
+                                    if (!(item is FrameworkElement el) || !(el.Tag is MarkerDefinition def)) return false;
+                                    return def.Code == code;
+                                });
+                                break;
+                            case MarkerDefinition markerDefinition:
+                                success = _comboBox.FindAndSelectFirstByTag(markerDefinition);
+                                break;
+                        }
+                        if (!success)
+                            _comboBox.SelectedIndex = 0;
+                        _comboBox.UpdateLayout();
+                    }
+                }
             }
 
             private void ComboBox_OnLoaded(object sender, RoutedEventArgs args)

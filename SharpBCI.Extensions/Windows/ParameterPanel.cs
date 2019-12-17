@@ -76,7 +76,7 @@ namespace SharpBCI.Extensions.Windows
                         {
                             if (!value.TryGet(entry.Key, out var val) || !entry.Key.IsValid(val))
                                 val = entry.Value.ParameterDescriptor.DefaultValue;
-                            entry.Value.PresentedParameter.SetValue(val);
+                            entry.Value.PresentedParameter.Value = val;
                         }
                 Refresh();
             }
@@ -93,7 +93,7 @@ namespace SharpBCI.Extensions.Windows
         {
             var context = new Context();
             foreach (var entry in _paramViewModels)
-                try { context[entry.Key] = entry.Value.PresentedParameter.GetValue(); }
+                try { context[entry.Key] = entry.Value.PresentedParameter.Value; }
                 catch (Exception) { /* ignored */ }
             _context = context;
             OnParamsUpdated();
@@ -133,7 +133,7 @@ namespace SharpBCI.Extensions.Windows
                         if (!paramKeySet.Add(paramItem.Key)) throw new UserException($"Parameter key duplicated: {paramItem.Key}");
                         var presentedParameter = paramItem.GetPresenter().Present(paramItem, () => OnParamChanged(paramItem));
                         using (_updateLock.Ref()) // SetValue Default Value;
-                            try { presentedParameter.SetValue(_context.TryGet(paramItem, out var val) ? val : paramItem.DefaultValue); } 
+                            try { presentedParameter.Value = _context.TryGet(paramItem, out var val) ? val : paramItem.DefaultValue; } 
                             catch (Exception e) { throw new ProgrammingException($"Invalid default value: parameter {paramItem.Key}", e); }
                         var canReset = Adapter?.CanReset(paramItem) ?? false;
                         var nameTextBlock = ViewHelper.CreateParamNameTextBlock(paramItem, canReset);
@@ -144,7 +144,7 @@ namespace SharpBCI.Extensions.Windows
                                 if (MessageBox.Show($"Set param '{paramItem.Name}' to default?", "Set to default", MessageBoxButton.YesNo,
                                         MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes)
                                     using (_updateLock.Ref())
-                                        presentedParameter.SetValue(paramItem.DefaultValue);
+                                        presentedParameter.Value = paramItem.DefaultValue;
                                 OnParamChanged(paramItem);
                             };
                         var rowGrid = groupMeta.Container.AddLabeledRow(nameTextBlock, presentedParameter.Element);
@@ -174,7 +174,7 @@ namespace SharpBCI.Extensions.Windows
         private void OnParamChanged(IParameterDescriptor parameter)
         {
             if (_updateLock.IsReferred) return;
-            try { _context[parameter] = _paramViewModels[parameter].PresentedParameter.GetValue(); }
+            try { _context[parameter] = _paramViewModels[parameter].PresentedParameter.Value; }
             catch (Exception) { /* ignored */ }
             OnParamsUpdated();
         }
@@ -215,7 +215,7 @@ namespace SharpBCI.Extensions.Windows
             var adapter = Adapter;
             if (adapter == null) return;
             foreach (var paramHolder in _paramViewModels.Values)
-                paramHolder.PresentedParameter.SetEnabled(adapter.IsEnabled(@params, paramHolder.ParameterDescriptor));
+                paramHolder.PresentedParameter.IsEnabled = adapter.IsEnabled(@params, paramHolder.ParameterDescriptor);
         }
 
     }

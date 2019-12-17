@@ -29,16 +29,18 @@ namespace SharpBCI.Extensions.Presenters
                 _slider = slider;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(new Range(_slider.SelectionStart, _slider.SelectionEnd));
-
-            public void SetValue(object value)
+            public object Value
             {
-                if (value is Range interval)
+                get => _parameter.IsValidOrThrow(new Range(_slider.SelectionStart, _slider.SelectionEnd)); 
+                set
                 {
-                    _slider.SelectionStart = interval.MinValue;
-                    _slider.SelectionEnd = interval.MaxValue;
-                    _slider.Value = interval.MaxValue;
-                    UpdateToolTip();
+                    if (value is Range interval)
+                    {
+                        _slider.SelectionStart = interval.MinValue;
+                        _slider.SelectionEnd = interval.MaxValue;
+                        _slider.Value = interval.MaxValue;
+                        UpdateToolTip();
+                    }
                 }
             }
 

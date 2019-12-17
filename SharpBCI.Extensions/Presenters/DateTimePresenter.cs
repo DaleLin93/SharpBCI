@@ -20,9 +20,11 @@ namespace SharpBCI.Extensions.Presenters
                 _datePicker = datePicker;
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(_datePicker.SelectedDate);
-
-            public void SetValue(object value) => _datePicker.SelectedDate = (DateTime?) value;
+            public object Value
+            {
+                get => _parameter.IsValidOrThrow(_datePicker.SelectedDate);
+                set => _datePicker.SelectedDate = (DateTime?) value;
+            }
 
         }
 

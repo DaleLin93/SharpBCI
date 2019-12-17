@@ -56,13 +56,23 @@ namespace SharpBCI.Extensions.Presenters
                 _presented = presented;
             }
 
-            public object GetValue() => _parameter.TypeConverter.ConvertBackward(_presented.GetValue());
+            public bool IsEnabled
+            {
+                get => _presented.IsEnabled;
+                set => _presented.IsEnabled = value;
+            }
 
-            public void SetValue(object value) => _presented.SetValue(_parameter.TypeConverter.ConvertForward(value));
+            public bool IsValid
+            {
+                get => _presented.IsValid;
+                set => _presented.IsValid = value;
+            }
 
-            public void SetEnabled(bool value) => _presented.SetEnabled(value);
-
-            public void SetValid(bool value) => _presented.SetValid(value);
+            public object Value
+            {
+                get => _parameter.TypeConverter.ConvertBackward(_presented.Value);
+                set => _presented.Value = _parameter.TypeConverter.ConvertForward(value);
+            }
 
         }
 

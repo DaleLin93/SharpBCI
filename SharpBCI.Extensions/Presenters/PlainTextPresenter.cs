@@ -24,14 +24,16 @@ namespace SharpBCI.Extensions.Presenters
                 _textBox = textBox;
             }
 
-            public object GetValue()
+            public object Value
             {
-                var text = _textBox.Text ?? "";
-                if (_regex != null && !_regex.IsMatch(text)) throw new Exception("input text not match the given pattern");
-                return _parameter.IsValidOrThrow(_parameter.ParseValueFromString(text));
+                get
+                {
+                    var text = _textBox.Text ?? "";
+                    if (_regex != null && !_regex.IsMatch(text)) throw new Exception("input text not match the given pattern");
+                    return _parameter.IsValidOrThrow(_parameter.ParseValueFromString(text));
+                }
+                set => _textBox.Text = _parameter.ConvertValueToString(value ?? "");
             }
-
-            public void SetValue(object value) => _textBox.Text = _parameter.ConvertValueToString(value ?? "");
 
         }
 

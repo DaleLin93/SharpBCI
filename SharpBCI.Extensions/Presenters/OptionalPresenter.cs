@@ -38,20 +38,30 @@ namespace SharpBCI.Extensions.Presenters
                 _valueProperty = _parameter.ValueType.GetProperty(nameof(Optional<object>.Value)) ?? throw new Exception("cannot found 'Value' property");
             }
 
-            public object GetValue() => _parameter.IsValidOrThrow(_constructor.Invoke(new[] { _checkBox.IsChecked ?? false, _presented.GetValue() }));
-
-            public void SetValue(object value)
+            public bool IsEnabled
             {
-                if (_parameter.ValueType.IsInstanceOfType(value))
-                {
-                    _checkBox.IsChecked = _hasValueProperty.GetValue(value) as bool?;
-                    _presented.SetValue(_valueProperty.GetValue(value));
-                }
+                get => _container.IsEnabled;
+                set => _container.IsEnabled = value;
             }
 
-            public void SetEnabled(bool value) => _container.IsEnabled = value;
+            public bool IsValid
+            {
+                get => _presented.IsValid;
+                set => _presented.IsValid = value;
+            }
 
-            public void SetValid(bool value) { }
+            public object Value
+            {
+                get => _parameter.IsValidOrThrow(_constructor.Invoke(new[] {_checkBox.IsChecked ?? false, _presented.Value}));
+                set
+                {
+                    if (_parameter.ValueType.IsInstanceOfType(value))
+                    {
+                        _checkBox.IsChecked = _hasValueProperty.GetValue(value) as bool?;
+                        _presented.Value = _valueProperty.GetValue(value);
+                    }
+                }
+            }
 
         }
 

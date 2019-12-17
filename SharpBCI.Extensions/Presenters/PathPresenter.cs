@@ -42,34 +42,46 @@ namespace SharpBCI.Extensions.Presenters
                 _browseButton = browseButton;
             }
 
-            public object GetValue()
+            public bool IsEnabled
             {
-                var path = string.IsNullOrWhiteSpace(_pathTextBox.Text) ? null : new Path(_pathTextBox.Text);
-                if (path != null && _checkExistence)
+                get => _pathTextBox.IsEnabled;
+                set
                 {
-                    switch (_pathType)
-                    {
-                        case PathType.File:
-                            if (!File.Exists(path.Value)) throw new Exception("file not exists");
-                            break;
-                        case PathType.Directory:
-                            if (!Directory.Exists(path.Value)) throw new Exception("directory not exists");
-                            break;
-                    }
+                    _pathTextBox.IsEnabled = value;
+                    if (_browseButton != null) _browseButton.IsEnabled = value;
                 }
-                return _parameter.IsValidOrThrow(path);
             }
 
-            public void SetValue(object value) => _pathTextBox.Text = ((Path)value)?.Value ?? "";
-
-            public void SetEnabled(bool value)
+            public bool IsValid
             {
-                _pathTextBox.IsEnabled = value;
-                if (_browseButton != null) _browseButton.IsEnabled = value;
+                get => _pathTextBox.Background != ViewConstants.InvalidColorBrush;
+                set => _pathTextBox.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
             }
 
-            public void SetValid(bool value) => _pathTextBox.Background = value ? Brushes.Transparent : ViewConstants.InvalidColorBrush;
-
+            public object Value
+            {
+                get
+                {
+                    var path = string.IsNullOrWhiteSpace(_pathTextBox.Text) ? null : new Path(_pathTextBox.Text);
+                    if (path != null && _checkExistence)
+                    {
+                        switch (_pathType)
+                        {
+                            case PathType.File:
+                                if (!File.Exists(path.Value)) throw new Exception("file not exists");
+                                break;
+                            case PathType.Directory:
+                                if (!Directory.Exists(path.Value)) throw new Exception("directory not exists");
+                                break;
+                            default:
+                                throw new NotSupportedException($"unsupported path type: {_pathType}" );
+                        }
+                    }
+                    return _parameter.IsValidOrThrow(path);
+                }
+                set => _pathTextBox.Text = ((Path)value)?.Value ?? "";
+            }
+            
         }
 
         public static readonly NamedProperty<string> FilterProperty = new NamedProperty<string>("Filter", FileUtils.AllFileFilter);

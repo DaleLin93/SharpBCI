@@ -32,26 +32,32 @@ namespace SharpBCI.Extensions.Presenters
                 _textBlock = textBlock;
             }
 
-            public object GetValue()
+            public bool IsEnabled
             {
-                var color = ((SolidColorBrush)_rect.Fill).Color;
-                return _parameter.IsValidOrThrow(_isSdColor ? color.ToSdColor() : (object) color);
+                get => _rect.IsEnabled;
+                set => _rect.IsEnabled = value;
             }
 
-            public void SetValue(object value)
+            public bool IsValid { get; set; }
+
+            public object Value
             {
-                var color = (_isSdColor ? ((System.Drawing.Color?)value)?.ToSwmColor() : (Color?)value) ?? Color.FromScRgb(0, 0, 0, 0);
-                _rect.Fill = new SolidColorBrush(color);
-                if (_textBlock != null)
+                get
                 {
-                    _textBlock.Text = $"ARGB({color.A}, {color.R}, {color.G}, {color.B})";
-                    _textBlock.Foreground = new SolidColorBrush(color.Inverted());
+                    var color = ((SolidColorBrush)_rect.Fill).Color;
+                    return _parameter.IsValidOrThrow(_isSdColor ? color.ToSdColor() : (object)color);
+                }
+                set
+                {
+                    var color = (_isSdColor ? ((System.Drawing.Color?)value)?.ToSwmColor() : (Color?)value) ?? Color.FromScRgb(0, 0, 0, 0);
+                    _rect.Fill = new SolidColorBrush(color);
+                    if (_textBlock != null)
+                    {
+                        _textBlock.Text = $"ARGB({color.A}, {color.R}, {color.G}, {color.B})";
+                        _textBlock.Foreground = new SolidColorBrush(color.Inverted());
+                    }
                 }
             }
-
-            public void SetEnabled(bool value) => _rect.IsEnabled = value;
-
-            public void SetValid(bool value) { }
 
         }
 

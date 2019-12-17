@@ -23,6 +23,8 @@ namespace SharpBCI.Extensions.Presenters
 
             private readonly Rectangle[] _checkBoxes;
 
+            private bool _isEnabled = true, _isValid = true;
+
             private int _selectedIndex = -1;
 
             public Adapter(IParameterDescriptor parameter, IList enumValues, Rectangle[] checkBoxes)
@@ -42,27 +44,41 @@ namespace SharpBCI.Extensions.Presenters
                 return true;
             }
 
-            public object GetValue()
+            public bool IsEnabled
             {
-                object value = null;
-                if (_selectedIndex >= 0) value = _enumValues[_selectedIndex];
-                return _parameter.IsValidOrThrow(value);
+                get => _isEnabled;
+                set
+                {
+                    if (_isEnabled == value) return;
+                    _isEnabled = value;
+                    foreach (var checkbox in _checkBoxes)
+                        checkbox.IsEnabled = value;
+                }
             }
 
-            public void SetValue(object value) => Select((int)value);
-
-            public void SetEnabled(bool value)
+            public bool IsValid
             {
-                foreach (var checkbox in _checkBoxes)
-                    checkbox.IsEnabled = value;
+                get => _isValid;
+                set
+                {
+                    if (_isValid == value) return;
+                    _isValid = value;
+                    for (var i = 0; i < _checkBoxes.Length; i++)
+                        _checkBoxes[i].Fill = value ? (i == _selectedIndex ? Brushes.DimGray : Brushes.White) : ViewConstants.InvalidColorBrush;
+                }
             }
 
-            public void SetValid(bool value)
+            public object Value
             {
-                for (var i = 0; i < _checkBoxes.Length; i++)
-                    _checkBoxes[i].Fill = value ? (i == _selectedIndex ? Brushes.DimGray : Brushes.White) : ViewConstants.InvalidColorBrush;
+                get
+                {
+                    object value = null;
+                    if (_selectedIndex >= 0) value = _enumValues[_selectedIndex];
+                    return _parameter.IsValidOrThrow(value);
+                }
+                set => Select((int) value);
             }
-
+            
         }
 
         public static readonly NamedProperty<uint> CheckboxSizeProperty = new NamedProperty<uint>("CheckboxSize", 15);
