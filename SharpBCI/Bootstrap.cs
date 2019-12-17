@@ -60,11 +60,15 @@ namespace SharpBCI
         /// <param name="paradigms">paradigms of each session</param>
         /// <param name="devices">devices used across sessions</param>
         /// <param name="sessionListener"></param>
-        public static void StartSessions(string subject, string[] sessionDescriptors, SerializedObject[] paradigms, [NotNull] DeviceConfig[] devices, 
+        public static void StartSessions(string subject, [NotNull] string[] sessionDescriptors, [NotNull] SerializedObject[] paradigms, [CanBeNull] DeviceConfig[] devices, 
             ISessionListener sessionListener = null)
         {
             subject = subject?.Trim2Null() ?? throw new UserException("subject name cannot be empty");
+            if (sessionDescriptors == null) throw new ArgumentNullException(nameof(sessionDescriptors));
+            if (paradigms == null) throw new ArgumentNullException(nameof(paradigms));
             if (sessionDescriptors.Length != paradigms.Length) throw new ProgrammingException("The count of session descriptors and the count of paradigms are not equal");
+            for (var i = 0; i < sessionDescriptors.Length; i++)
+                sessionDescriptors[i] = sessionDescriptors[i]?.Trim2Null() ?? throw new UserException("session descriptor name cannot be empty");
             var sessionNum = sessionDescriptors.Length;
 
             /* Constructs paradigm instances. */
@@ -85,9 +89,10 @@ namespace SharpBCI
 
             /* Constructs device map. */
             var deviceMap = new Dictionary<string, DeviceConfig>();
-            foreach (var device in devices)
-                if (!deviceMap.ContainsKey(device.DeviceType))
-                    deviceMap[device.DeviceType] = device;
+            if (devices != null)
+                foreach (var device in devices)
+                    if (!deviceMap.ContainsKey(device.DeviceType))
+                        deviceMap[device.DeviceType] = device;
 
             /* Parse consumer configurations. */
             var deviceConsumerLists = new Dictionary<DeviceType, IList<TemplateWithArgs<ConsumerTemplate>>>();
