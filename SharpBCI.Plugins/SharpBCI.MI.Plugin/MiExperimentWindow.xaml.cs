@@ -26,6 +26,7 @@ using SharpBCI.Extensions.IO.Devices.EyeTrackers;
 using Brushes = System.Windows.Media.Brushes;
 using Point = System.Windows.Point;
 using System.IO;
+using System.Net;
 using XamlAnimatedGif;
 
 namespace SharpBCI.Paradigms.MI
@@ -269,6 +270,8 @@ namespace SharpBCI.Paradigms.MI
 
             }
 
+            private readonly WebClient _webClient = new WebClient();
+
             private readonly IDictionary<Uri, Element> _elements = new Dictionary<Uri, Element>();
 
             public readonly Grid ImageContainer;
@@ -289,7 +292,7 @@ namespace SharpBCI.Paradigms.MI
                 return _elements.GetOrCreate(imageUri, uri =>
                 {
                     var image = new Image { Visibility = Visibility.Hidden };
-                    AnimationBehavior.SetSourceUri(image, uri);
+                    AnimationBehavior.SetSourceStream(image, new MemoryStream(_webClient.DownloadData(uri)));
                     AnimationBehavior.SetAutoStart(image, false);
                     AnimationBehavior.SetRepeatBehavior(image, Repeat ? RepeatBehavior.Forever : new RepeatBehavior(1));
                     ImageContainer.Children.Add(image);
