@@ -1,13 +1,43 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace SharpBCI.Paradigms.WebBrowser
 {
 
 #pragma warning disable 169
+    public struct Point
+    {
+
+        public double X, Y;
+
+        public System.Windows.Point ToSwPoint() => new System.Windows.Point(X, Y);
+
+    }
+
+    public struct Size
+    {
+
+        public double Width, Height;
+
+        public System.Windows.Size ToSwSize() => new System.Windows.Size(Width, Height);
+
+    }
+
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum Scene
+    {
+        Page, Keyboard
+    }
+
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum Mode
+    {
+        Normal, Reading
+    }
+
     public abstract class Message
     {
 
-        [JsonProperty("type")]
         public string Type;
 
     }
@@ -16,8 +46,21 @@ namespace SharpBCI.Paradigms.WebBrowser
     public class IncomingMessage : Message
     {
 
-        [JsonProperty("focused")]
+        public Scene? Scene;
+
+        public Mode? Mode;
+
         public bool? Focused;
+
+        public Point? WindowPosition;
+
+        public Point? ScrollPosition;
+
+        public Size? WindowOuterSize;
+
+        public Size? WindowInnerSize;
+
+        public Size? DocumentSize;
 
     }
 
@@ -28,54 +71,37 @@ namespace SharpBCI.Paradigms.WebBrowser
         public struct VisualScheme
         {
 
-            [JsonProperty("frequency")]
             public float Frequency;
 
-            [JsonProperty("borderThickness")]
             public string BorderThickness;
 
-            [JsonProperty("borderStyle")]
             public string BorderStyle;
 
-            [JsonProperty("color")]
             public string Color;
 
         }
 
-        public struct Point
-        {
-
-            [JsonProperty("x")]
-            public double X;
-
-            [JsonProperty("y")]
-            public double Y;
-
-        }
-
-        [JsonProperty("debug")]
         public bool? Debug;
 
-        [JsonProperty("visualSchemes")]
         public VisualScheme[] VisualSchemes;
 
-        [JsonProperty("stimulationSize")]
         public Point? StimulationSize;
 
-        [JsonProperty("maxActiveDistance")]
-        public uint MaxActiveDistance;
+        public uint? MaxActiveDistance;
 
-        [JsonProperty("confirmationDelay")]
         public uint? ConfirmationDelay;
 
-        [JsonProperty("homePage")]
+        public bool? EdgeScrolling;
+
         public string HomePage;
 
-        [JsonProperty("gazePoint")]
         public Point? GazePoint;
 
-        [JsonProperty("frequencyIndex")]
+        public Point? ScrollDistance;
+
         public int? FrequencyIndex;
+
+        public Mode? Mode;
 
     }
 #pragma warning restore 169

@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
 using System.Linq;
 using System.Threading;
+using Accord.Math;
+using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using MarukoLib.Logging;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
-using SharpBCI.Core.IO;
 using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 using SharpBCI.Extensions.IO.Devices.EyeTrackers;
 using SharpBCI.Extensions.Patterns;
@@ -24,11 +24,23 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         public Point? CurrentPosition { get; private set; }
 
+        public bool TryGetCurrentPosition(out Point point)
+        {
+            var position = CurrentPosition;
+            if (!position.HasValue)
+            {
+                point = default;
+                return false;
+            }
+            point = position.Value;
+            return true;
+        }
+
         public override void Accept(Timestamped<IGazePoint> value)
         {
             var gazePoint = value.Value;
             var scale = GraphicsScale();
-            CurrentPosition = new Point((int)Math.Round(gazePoint.X / scale), (int)Math.Round(gazePoint.Y / scale));
+            CurrentPosition = new Point {X = Math.Round(gazePoint.X / scale), Y = Math.Round(gazePoint.Y / scale)};
         }
 
     }
@@ -128,9 +140,12 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private static readonly string[] IndicatorBorderStyles = { "double", "dotted", "dashed", "groove" };
 
+        [SuppressMessage("ReSharper", "StringLiteralTypo")] 
         private static readonly string[] VisualColors = { "deepskyblue", "red", "orange", "lightgreen" };
 
-        private static readonly float[] ExtraFrequencies = { 13.5F, 14.5F, 15.5F };
+        private static readonly float[] ExtraFrequencies = {13.5F, 14.5F, 15.5F};
+
+        private readonly ManualResetEvent _hasActiveClient = new ManualResetEvent(false);
 
         private readonly ManualResetEvent _trialStartEvent = new ManualResetEvent(false);
 
@@ -150,16 +165,34 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private readonly SsvepDetector _ssvepDetector;
 
+        private Mode _mode = Mode.Normal;
+
         private Thread _thread;
 
         public WebBrowserAssistantEngine(Session session)
         {
             var paradigm = _paradigm = (WebBrowserAssistantParadigm) session.Paradigm;
 
-            _server = new WebBrowserAssistantServer(session);
-            _server.AddMessageHandler(this);
             if (!session.StreamerCollection.TryFindFirst(out _gazePointStreamer)) throw new UserException("Gaze-point streamer not found");
             if (!session.StreamerCollection.TryFindFirst(out _biosignalStreamer)) throw new UserException("Biosignal streamer not found");
+
+            _server = new WebBrowserAssistantServer(session);
+            _server.AddMessageHandler(this);
+            _server.ActiveClientChanged += (sender, e) =>
+            {
+                if (e.OldValue == null)
+                    _hasActiveClient.Set();
+                else
+                {
+                    if (e.NewValue == null) _hasActiveClient.Reset();
+                    InterruptTrial();
+                }
+            };
+            _server.ActiveClientDimensionsChanged += (sender, e) =>
+            {
+                InterruptTrial();
+            };
+
             _gazePointProvider = new GazePointProvider();
             _dwellTrialController = new DwellTrialController(session.Clock, _gazePointProvider, paradigm.Config.User);
             _dwellTrialController.Triggered += (sender, e) => _trialStartEvent.Set();
@@ -175,6 +208,24 @@ namespace SharpBCI.Paradigms.WebBrowser
                 _biosignalStreamer.BiosignalSource.Frequency, paradigm.Config.User.TrialDuration, 0);
         }
 
+        ~WebBrowserAssistantEngine()
+        {
+            _hasActiveClient.Dispose();
+            _trialStartEvent.Dispose();
+            _trialCancelled.Dispose();
+        }
+
+        public Mode Mode
+        {
+            get => _mode;
+            set
+            {
+                if (_mode == value) return;
+                _mode = value;
+                _server.SendMessageToAllClients(new OutgoingMessage {Type = "Mode", Mode = value});
+            }
+        }
+
         public void Start()
         {
             _server.Start();
@@ -186,6 +237,12 @@ namespace SharpBCI.Paradigms.WebBrowser
             _gazePointStreamer.AttachConsumer(_gazePointProvider);
 
             (_thread = new Thread(RunTrials) {IsBackground = true}).Start();
+        }
+
+        public void SwitchMode()
+        {
+            var array = typeof(Mode).GetEnumValues().Cast<Mode>().ToArray();
+            Mode = array[(array.IndexOf(_mode) + 1) % array.Length];
         }
 
         public void Stop()
@@ -210,33 +267,102 @@ namespace SharpBCI.Paradigms.WebBrowser
         {
             for (;;)
             {
-                _dwellTrialController.Reset();
-                _trialStartEvent.Reset();
-                _trialCancelled.Reset();
-
-                /* Waiting for the start signal. */
-                _trialStartEvent.WaitOne();
-                var point = _gazePointProvider.CurrentPosition;
-                if (point == null) continue;
-                var gazePoint = new OutgoingMessage.Point {X = point.Value.X, Y = point.Value.Y};
-                _server.SendMessageToAllClients(new OutgoingMessage { Type = "StartTrial", GazePoint = gazePoint});
-
-                /* Waiting for the ending of trial or cancelled by system. */
-                var cancelled = _trialCancelled.WaitOne(TimeSpan.FromMilliseconds((int)(_paradigm.Config.User.TrialDuration + 200)));
-
-                if (!cancelled) _server.SendMessageToAllClients(new OutgoingMessage { Type = "EndTrial" });
-
-                /* Send identified frequency index, absent on cancelled trial. */
-                var frequencyIndex = cancelled ? AbsentFrequencyIndex : _ssvepDetector.Classify();
-                Logger.Info("StageProgram_StageChanged", "classifiedFrequencyIndex", frequencyIndex);
-                if (frequencyIndex < 0 || frequencyIndex >= Frequencies.Length)
-                    frequencyIndex = AbsentFrequencyIndex;
-                _server.SendMessageToAllClients(new OutgoingMessage { Type = "Frequency", FrequencyIndex = frequencyIndex });
+                try
+                {
+                    if (_hasActiveClient.WaitOne())
+                    {
+                        var client = _server.ActiveClient;
+                        if (client == null) continue;
+                        RunTrial(client);
+                    }
+                }
+                catch (ThreadAbortException) { return; }
+                catch (ThreadInterruptedException) { }
+                catch (Exception e)
+                {
+                    Logger.Error("RunTrials", e);
+                }
             }
+        }
+
+        private void RunTrial([NotNull] WebBrowserAssistantServer.Client client)
+        {
+            var edgeScrollRatio = _paradigm.Config.User.EdgeScrollRatio;
+            var edgeScrolling = !double.IsNaN(edgeScrollRatio);
+
+            /* Initialize signals. */
+            _dwellTrialController.Reset();
+            _trialStartEvent.Reset();
+            _trialCancelled.Reset();
+
+            /* Waiting for the start signal. */
+            Point gazePoint;
+            if (edgeScrolling)
+                while (!_trialStartEvent.WaitOne(TimeSpan.FromMilliseconds(20)))
+                {
+                    if (!_gazePointProvider.TryGetCurrentPosition(out gazePoint)) continue;
+                    var area = GetGazeArea(client, edgeScrollRatio, gazePoint);
+                    if (area == 0) continue;
+                    SendScroll(client, new Point {X = 0, Y = area * 20});
+                }
+            else
+                _trialStartEvent.WaitOne();
+            if (!_gazePointProvider.TryGetCurrentPosition(out gazePoint)) return;
+            _server.SendMessageToClient(client, new OutgoingMessage { Type = "StartTrial", GazePoint = gazePoint });
+
+            /* Waiting for the ending of trial or cancelled by system. */
+            if (!WaitForEndOfTrial(client)) return;
+            _server.SendMessageToClient(client, new OutgoingMessage { Type = "EndTrial" });
+
+            /* Send identified frequency index. */
+            var frequencyIndex = _ssvepDetector.Classify();
+            Logger.Info("RunTrial", "identifiedFrequencyIndex", frequencyIndex);
+            SendIdentifiedFrequency(client, frequencyIndex);
+        }
+
+        private void InterruptTrial() => _thread?.Interrupt();
+
+        private int GetGazeArea([NotNull] WebBrowserAssistantServer.Client client, double edgeScrollRatio, Point gazePoint)
+        {
+            var dimensions = client.Dimensions;
+            if (dimensions == null) return 0;
+            var x = gazePoint.X - dimensions.WindowPosition.X;
+            var y = gazePoint.Y - dimensions.WindowPosition.Y;
+            var horizontalSpacing = dimensions.WindowOuterSize.Width / 4.0;
+            if (x < horizontalSpacing || x >= dimensions.WindowOuterSize.Width - horizontalSpacing) return 0;
+            var contentOffset = dimensions.WindowOuterSize.Height * edgeScrollRatio;
+            var contentHeight = dimensions.WindowOuterSize.Height - contentOffset * 2;
+            if (y >= contentOffset && y <= contentHeight + contentOffset) return 0;
+            dimensions.IsReachBounds(3, out _, out var topReached, out _, out var bottomReached);
+            return y < contentOffset ? topReached ? 0 : -1 : bottomReached ? 0 : +1;
+        }
+
+        private void SendIdentifiedFrequency([NotNull] WebBrowserAssistantServer.Client client, int frequencyIndex)
+        {
+            if (frequencyIndex < 0 || frequencyIndex >= Frequencies.Length) frequencyIndex = AbsentFrequencyIndex;
+            _server.SendMessageToClient(client, new OutgoingMessage { Type = "Frequency", FrequencyIndex = frequencyIndex });
+        }
+
+        private void SendScroll([NotNull] WebBrowserAssistantServer.Client client, Point scrollDistance) => 
+            _server.SendMessageToClient(client, new OutgoingMessage {Type = "Scroll", ScrollDistance = scrollDistance });
+
+        private bool WaitForEndOfTrial([NotNull] WebBrowserAssistantServer.Client client)
+        {
+            var cancelled = true;
+            try
+            {
+                cancelled = _trialCancelled.WaitOne(TimeSpan.FromMilliseconds((int)(_paradigm.Config.User.TrialDuration + 200)));
+            }
+            finally
+            {
+                if (cancelled) SendIdentifiedFrequency(client, AbsentFrequencyIndex);
+            }
+            return !cancelled;
         }
 
         void WebBrowserAssistantServer.IClientMessageHandler.Handle(WebBrowserAssistantServer.Client client, IncomingMessage message)
         {
+            // ReSharper disable once SwitchStatementMissingSomeCases
             switch (message.Type)
             {
                 case "Handshake":
@@ -255,18 +381,17 @@ namespace SharpBCI.Paradigms.WebBrowser
                         VisualSchemes = schemes,
                         MaxActiveDistance = _paradigm.Config.User.CursorMovementTolerance,
                         ConfirmationDelay = _paradigm.Config.User.ConfirmationDelay,
-                        StimulationSize = new OutgoingMessage.Point
+                        EdgeScrolling = !double.IsNaN(_paradigm.Config.User.EdgeScrollRatio),
+                        StimulationSize = new Point
                         {
                             X = _paradigm.Config.User.StimulationSize.Width,
                             Y = _paradigm.Config.User.StimulationSize.Height
-                        }
+                        },
+                        Mode = _mode
                     });
                     break;
-                case "Focus":
-                    client.IsActive = message.Focused ?? true;
-                    break;
-                default:
-                    Logger.Warn("Handle - unknown message type", "messageType", message.Type);
+                case "Mode":
+                    Mode = message.Mode ?? Mode.Normal;
                     break;
             }
         }

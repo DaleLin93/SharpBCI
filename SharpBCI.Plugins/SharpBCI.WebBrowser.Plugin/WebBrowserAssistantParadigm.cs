@@ -44,6 +44,8 @@ namespace SharpBCI.Paradigms.WebBrowser
 
                 public uint ConfirmationDelay;
 
+                public double EdgeScrollRatio;
+
                 public uint CursorMovementTolerance;
 
                 public uint TrialDuration;
@@ -82,6 +84,11 @@ namespace SharpBCI.Paradigms.WebBrowser
 
             private static readonly Parameter<uint> ConfirmationDelay = new Parameter<uint>("Confirmation Delay", "ms", null, 600);
 
+            private static readonly Parameter<Optional<double>> EdgeScrollRatio = Parameter<Optional<double>>.CreateBuilder("Edge Scroll Ratio", new Optional<double>(0.2))
+                .SetDescription("Valid range of value: (0, 0.5)")
+                .SetValidator(value => !value.HasValue || value.Value > 0 && value.Value < 0.5)
+                .Build();
+
             private static readonly Parameter<uint> CursorMovementTolerance = new Parameter<uint>("Cursor Movement Tolerance", "dp", null, 300);
 
             private static readonly Parameter<ArrayQuery<int>> Channels = Parameter<ArrayQuery<int>>.CreateBuilder("Channels")
@@ -101,7 +108,7 @@ namespace SharpBCI.Paradigms.WebBrowser
 
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new ParameterGroupCollection()
                 .Add("System", DebugInformation, ListeningPort, Channels)
-                .Add("User", HomePage, WebRootDir, DwellSelectionDelay, ConfirmationDelay, CursorMovementTolerance, TrialDuration, TrialCancellable, StimulationSize);
+                .Add("User", HomePage, WebRootDir, DwellSelectionDelay, ConfirmationDelay, EdgeScrollRatio, CursorMovementTolerance, TrialDuration, TrialCancellable, StimulationSize);
 
             public override WebBrowserAssistantParadigm Create(IReadonlyContext context) => new WebBrowserAssistantParadigm(new Configuration
             {
@@ -117,6 +124,7 @@ namespace SharpBCI.Paradigms.WebBrowser
                     WebRootDir = WebRootDir.Get(context).Value,
                     DwellSelectionDelay = DwellSelectionDelay.Get(context),
                     ConfirmationDelay = ConfirmationDelay.Get(context),
+                    EdgeScrollRatio = EdgeScrollRatio.Get(context, op => op.HasValue ? op.Value : double.NaN),
                     CursorMovementTolerance = CursorMovementTolerance.Get(context),
                     TrialDuration = TrialDuration.Get(context),
                     TrialCancellable = TrialCancellable.Get(context),
@@ -146,9 +154,14 @@ namespace SharpBCI.Paradigms.WebBrowser
             var engine = new WebBrowserAssistantEngine(session);
             var notifyIcon = new NotifyIcon {Visible = true, Text = "Web Browser Assistant Server", Icon = BrowserIcon };
             var notifyContextMenu = new ContextMenuStrip();
+            var modeMenuItem = new ToolStripMenuItem();
+            modeMenuItem.Click += (sender, e) => engine.SwitchMode();
+            notifyContextMenu.Items.Add(modeMenuItem);
+            notifyContextMenu.Items.Add(new ToolStripSeparator());
             var stopMenuItem = new ToolStripMenuItem {Text = "Stop"};
             stopMenuItem.Click += (sender, e) => engine.Stop();
             notifyContextMenu.Items.Add(stopMenuItem);
+            notifyContextMenu.Opening += delegate { modeMenuItem.Text = $"Current Mode: {engine.Mode.ToString()}"; };
             notifyIcon.ContextMenuStrip = notifyContextMenu;
 
             /* Start system */

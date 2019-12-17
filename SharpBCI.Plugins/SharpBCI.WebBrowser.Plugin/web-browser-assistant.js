@@ -19,6 +19,7 @@
 
   var maxActiveDistance = 500;
   var confirmationDelay = 600;
+  var edgeScrolling = false;
   var homePage = 'about:blank';
 
   var customStyle = undefined;
@@ -191,7 +192,7 @@
     if (!scrollUpButton) {
       scrollUpButton = document.createElement("fbtn");
       scrollUpButton.className = 'scroller flexcenter';
-      scrollUpButton.style.left = "50px";
+      scrollUpButton.style.left = "35px";
       scrollUpButton.style.top = "50px";
       scrollUpButton.innerHTML = "\u25b2";
       scrollUpButton.addEventListener('click', function() {
@@ -206,7 +207,7 @@
     if (!scrollDownButton) {
       scrollDownButton = document.createElement("fbtn");
       scrollDownButton.className = 'scroller flexcenter';
-      scrollDownButton.style.left = "50px";
+      scrollDownButton.style.left = "35px";
       scrollDownButton.style.bottom = "50px";
       scrollDownButton.innerHTML = "\u25bc";
       scrollDownButton.addEventListener('click', function() {
@@ -223,7 +224,7 @@
     if (!backwardButton) {
       backwardButton = document.createElement("fbtn");
       backwardButton.className = 'scroller flexcenter';
-      backwardButton.style.left = "50px";
+      backwardButton.style.left = "35px";
       backwardButton.style.top = "calc(50% - 20px)";
       backwardButton.innerHTML = "\u25c0";
       backwardButton.addEventListener('click', function() {
@@ -235,7 +236,7 @@
     if (!forwardButton) {
       forwardButton = document.createElement("fbtn");
       forwardButton.className = 'scroller flexcenter';
-      forwardButton.style.right = "50px";
+      forwardButton.style.right = "35px";
       forwardButton.style.top = "calc(50% - 20px)";
       forwardButton.innerHTML = "\u25b6";
       forwardButton.addEventListener('click', function() {
@@ -249,7 +250,7 @@
     if (!homeButton) {
       homeButton = document.createElement("fbtn");
       homeButton.className = 'scroller flexcenter';
-      homeButton.style.left = "50px";
+      homeButton.style.left = "35px";
       homeButton.style.top = "calc(25% - 20px)";
       homeButton.appendChild(createGlyphElement('home'));
       homeButton.addEventListener('click', function() {
@@ -261,7 +262,7 @@
     if (!availabilitySwitchButton) {
       availabilitySwitchButton = document.createElement("fbtn");
       availabilitySwitchButton.className = 'scroller flexcenter';
-      availabilitySwitchButton.style.left = "50px";
+      availabilitySwitchButton.style.left = "35px";
       availabilitySwitchButton.style.top = "calc(75% - 20px)";
       availabilitySwitchButton.appendChild(createGlyphElement('ban-circle'));
       availabilitySwitchButton.addEventListener('click', function() {
@@ -383,6 +384,7 @@
   function openKeyboard(inputEl) {
     if (!inputEl) return;
     if (!isSystemAvailable()) return;
+    sendScene("Keyboard");
     window.keyboardFocusElement = inputEl;
     keyboardText.innerHTML = inputEl.value;
     keyboardBackdrop.style.display = 'block';
@@ -405,6 +407,7 @@
     if (!isSystemAvailable()) return;
     window.keyboardFocusElement = null;
     keyboardBackdrop.style.display = 'none';
+    sendScene("Page");
   }
 
   function switchCapsLock() {
@@ -423,8 +426,8 @@
   }
 
   function updateScrollerVisibility() {
-    if (scrollUpButton) scrollUpButton.className = window.scrollY <= 0 ? 'display-none' : 'scroller flexcenter';
-    if (scrollDownButton) scrollDownButton.className = window.scrollY + window.innerHeight >= $jQuery(document).outerHeight() ? 'display-none' : 'scroller flexcenter';
+    if (scrollUpButton) scrollUpButton.className = edgeScrolling || window.scrollY <= 0 ? 'display-none' : 'scroller flexcenter';
+    if (scrollDownButton) scrollDownButton.className = edgeScrolling || window.scrollY + window.innerHeight >= $jQuery(document).outerHeight() ? 'display-none' : 'scroller flexcenter';
   }
 
   function updateNavigatorVisibility() {
@@ -436,7 +439,9 @@
   }
 
   function setAvailability(availability) {
+    if (systemAvailability == availability) return;
     systemAvailability = availability;
+    sendMode(availability ? "Normal" : "Reading");
     updateAvailabilitySwitchButtonStyle();
   }
 
@@ -525,7 +530,7 @@
         var pageBoundingBox = {
           xInterval: {
             min: window.scrollX,
-            max: window.scrollX + window.innerWidth
+            max: window.scrollX + document.body.clientWidth
           },
           yInterval: {
             min: window.scrollY,
@@ -706,17 +711,14 @@
 
     function onWindowFocusChanged(focused) {
       windowFocused = focused;
-      if (window.clientSocket) {
-        window.clientSocket.send(JSON.stringify({type: "Focus", focused: focused}));
-      }
-      if (debug) {
-        console.log('Window Focus Changed: ' + focused);
-      }
+      sendFocus(focused);
+      if (debug) console.log('[Web Browser Assistant] Window Focus Changed: ' + focused);
     }
 
     function onWindowViewportChanged() {
       resetTrial();
       updateScrollerVisibility();
+      sendDimensions();
     }
 
     function handleIncomingMessage(message) {
@@ -727,8 +729,12 @@
                 debug = message.debug;
                 maxActiveDistance = message.maxActiveDistance;
                 confirmationDelay = message.confirmationDelay;
+                edgeScrolling = message.edgeScrolling;
                 homePage = message.homePage;
+                systemAvailability = message.mode === "Normal";
                 initializeStimulation(message.visualSchemes, message.stimulationSize);
+                updateScrollerVisibility();
+                updateAvailabilitySwitchButtonStyle();
                 break;
             case 'StartTrial':
                 setGazePoint(message.gazePoint);
@@ -740,13 +746,98 @@
             case 'Frequency':
                 onFrequencyIdentified(message.frequencyIndex);
                 break;
+            case 'Scroll':
+                if (isKeyboardVisible()) return;
+                var scrollDistance = message.scrollDistance;
+                window.scrollBy(scrollDistance.x, scrollDistance.y);
+                break;
+            case 'Mode':
+                setAvailability(message.mode === "Normal");
+                break;
             default:
-                console.log("Unknown message type: " + messageType);
+                console.log("[Web Browser Assistant] Unknown message type: " + messageType);
                 break;
         }
     }
 
+    function sendHandshake() {
+      sendToServer('{"Type":"Handshake"}');
+    }
+
+    function sendFocus(focused) {
+      sendToServer({type: "Focus", focused: focused});
+    }
+
+    function sendScene(scene) {
+      sendToServer({type: "Scene", scene: scene});
+    }
+
+    function sendMode(mode) {
+      sendToServer({type: "Mode", mode: mode});
+    }
+
+    function sendDimensions() {
+      sendToServer({
+        type: "Dimensions",
+        windowPosition: {x: window.screenLeft, y: window.screenTop},
+        scrollPosition: {x: window.scrollX, y: window.scrollY},
+        windowOuterSize: {width: window.outerWidth, height: window.outerHeight},
+        windowInnerSize: {width: window.innerWidth, height: window.innerHeight},
+        documentSize: {width: document.body.scrollWidth, height: document.body.scrollHeight},
+      });
+    }
+
+    function sendToServer(message) {
+      if (!message) return;
+      if (!window.websocket) return;
+      if (typeof message !== 'string') message = JSON.stringify(message);
+      if (debug) console.log("[Web Browser Assistant] ==> " + message);
+      window.websocket.send(message);
+    }
+
+    function connectServer(onMessageReceived) {
+      var websocket = window.websocket = new WebSocket("ws://localhost:" + serverPort + "/?" 
+        + "referer=" + encodeURIComponent(window.location.href) + "&priority=0");
+      websocket.onopen = function(_evt) {
+        console.log("[Web Browser Assistant] Server Connected!");
+        window.connectionRetryCount = 0;
+        sendHandshake();
+        sendFocus(document.hasFocus());
+        sendDimensions();
+      };
+      websocket.onclose = function(_evt) {
+        console.log("[Web Browser Assistant] Server Disconnected!");
+        window.websocket = undefined;
+        var reconnectDelay = 5;
+        if (window.connectionRetryCount >= 500) {
+          /* abort */
+          console.log("[Web Browser Assistant] Shutdown after 500 retries!");
+          return;
+        } else if (window.connectionRetryCount >= 100) {
+          reconnectDelay = 60;
+        } else if (window.connectionRetryCount >= 50) {
+          reconnectDelay = 30;
+        } else if (window.connectionRetryCount >= 10) {
+          reconnectDelay = 10;
+        }
+        console.log("[Web Browser Assistant] Reconnect after " + reconnectDelay + " seconds!");
+        setTimeout(function () {
+          window.connectionRetryCount++;
+          connectServer(onMessageReceived);
+        }, reconnectDelay * 1000);
+      };
+      websocket.onerror = function(evt) {
+        // console.log(evt);
+      };
+      websocket.onmessage = function(evt) {
+        if (debug) console.log("[Web Browser Assistant] <== " + evt.data);
+        var message = JSON.parse(evt.data);
+        onMessageReceived(message);
+      };
+    }
+
     function startSystem() {
+      window.connectionRetryCount = 0;
       if (!Date.now) {
         Date.now = function() { return new Date().getTime(); }
       }
@@ -770,12 +861,27 @@
       		 * @param {String} str htmlSet entities
       		 **/
       		decode : function(str) {
-      			return str.replace(/&#(\d+);/g, function(match, dec) {
+      			return str.replace(/&#(\d+);/g, function(_match, dec) {
       				return String.fromCharCode(dec);
       			});
       		}
       	};
       }
+
+      function observeChanges() {
+        if (!MutationObserver) return;
+        var observer = new MutationObserver(function() {
+          updateScrollerVisibility();
+        });
+        var config = {
+            attributes: true,
+            childList: true,
+            characterData: true
+        };
+        observer.observe(document.body, config);
+        observer.disconnect();
+      }
+      
       var afterJQuery = function() {
         $jQuery.extend(
           $jQuery.expr[ ":" ],
@@ -803,43 +909,6 @@
         onWindowViewportChanged();
       }
 
-      function observeChanges() {
-        if (!MutationObserver) return;
-        var observer = new MutationObserver(function( mutations ) {
-          updateScrollerVisibility();
-        });
-        var config = {
-            attributes: true,
-            childList: true,
-            characterData: true
-        };
-        observer.observe(document.body, config);
-        observer.disconnect();
-      }
-
-      function connectServer(onMessageReceived, reconnectDelay) {
-        var websocket = window.clientSocket = new WebSocket("ws://localhost:" + serverPort + "/?priority=0");
-        websocket.onopen = function(evt) {
-          console.log("Web browser assistant server connected!");
-          websocket.send('{"Type":"Handshake"}');
-        };
-        websocket.onclose = function(evt) {
-          console.log("Web browser assistant server disconnected!");
-          window.clientSocket = undefined;
-          setTimeout(function () {
-            connectServer(onMessageReceived, reconnectDelay);
-          }, reconnectDelay);
-        };
-        websocket.onerror = function(evt) {
-          console.log(evt);
-        };
-        websocket.onmessage = function(evt) {
-          if (debug) console.log("Message Received: " + evt.data);
-          var message = JSON.parse(evt.data);
-          onMessageReceived(message);
-        };
-      }
-
       if (!window.jQuery) {
         var jQueryScript = document.createElement("script");
         jQueryScript.src = "http://localhost:" + serverPort + "/static/jquery-3.3.1.min.js?t=" + Date.now();
@@ -847,13 +916,15 @@
         jQueryScript.onload = function () {
           $jQuery = window.jQuery;
           afterJQuery();
+          var htmlNode = document.children[0];
+          if (htmlNode) $jQuery(htmlNode).css('scroll-behavior', 'smooth');
         };
         document.head.appendChild(jQueryScript);
       } else {
         $jQuery = window.jQuery;
         afterJQuery();
       }
-      connectServer(handleIncomingMessage, 5000);
+      connectServer(handleIncomingMessage);
     }
 
     if (window.top == window.self)
