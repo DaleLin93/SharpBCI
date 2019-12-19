@@ -123,7 +123,8 @@ namespace SharpBCI.Paradigms.MI
 
             private static readonly Parameter<bool> ForceReset = new Parameter<bool>("Force Reset", false);
 
-            private static readonly Parameter<byte> GazeToFocusDuration = new Parameter<byte>("Gaze To Focus Duration", "s", null, 2);
+            private static readonly Parameter<float> GazeToFocusDuration = Parameter<float>.CreateBuilder("Gaze To Focus Duration", 2)
+                .SetUnit("s").SetValidator(Predicates.Nonnegative).Build();
 
             private static readonly Parameter<Path> PreLoadResourceList = Parameter<Path>.CreateBuilder("Pre-load Resource List").SetNullable(true).Build();
 
