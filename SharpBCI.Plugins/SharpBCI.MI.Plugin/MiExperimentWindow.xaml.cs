@@ -112,6 +112,7 @@ namespace SharpBCI.Paradigms.MI
             public override void Accept(Timestamped<IGazePoint> value)
             {
                 if (!IsEnabled || value.Value == null) return;
+                if (value.Value.IsOutOfScreen) return;
                 var now = Clock.Time;
                 var inside = IsInsideTargetCircle(value.Value);
                 if (_entered != inside)
