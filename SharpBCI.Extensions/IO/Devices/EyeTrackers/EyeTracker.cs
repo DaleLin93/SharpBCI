@@ -6,6 +6,8 @@ namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
     public interface IGazePoint
     {
 
+        bool IsOutOfScreen { get; }
+
         /// <summary>
         /// Unit: px
         /// </summary>
@@ -21,11 +23,16 @@ namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
     public struct GazePoint : IGazePoint
     {
 
+        public static readonly GazePoint OutOfScreen = new GazePoint(double.NaN, double.NaN);
+
         public GazePoint(double px, double py)
         {
+            IsOutOfScreen = double.IsNaN(px) || double.IsNaN(py);
             X = px;
             Y = py;
         }
+
+        public bool IsOutOfScreen { get; }
 
         public double X { get; }
 
