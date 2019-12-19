@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
+using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
 using SharpBCI.Extensions;
@@ -32,7 +34,7 @@ namespace SharpBCI.EyeTrackers
                     case EyeXAvailability.NotRunning:
                         throw new StateException("Tobii software is not running");
                     default:
-                        return new TobiiEyeTracker(new Host(HostNameParam.Get(context)));
+                        return new TobiiEyeTracker(HostNameParam.Get(context));
                 }
             }
 
@@ -42,16 +44,29 @@ namespace SharpBCI.EyeTrackers
 
         private readonly AutoResetEvent _signal = new AutoResetEvent(false);
 
+        private readonly Host _host;
+
+        private readonly bool _autoDispose;
+
         private readonly GazePointDataStream _gazePointDataStream;
 
         private volatile bool _stopped = true;
 
         private IGazePoint _lastGazePoint;
 
-        public TobiiEyeTracker(Host host)
+        public TobiiEyeTracker([NotNull] string hostName) : this(new Host(hostName ?? throw new ArgumentNullException(nameof(hostName)))) { }
+
+        public TobiiEyeTracker([NotNull] Host host, bool autoDispose = true)
         {
+            _host = host ?? throw new ArgumentNullException(nameof(host));
+            _autoDispose = autoDispose;
             _gazePointDataStream = host.Streams.CreateGazePointDataStream();
             _gazePointDataStream.IsEnabled = false;
+        }
+
+        ~TobiiEyeTracker()
+        {
+            if (_autoDispose) _host.Dispose();
         }
 
         public override void Open()
