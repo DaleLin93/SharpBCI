@@ -11,10 +11,33 @@ using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 using SharpBCI.Extensions.IO.Devices.EyeTrackers;
+using SharpBCI.Extensions.IO.Devices.MarkerSources;
 using SharpBCI.Extensions.Patterns;
 
 namespace SharpBCI.Paradigms.WebBrowser
 {
+
+    internal class ModeOnSetInterceptor : Core.IO.Filter<Timestamped<IMarker>>
+    {
+
+        public event EventHandler<Mode> ModeOnSet;
+
+        public override bool Accept(Timestamped<IMarker> value)
+        {
+            switch (value.Value.Code)
+            {
+                case WebBrowserAssistantParadigm.NormalModeOnSetMarker:
+                    ModeOnSet?.Invoke(this, Mode.Normal);
+                    return false;
+                case WebBrowserAssistantParadigm.ReadingModeOnSetMarker:
+                    ModeOnSet?.Invoke(this, Mode.Reading);
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
+    }
 
     internal class GazePointProvider : Core.IO.Consumer<Timestamped<IGazePoint>>
     {
@@ -145,6 +168,8 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private static readonly float[] ExtraFrequencies = {13.5F, 14.5F, 15.5F};
 
+        private readonly object _modeLock = new object();
+
         private readonly ManualResetEvent _hasActiveClient = new ManualResetEvent(false);
 
         private readonly ManualResetEvent _trialStartEvent = new ManualResetEvent(false);
@@ -155,9 +180,13 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private readonly WebBrowserAssistantServer _server;
 
+        private readonly MarkerStreamer _markerStreamer;
+
         private readonly GazePointStreamer _gazePointStreamer;
 
         private readonly BiosignalStreamer _biosignalStreamer;
+
+        private readonly ModeOnSetInterceptor _modeOnSetInterceptor;
 
         private readonly GazePointProvider _gazePointProvider;
 
@@ -173,6 +202,7 @@ namespace SharpBCI.Paradigms.WebBrowser
         {
             var paradigm = _paradigm = (WebBrowserAssistantParadigm) session.Paradigm;
 
+            if (!session.StreamerCollection.TryFindFirst(out _markerStreamer)) throw new UserException("Marker streamer not found");
             if (!session.StreamerCollection.TryFindFirst(out _gazePointStreamer)) throw new UserException("Gaze-point streamer not found");
             if (!session.StreamerCollection.TryFindFirst(out _biosignalStreamer)) throw new UserException("Biosignal streamer not found");
 
@@ -188,10 +218,10 @@ namespace SharpBCI.Paradigms.WebBrowser
                     InterruptTrial();
                 }
             };
-            _server.ActiveClientDimensionsChanged += (sender, e) =>
-            {
-                InterruptTrial();
-            };
+            _server.ActiveClientDimensionsChanged += (sender, e) => InterruptTrial();
+
+            _modeOnSetInterceptor = new ModeOnSetInterceptor();
+            _modeOnSetInterceptor.ModeOnSet += (sender, e) => Mode = e;
 
             _gazePointProvider = new GazePointProvider();
             _dwellTrialController = new DwellTrialController(session.Clock, _gazePointProvider, paradigm.Config.User);
@@ -217,11 +247,18 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         public Mode Mode
         {
-            get => _mode;
+            get
+            {
+                lock (_modeLock)
+                    return _mode;
+            }
             set
             {
-                if (_mode == value) return;
-                _mode = value;
+                lock (_modeLock)
+                {
+                    if (_mode == value) return;
+                    _mode = value;
+                }
                 _server.SendMessageToAllClients(new OutgoingMessage {Type = "Mode", Mode = value});
             }
         }
@@ -233,6 +270,7 @@ namespace SharpBCI.Paradigms.WebBrowser
 
             _ssvepDetector.Active = true;
 
+            _markerStreamer.AttachFilter(_modeOnSetInterceptor);
             _biosignalStreamer.AttachConsumer(_ssvepDetector);
             _gazePointStreamer.AttachConsumer(_gazePointProvider);
 
@@ -242,13 +280,14 @@ namespace SharpBCI.Paradigms.WebBrowser
         public void SwitchMode()
         {
             var array = typeof(Mode).GetEnumValues().Cast<Mode>().ToArray();
-            Mode = array[(array.IndexOf(_mode) + 1) % array.Length];
+            Mode = array[(array.IndexOf(Mode) + 1) % array.Length];
         }
 
         public void Stop()
         {
             _ssvepDetector.Active = false;
 
+            _markerStreamer.DetachFilter(_modeOnSetInterceptor);
             _biosignalStreamer.DetachConsumer(_ssvepDetector);
             _gazePointStreamer.DetachConsumer(_gazePointProvider);
 
@@ -387,7 +426,7 @@ namespace SharpBCI.Paradigms.WebBrowser
                             X = _paradigm.Config.User.StimulationSize.Width,
                             Y = _paradigm.Config.User.StimulationSize.Height
                         },
-                        Mode = _mode
+                        Mode = Mode
                     });
                     break;
                 case "Mode":

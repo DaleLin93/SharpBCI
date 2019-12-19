@@ -30,7 +30,7 @@ namespace SharpBCI.Paradigms.WebBrowser
     }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum Mode
+    public enum Mode : byte
     {
         Normal, Reading
     }
