@@ -172,6 +172,34 @@ namespace SharpBCI.Extensions
 
     }
 
+    internal sealed class MetadataOverridenParameter : RoutedParameter
+    {
+
+        internal MetadataOverridenParameter([NotNull] IParameterDescriptor originalParameter, [NotNull] IReadonlyContext metadata)
+            : base(originalParameter) => Metadata = metadata;
+
+        public override string Key => OriginalParameter.Key;
+
+        public override string Name => OriginalParameter.Name;
+
+        public override string Unit => OriginalParameter.Unit;
+
+        public override string Description => OriginalParameter.Description;
+
+        public override Type ValueType => OriginalParameter.ValueType;
+
+        public override bool IsNullable => OriginalParameter.IsNullable;
+
+        public override object DefaultValue => OriginalParameter.DefaultValue;
+
+        public override IEnumerable SelectableValues => OriginalParameter.SelectableValues;
+
+        public override IReadonlyContext Metadata { get; }
+
+        public override bool IsValid(object val) => IsNullable && val == null || ValueType.IsInstanceOfType(val);
+
+    }
+
     internal sealed class TypeOverridenParameter : RoutedParameter
     {
 
