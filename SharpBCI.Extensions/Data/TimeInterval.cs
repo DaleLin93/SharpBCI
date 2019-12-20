@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using MarukoLib.Lang;
 using SharpBCI.Extensions.Presenters;
@@ -32,31 +33,40 @@ namespace SharpBCI.Extensions.Data
                 .SetMetadata(ParameterizedObjectPresenter.ColumnWidthProperty, ViewConstants.Star1GridLength)
                 .Build();
 
-            public override IReadOnlyCollection<IParameterDescriptor> GetParameters(IParameterDescriptor parameter)
-            {
-                var parameters = new IParameterDescriptor[] {Length, Unit};
-                if (parameter.Metadata.Contains(IncludedTimeUnitsProperty) || parameter.Metadata.Contains(ExcludedTimeUnitsProperty))
-                {
-                    var meta = new Context(Unit.Metadata);
-                    SelectablePresenter.SelectableValuesFuncProperty.Set(meta, p =>
-                    {
-                        var list = new LinkedList<TimeUnit>();
-                        list.AddAll(IncludedTimeUnitsProperty.TryGet(p.Metadata, out var included) ? included : Enum.GetValues(typeof(TimeUnit)).Cast<TimeUnit>());
-                        if (ExcludedTimeUnitsProperty.TryGet(p.Metadata, out var excluded)) list.RemoveAll(excluded);
-                        return list.ToArray();
-                    });
-                    parameters[1] = new MetadataOverridenParameter(Unit, meta);
-                }
-                return parameters;
-            }
+            private static readonly IParameterDescriptor[] DefaultParameters = {Length, Unit};
 
-            public override TimeInterval Create(IParameterDescriptor parameter, IReadonlyContext context) => new TimeInterval(Length.Get(context), Unit.Get(context));
+            private readonly ConditionalWeakTable<IParameterDescriptor, IParameterDescriptor[]> _cache;
+
+            public Factory() => _cache = new ConditionalWeakTable<IParameterDescriptor, IParameterDescriptor[]>();
+
+            public override IReadOnlyCollection<IParameterDescriptor> GetParameters(IParameterDescriptor parameter) => GetParameterArray(parameter);
+
+            public override TimeInterval Create(IParameterDescriptor parameter, IReadonlyContext context) => 
+                new TimeInterval(Length.Get(context), context.GetOrDefault(GetParameterArray(parameter)[1], Unit.DefaultValue));
 
             public override IReadonlyContext Parse(IParameterDescriptor parameter, TimeInterval timeInterval) => new Context
             {
                 [Length] = timeInterval.Length,
-                [Unit] = timeInterval.Unit
+                [GetParameterArray(parameter)[1]] = timeInterval.Unit
             };
+
+            private IParameterDescriptor[] GetParameterArray(IParameterDescriptor parameter)
+            {
+                if (!parameter.Metadata.Contains(IncludedTimeUnitsProperty) && !parameter.Metadata.Contains(ExcludedTimeUnitsProperty))
+                    return DefaultParameters;
+                if (_cache.TryGetValue(parameter, out var cachedParameters)) return cachedParameters;
+                var meta = new Context(Unit.Metadata);
+                SelectablePresenter.SelectableValuesFuncProperty.Set(meta, p =>
+                {
+                    var list = new LinkedList<TimeUnit>();
+                    list.AddAll(IncludedTimeUnitsProperty.TryGet(parameter.Metadata, out var included) ? included : Enum.GetValues(typeof(TimeUnit)).Cast<TimeUnit>());
+                    if (ExcludedTimeUnitsProperty.TryGet(parameter.Metadata, out var excluded)) list.RemoveAll(excluded);
+                    return list.ToArray();
+                });
+                var parameters = new IParameterDescriptor[] { Length, new MetadataOverridenParameter(Unit, meta) };
+                _cache.Add(parameter, parameters);
+                return parameters;
+            }
 
         }
 
