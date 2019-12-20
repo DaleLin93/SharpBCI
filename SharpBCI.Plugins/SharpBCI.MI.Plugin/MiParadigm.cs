@@ -18,7 +18,7 @@ namespace SharpBCI.Paradigms.MI
     public class MiParadigm : Paradigm
     {
 
-        public const string ParadigmName = "Motor Imaginary (MI) [Client]";
+        public const string ParadigmName = "Motor Imagery (MI) [Client]";
 
         public class Configuration
         {
