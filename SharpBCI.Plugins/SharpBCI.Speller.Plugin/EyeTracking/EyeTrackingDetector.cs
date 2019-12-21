@@ -38,12 +38,12 @@ namespace SharpBCI.Paradigms.Speller.EyeTracking
             }
         }
 
-        public int GetResult(SpellerExperimentBaseWindow.UIButton[] buttons)
+        public IdentificationResult GetResult(AbstractSpellerWindow.UIButton[] buttons)
         {
             lock (_lock)
             {
                 var count = _points.Count;
-                if (count <= 0) return -1;
+                if (count <= 0) return IdentificationResult.Missed;
                 double xSum = 0, ySum = 0;
                 foreach (var point in _points)
                 {
@@ -55,9 +55,9 @@ namespace SharpBCI.Paradigms.Speller.EyeTracking
                 {
                     var button = buttons[i];
                     if (button == null) continue;
-                    if (button.BorderRect.Contains(x, y)) return i;
+                    if (button.BorderRect.Contains(x, y)) return new IdentificationResult(i);
                 }
-                return -1;
+                return IdentificationResult.Missed;
             }
 //                return _points.All(p => _container.Contains(p.X, p.Y));
         }

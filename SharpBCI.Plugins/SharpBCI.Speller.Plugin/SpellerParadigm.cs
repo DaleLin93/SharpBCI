@@ -21,7 +21,7 @@ namespace SharpBCI.Paradigms.Speller
 {
 
     [ParameterizedObject(typeof(ObjectFactory))]
-    public struct SubBandMixingParams : IParameterizedObject
+    public class SubBandMixingParams : IParameterizedObject
     {
 
         public class ObjectFactory : ParameterizedObjectFactory<SubBandMixingParams>
@@ -40,6 +40,8 @@ namespace SharpBCI.Paradigms.Speller
             };
 
         }
+
+        public static readonly SubBandMixingParams Default = new SubBandMixingParams(0, 0);
 
         public readonly double A;
 
@@ -117,34 +119,6 @@ namespace SharpBCI.Paradigms.Speller
             public class TestConfig
             {
 
-                public class BandpassFilter
-                {
-
-                    public readonly double LowCutOff;
-
-                    public readonly double HighCutOff;
-
-                    public BandpassFilter(double lowCutOff, double highCutOff)
-                    {
-                        LowCutOff = lowCutOff;
-                        HighCutOff = highCutOff;
-                    }
-
-                    public static BandpassFilter[] Parse(MatrixQuery matrixQuery)
-                    {
-                        var matrix = matrixQuery?.GetMatrix();
-                        if (matrix == null || matrix.Length == 0) return null;
-                        var filterCount = matrix.GetRowCount();
-                        var bandpassFilters = new BandpassFilter[filterCount];
-                        for (var r = 0; r<filterCount; r++)
-                            bandpassFilters[r] = new BandpassFilter(matrix[r, 0], matrix[r, 1]);
-                        return bandpassFilters;
-                    }
-
-                    public override string ToString() => $"{LowCutOff:G1}~{HighCutOff:G1}Hz";
-
-                }
-
                 public bool Debug;
 
                 public KeyboardLayout Layout;
@@ -179,7 +153,7 @@ namespace SharpBCI.Paradigms.Speller
 
                 public CompositeTemporalPattern<SinusoidalPattern>[] StimulationPatterns;
 
-                public BandpassFilter[] FilterBank;
+                public IdealBandpassFilterParams[] FilterBank;
 
                 public SubBandMixingParams SubBandMixingParams;
 
@@ -576,7 +550,7 @@ namespace SharpBCI.Paradigms.Speller
                         SubTrialCount = SubTrialCount.Get(context),
                         ComputeParallelLevel = ComputeParallelLevel.Get(context),
                         StimulationPatterns = StimulationPatterns.Get(context, ParseMultiple),
-                        FilterBank = FilterBank.Get(context, Configuration.TestConfig.BandpassFilter.Parse),
+                        FilterBank = FilterBank.Get(context, IdealBandpassFilterParams.Parse),
                         SubBandMixingParams= SubBandMixingParams.Get(context),
                         HarmonicsCount = HarmonicsCount.Get(context),
                         SsvepDelay = SsvepDelay.Get(context),

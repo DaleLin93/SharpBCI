@@ -9,23 +9,25 @@ using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 namespace SharpBCI.Paradigms.Speller.SSVEP
 {
 
-    public interface ISsvepClassifier : IConsumer<Timestamped<ISample>>
+    public interface ISsvepIdentifier : IConsumer<Timestamped<ISample>>
     {
 
-        bool Actived { get; set; }
+        bool IsActive { get; set; }
 
-        int Classify();
+        double WindowSizeInSecs { get; }
+
+        uint HarmonicsCount { get; }
+
+        IdentificationResult Identify();
 
     }
 
-    internal abstract class AbstractSsvepClassifier : Core.IO.Consumer<Timestamped<ISample>>, ISsvepClassifier
+    public abstract class AbstractSsvepIdentifier : Core.IO.Consumer<Timestamped<ISample>>, ISsvepIdentifier
     {
 
         protected readonly IClock Clock;
 
         protected readonly uint[] ChannelIndices;
-
-        protected readonly double SamplingRate;
 
         protected readonly uint TrialDurationMs;
 
@@ -33,28 +35,35 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         private readonly LinkedList<double[]> _samples = new LinkedList<double[]>();
 
-        private bool _actived = false;
+        private bool _active;
 
         private int _discardCount;
 
-        protected AbstractSsvepClassifier([NotNull] IClock clock, [NotNull] uint[] channelIndices, double samplingRate, uint trialDurationMs, uint ssvepDelayMs)
+        protected AbstractSsvepIdentifier([NotNull] IClock clock, [NotNull] uint[] channelIndices, double samplingRate, uint trialDurationMs, uint ssvepDelayMs, uint harmonicsCount)
         {
             Clock = clock;
             ChannelIndices = (uint[])channelIndices.Clone();
             SamplingRate = samplingRate;
             TrialDurationMs = trialDurationMs;
             SsvepDelayMs = ssvepDelayMs;
-            WindowSize = (uint)(samplingRate * trialDurationMs / 1000.0);
+            WindowSizeInSamples = (uint)(samplingRate * trialDurationMs / 1000.0);
+            HarmonicsCount = harmonicsCount;
         }
 
-        public uint WindowSize { get; }
+        public double SamplingRate { get; }
 
-        public bool Actived
+        public uint WindowSizeInSamples { get; }
+
+        public double WindowSizeInSecs => WindowSizeInSamples / SamplingRate;
+
+        public uint HarmonicsCount { get; }
+
+        public bool IsActive
         {
-            get => _actived;
+            get => _active;
             set
             {
-                if (value == _actived)
+                if (value == _active)
                     return;
                 if (value)
                 {
@@ -62,18 +71,18 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                     lock (_samples)
                         _samples.Clear();
                 }
-                _actived = value;
+                _active = value;
             }
         }
 
         public override void Accept(Timestamped<ISample> data)
         {
             lock (_samples)
-                if (_samples.Count < WindowSize && Interlocked.Decrement(ref _discardCount) <= 0)
+                if (_samples.Count < WindowSizeInSamples && Interlocked.Decrement(ref _discardCount) <= 0)
                     _samples.AddLast(data.Value[ChannelIndices]);
         }
 
-        public abstract int Classify();
+        public abstract IdentificationResult Identify();
 
         protected bool TryGetSamples(out IEnumerable<double[]> samples)
         {
@@ -81,7 +90,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
             for (;;)
             {
                 lock (_samples)
-                    if (_samples.Count >= WindowSize)
+                    if (_samples.Count >= WindowSizeInSamples)
                     {
                         samples = _samples.ToArray();
                         break;

@@ -21,7 +21,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 {
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
-    internal class SsvepSpellerWindow : SpellerExperimentBaseWindow
+    internal class SsvepSpellerWindow : AbstractSpellerWindow
     {
 
         private class SsvepResult : SpellerParadigm.Result
@@ -62,7 +62,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         private readonly BiosignalStreamer _biosignalStreamer;
 
-        private readonly HybridSsvepClassifier _hybridSsvepClassifier;
+        private readonly HybridSsvepIdentifier _hybridSsvepIdentifier;
 
         private readonly CompositeTemporalPattern<SinusoidalPattern>[] _stimulationPatterns;
 
@@ -70,7 +70,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         private volatile UIButton[] _activedButtons;
 
-        private HybridSsvepClassifier.IInitializer _initializer;
+        private HybridSsvepIdentifier.IInitializer _initializer;
 
         private SsvepTrial _trial;
 
@@ -85,6 +85,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
             SuspendLayout();
             ControlBox = false;
             IsFullscreen = true;
+            // ReSharper disable once VirtualMemberCallInConstructor
             DoubleBuffered = false;
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Maximized;
@@ -103,13 +104,13 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
             if (session.StreamerCollection.TryFindFirst(out _biosignalStreamer))
             {
-                _hybridSsvepClassifier = new HybridSsvepClassifier(session.Clock, Paradigm.Config.Test.ComputeParallelLevel, 
+                _hybridSsvepIdentifier = new HybridSsvepIdentifier(session.Clock, Paradigm.Config.Test.ComputeParallelLevel, 
                     _stimulationPatterns, Paradigm.Config.Test.FilterBank, Paradigm.Config.Test.SubBandMixingParams,
                     Paradigm.Config.Test.HarmonicsCount, Paradigm.Config.Test.CcaThreshold,
                     Paradigm.Config.Test.Channels.Enumerate(1, _biosignalStreamer.BiosignalSource.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
                     _biosignalStreamer.BiosignalSource.Frequency, Paradigm.Config.Test.Trial.Duration,
                     Paradigm.Config.Test.SsvepDelay);
-                _biosignalStreamer.AttachConsumer(_hybridSsvepClassifier);
+                _biosignalStreamer.AttachConsumer(_hybridSsvepIdentifier);
             }
         }
 
@@ -165,9 +166,9 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                 switch (stage.Marker)
                 {
                     case MarkerDefinitions.BaselineStartMarker:
-                        if (_hybridSsvepClassifier != null)
+                        if (_hybridSsvepIdentifier != null)
                         {
-                            _initializer = _hybridSsvepClassifier?.CreateInitializer();
+                            _initializer = _hybridSsvepIdentifier?.CreateInitializer();
                             _biosignalStreamer.AttachConsumer(_initializer);
                         }
                         break;
@@ -203,8 +204,8 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                         }
                         trial.StartTime = CurrentTime;
                         _trial = trial;
-                        if (_hybridSsvepClassifier != null)
-                            _hybridSsvepClassifier.Actived = true;
+                        if (_hybridSsvepIdentifier != null)
+                            _hybridSsvepIdentifier.IsActive = true;
                         SelectedButton = null;
                         DisplayText = null;
                         TrialCancelled = false;
@@ -223,9 +224,9 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                         _trial = null;
                         trial.Cancelled = TrialCancelled;
                         trial.EndTime = CurrentTime;
-                        if (_hybridSsvepClassifier != null) _hybridSsvepClassifier.Actived = false;
+                        if (_hybridSsvepIdentifier != null) _hybridSsvepIdentifier.IsActive = false;
                         if (!trial.Cancelled && ComputeTrialResult(_activedButtons,
-                                _hybridSsvepClassifier == null ? null : (Func<int>)_hybridSsvepClassifier.Classify, 
+                                _hybridSsvepIdentifier == null ? null : (Func<IdentificationResult>)_hybridSsvepIdentifier.Identify, 
                                 hintButton, out var button, out var correct))
                         {
                             trial.Correct = correct;
@@ -321,7 +322,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                     }
                     if (debug && scheme != null)
                     {
-                        SharedBrush.Color = new Color(ForegroundColor.ToVector3(), 0.6F);
+                        SharedBrush.Color = new Color(ForegroundColor.R, ForegroundColor.G, ForegroundColor.B, 0.6F);
                         RenderTarget.DrawText(scheme.ToString(), _frequencyTextFormat, button.ContentRect,
                             SharedBrush, D2D1.DrawTextOptions.None);
                     }

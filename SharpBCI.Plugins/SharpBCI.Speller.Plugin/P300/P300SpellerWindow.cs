@@ -17,7 +17,7 @@ namespace SharpBCI.Paradigms.Speller.P300
 
     [SuppressMessage("ReSharper", "CollectionNeverQueried.Local")]
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
-    internal class P300SpellerWindow : SpellerExperimentBaseWindow
+    internal class P300SpellerWindow : AbstractSpellerWindow
     {
 
         private class P300Trial : SpellerParadigm.Result.Trial
@@ -40,7 +40,7 @@ namespace SharpBCI.Paradigms.Speller.P300
 
         /* Paradigm variables */
 
-        private volatile UIButton[] _activedButtons;
+        private volatile UIButton[] _activatedButtons;
 
         private volatile IRandomBoolSequence[] _randomBoolSequences;
 
@@ -53,6 +53,7 @@ namespace SharpBCI.Paradigms.Speller.P300
             SuspendLayout();
             ControlBox = false;
             IsFullscreen = true;
+            // ReSharper disable once VirtualMemberCallInConstructor
             DoubleBuffered = false;
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Maximized;
@@ -113,7 +114,7 @@ namespace SharpBCI.Paradigms.Speller.P300
                     {
                         var trial = new P300Trial { SubTrials = new List<P300Trial.SubTrial>((int)(Paradigm.Config.Test.SubTrialCount + 1)) };
                         UpdateCursor(GazePointHandler.CurrentPosition);
-                        var activedButtons = _activedButtons;
+                        var activedButtons = _activatedButtons;
                         if (activedButtons != null)
                         {
                             var buttons = new LinkedList<SpellerParadigm.Result.Button>();
@@ -125,7 +126,7 @@ namespace SharpBCI.Paradigms.Speller.P300
                         trial.StartTime = CurrentTime;
                         _trial = trial;
                         if (_p300Detector != null)
-                            _p300Detector.Actived = true;
+                            _p300Detector.IsActive = true;
                         SelectedButton = null;
                         DisplayText = null;
                         TrialCancelled = false;
@@ -139,9 +140,9 @@ namespace SharpBCI.Paradigms.Speller.P300
                         _trial = null;
                         trial.Cancelled = TrialCancelled;
                         trial.EndTime = CurrentTime;
-                        if (_p300Detector != null) _p300Detector.Actived = false;
-                        if (!trial.Cancelled && ComputeTrialResult(_activedButtons,
-                                _p300Detector == null ? null : (Func<int>)_p300Detector.Compute,
+                        if (_p300Detector != null) _p300Detector.IsActive = false;
+                        if (!trial.Cancelled && ComputeTrialResult(_activatedButtons,
+                                _p300Detector == null ? null : (Func<IdentificationResult>)_p300Detector.Compute,
                                 hintButton, out var button, out var correct))
                         {
                             trial.Correct = correct;
@@ -157,15 +158,19 @@ namespace SharpBCI.Paradigms.Speller.P300
                     }
                     case SpellerMarkerDefinitions.SubTrialMarker:
                     {
-                        var activedButtons = _activedButtons;
+                        var activatedButtons = _activatedButtons;
                         var randomBoolSequences = _randomBoolSequences;
-                        if (activedButtons != null)
+                        if (activatedButtons != null)
                         {
-                            var flags = new bool[activedButtons.Length];
-                            for (var i = 0; i < activedButtons.Length; i++)
+                            var flags = new bool[activatedButtons.Length];
+                            for (var i = 0; i < activatedButtons.Length; i++)
                             {
-                                var button = activedButtons[i];
-                                if(button != null) button.State = (flags[i] = randomBoolSequences[i].Next()) ? 1 : 0;
+                                var button = activatedButtons[i];
+                                if (button != null)
+                                {
+                                    var flag = flags[i] = randomBoolSequences[i].Next();
+                                    button.State = (flag) ? 1 : 0;
+                                }
                             }
                             _trial.SubTrials.Add(new P300Trial.SubTrial {Timestamp = CurrentTime, Flags = flags});
                         }
@@ -238,7 +243,7 @@ namespace SharpBCI.Paradigms.Speller.P300
 
             _randomBoolSequences = ArrayUtils.Initialize(activedButtonSlots.Length, index =>
                  Paradigm.Config.Test.TargetRate.CreateRandomBoolSequence((int)(DateTimeUtils.CurrentTimeTicks << 1 + index)));
-            _activedButtons = activedButtonSlots;
+            _activatedButtons = activedButtonSlots;
         }
 
     }

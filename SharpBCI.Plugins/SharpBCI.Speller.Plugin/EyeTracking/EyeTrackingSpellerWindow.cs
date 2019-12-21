@@ -15,14 +15,14 @@ namespace SharpBCI.Paradigms.Speller.EyeTracking
 {
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
-    internal class EyeTrackingSpellerWindow : SpellerExperimentBaseWindow
+    internal class EyeTrackingSpellerWindow : AbstractSpellerWindow
     {
 
         private readonly EyeTrackingDetector _detector;
 
         /* Paradigm variables */
 
-        private volatile UIButton _activedButton;
+        private volatile UIButton _activatedButton;
 
         private SpellerParadigm.Result.Trial _trial;
 
@@ -31,6 +31,7 @@ namespace SharpBCI.Paradigms.Speller.EyeTracking
             SuspendLayout();
             ControlBox = false;
             IsFullscreen = false;
+            // ReSharper disable once VirtualMemberCallInConstructor
             DoubleBuffered = false;
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Maximized;
@@ -86,7 +87,7 @@ namespace SharpBCI.Paradigms.Speller.EyeTracking
                     case MarkerDefinitions.TrialStartMarker:
                     {
                         var trial = new SpellerParadigm.Result.Trial();
-                        var activedButton = _activedButton = HintedButton ?? UpdateCursor(GazePointHandler.CurrentPosition);
+                        var activedButton = _activatedButton = HintedButton ?? UpdateCursor(GazePointHandler.CurrentPosition);
                         if (activedButton != null)
                             trial.ActivedButtons = new SpellerParadigm.Result.Button(activedButton.Key).SingletonArray();
                         trial.StartTime = CurrentTime;
@@ -141,7 +142,7 @@ namespace SharpBCI.Paradigms.Speller.EyeTracking
                 {
                     if (button == null) continue;
                     var trial = _trial;
-                    var actived = trial != null && _activedButton == button;
+                    var actived = trial != null && _activatedButton == button;
                     if (button.BorderWidth > 0)
                     {
                         SharedBrush.Color = ButtonBorderColor;

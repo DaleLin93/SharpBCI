@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using SharpBCI.Core.IO;
 using JetBrains.Annotations;
 using MarukoLib.Lang;
-using MarukoLib.Logging;
 using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 
 namespace SharpBCI.Paradigms.Speller.P300
@@ -11,8 +10,6 @@ namespace SharpBCI.Paradigms.Speller.P300
 
     internal sealed class P300Detector : Core.IO.Consumer<Timestamped<ISample>>
     {
-
-        private static readonly Logger Logger = Logger.GetLogger(typeof(P300Detector));
 
         private readonly LinkedList<double[]> _samples = new LinkedList<double[]>();
 
@@ -24,7 +21,7 @@ namespace SharpBCI.Paradigms.Speller.P300
 
         private readonly double _overlap;
 
-        private bool _actived = false;
+        private bool _active;
 
         public P300Detector([NotNull] uint[] channelIndices, double samplingRate, uint windowSize, double overlap)
         {
@@ -40,16 +37,16 @@ namespace SharpBCI.Paradigms.Speller.P300
             _overlap = overlap;
         }
 
-        public bool Actived
+        public bool IsActive
         {
-            get => _actived;
+            get => _active;
             set
             {
-                if (value == _actived)
+                if (value == _active)
                     return;
                 if (value)
                     _samples.Clear();
-                _actived = value;
+                _active = value;
             }
         }
 
@@ -57,14 +54,11 @@ namespace SharpBCI.Paradigms.Speller.P300
 
         public override void Accept(Timestamped<ISample> data)
         {
-            if (Actived)
+            if (IsActive)
                 _samples.AddLast(data.Value[_channelIndices]);
         }
 
-        public int Compute()
-        {
-            return -1;
-        }
+        public IdentificationResult Compute() => IdentificationResult.Missed;
 
     }
 

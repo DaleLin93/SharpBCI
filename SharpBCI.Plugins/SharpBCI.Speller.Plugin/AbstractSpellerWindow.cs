@@ -72,7 +72,7 @@ namespace SharpBCI.Paradigms.Speller
 
         private readonly uint _hoverToSelectDuration;
 
-        private readonly Func<Point, SpellerExperimentBaseWindow.UIButton> _findButtonFunc;
+        private readonly Func<Point, AbstractSpellerWindow.UIButton> _findButtonFunc;
 
         private Timer _timer;
 
@@ -82,10 +82,10 @@ namespace SharpBCI.Paradigms.Speller
 
         private bool _inTrial;
 
-        private SpellerExperimentBaseWindow.UIButton _previousHover;
+        private AbstractSpellerWindow.UIButton _previousHover;
 
         public ButtonInsideTrialTrigger(IClock clock, SpellerController spellerController, GazePointHandler gazePointHandler,
-            SpellerParadigm.Configuration.TestConfig testConfig, Func<Point, SpellerExperimentBaseWindow.UIButton> findButtonFunc)
+            SpellerParadigm.Configuration.TestConfig testConfig, Func<Point, AbstractSpellerWindow.UIButton> findButtonFunc)
         {
             _clock = clock;
             _spellerController = spellerController;
@@ -248,7 +248,7 @@ namespace SharpBCI.Paradigms.Speller
 
     }
 
-    internal abstract class SpellerExperimentBaseWindow : RenderForm, IDisposable
+    internal abstract class AbstractSpellerWindow : RenderForm, IDisposable
     {
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -349,13 +349,13 @@ namespace SharpBCI.Paradigms.Speller
 
         protected readonly SpellerParadigm Paradigm;
 
-        protected readonly SpellerParadigm.Result Result;
-
         protected readonly IMarkable Markable;
 
         protected readonly StageProgram StageProgram;
 
         protected readonly GazePointHandler GazePointHandler;
+
+        protected SpellerParadigm.Result Result;
 
         protected ITrialTrigger TrialTrigger;
 
@@ -385,15 +385,15 @@ namespace SharpBCI.Paradigms.Speller
 
         protected string InputText = "";
 
-        protected bool UserInterrupted = false;
+        protected bool UserInterrupted;
 
-        protected bool ParadigmStarted = false;
+        protected bool ParadigmStarted;
 
         protected bool TrialCancelled;
 
-        protected string DisplayText = null;
+        protected string DisplayText;
 
-        protected string SubtitleText = null;
+        protected string SubtitleText;
 
         /* Converted variables */
 
@@ -429,7 +429,8 @@ namespace SharpBCI.Paradigms.Speller
 
         protected DW.TextLayout InputTextLayout;
 
-        protected SpellerExperimentBaseWindow(Session session, SpellerController spellerController)
+        [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
+        protected AbstractSpellerWindow(Session session, SpellerController spellerController)
         {
             // ReSharper disable once LocalizableElement
             Text = "Speller";
@@ -448,10 +449,6 @@ namespace SharpBCI.Paradigms.Speller
             Session = session;
             SpellerController = spellerController;
             Paradigm = (SpellerParadigm) session.Paradigm;
-
-            Result = CreateResult(session );
-            Result.Buttons = Paradigm.Config.Test.Layout.Keys.Select(key => new SpellerParadigm.Result.Button(key)).ToArray();
-            Result.Trials = new LinkedList<SpellerParadigm.Result.Trial>();
 
             Markable = session.StreamerCollection.FindFirstOrDefault<IMarkable>();
             LayoutSize = Paradigm.Config.Test.Layout.GetLayoutSize(Paradigm.Config.Gui.ColumnsOverridden);
@@ -639,15 +636,13 @@ namespace SharpBCI.Paradigms.Speller
         }
 
         /// <returns>true if result is computed</returns>
-        protected bool ComputeTrialResult(UIButton[] activedButtons, Func<int> func, UIButton hintButton, out UIButton button, out bool? correct)
+        protected bool ComputeTrialResult(UIButton[] activatedButtons, Func<IdentificationResult> func, UIButton hintButton, out UIButton button, out bool? correct)
         {
             button = null;
             correct = null;
-
-            if (activedButtons == null)
-                return false;
-            var index = func?.Invoke() ?? -1;
-            var selectedButton = index < 0 || index >= activedButtons.Length ? null : activedButtons[index];
+            if (activatedButtons == null) return false;
+            var result = func?.Invoke() ?? IdentificationResult.Missed;
+            var selectedButton = !result.IsValidResult(activatedButtons.Length) ? null : activatedButtons[result.FrequencyIndex];
             button = selectedButton;
             correct = OnButtonSelected(hintButton, selectedButton);
             return true;
@@ -849,7 +844,7 @@ namespace SharpBCI.Paradigms.Speller
             /* Draw Hint */
             if (HintText != null)
             {
-                SharedBrush.Color = new Color(ForegroundColor.ToVector3(), 0.7F);
+                SharedBrush.Color = new Color(ForegroundColor.R, ForegroundColor.G, ForegroundColor.B, 0.7F);
                 RenderTarget.DrawText(HintText, InputTextFormat, new RawRectangleF(10, 0, Width - 10, InputBoxHeight / 2),
                     SharedBrush, D2D1.DrawTextOptions.None);
             }
@@ -896,8 +891,7 @@ namespace SharpBCI.Paradigms.Speller
         {
             lock (_renderContextLock)
             {
-                if (RenderTarget?.IsDisposed ?? true)
-                    return;
+                if (RenderTarget?.IsDisposed ?? true) return;
 
                 RenderTarget.BeginDraw();
                 OnDraw();
@@ -951,6 +945,10 @@ namespace SharpBCI.Paradigms.Speller
             lock (_renderContextLock)
                 InitializeDirectXResources();
             UpdateLayout();
+
+            Result = CreateResult(Session);
+            Result.Buttons = Paradigm.Config.Test.Layout.Keys.Select(key => new SpellerParadigm.Result.Button(key)).ToArray();
+            Result.Trials = new LinkedList<SpellerParadigm.Result.Trial>();
 
             Session.Start();
             StageProgram.Start();

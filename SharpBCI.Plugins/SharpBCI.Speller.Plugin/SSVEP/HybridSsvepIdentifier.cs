@@ -15,6 +15,7 @@ using MarukoLib.Logging;
 using MarukoLib.Threading;
 using MathNet.Numerics.IntegralTransforms;
 using SharpBCI.Core.IO;
+using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 using SharpBCI.Extensions.Patterns;
 using Normal = MathNet.Numerics.Distributions.Normal;
@@ -24,7 +25,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
     [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
-    internal sealed class HybridSsvepClassifier : AbstractSsvepClassifier
+    public sealed class HybridSsvepIdentifier : AbstractSsvepIdentifier
     {
 
         [StructLayout(LayoutKind.Sequential)]
@@ -183,14 +184,14 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
             private readonly LinkedList<ISample> _samples = new LinkedList<ISample>();
 
-            private readonly HybridSsvepClassifier _hybridSsvepClassifier;
+            private readonly HybridSsvepIdentifier _hybridSsvepIdentifier;
 
             private readonly RunningNormalStatistics[] _statisticsArray;
 
-            public DistributionInitializer(HybridSsvepClassifier hybridSsvepClassifier)
+            public DistributionInitializer(HybridSsvepIdentifier hybridSsvepIdentifier)
             {
-                _hybridSsvepClassifier = hybridSsvepClassifier;
-                _statisticsArray = ArrayUtils.Initialize<RunningNormalStatistics>(_hybridSsvepClassifier._harmonicGroups.Length);
+                _hybridSsvepIdentifier = hybridSsvepIdentifier;
+                _statisticsArray = ArrayUtils.Initialize<RunningNormalStatistics>(_hybridSsvepIdentifier._harmonicGroups.Length);
             }
 
             public void Accept(ISample sample) => _samples.AddLast(sample);
@@ -202,16 +203,16 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                 if (_samples.IsEmpty()) return;
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
-                var array = new double[(int)_hybridSsvepClassifier.WindowSize * _hybridSsvepClassifier.ChannelIndices.Length];
+                var array = new double[(int)_hybridSsvepIdentifier.WindowSizeInSamples * _hybridSsvepIdentifier.ChannelIndices.Length];
                 foreach (var window in _samples
-                    .Select(sample => sample[_hybridSsvepClassifier.ChannelIndices])
-                    .MovingWindows(_hybridSsvepClassifier.WindowSize, 0.5))
+                    .Select(sample => sample[_hybridSsvepIdentifier.ChannelIndices])
+                    .MovingWindows(_hybridSsvepIdentifier.WindowSizeInSamples, 0.5))
                 {
                     var offset = 0;
                     foreach (var sample in window)
                         foreach (var channel in sample)
                             array[offset++] = channel;
-                    var features = _hybridSsvepClassifier.ComputeFeatures(array);
+                    var features = _hybridSsvepIdentifier.ComputeFeatures(array);
                     for (var i = 0; i < features.Length; i++)
                         _statisticsArray[i].Push(features[i]);
                 }
@@ -225,47 +226,40 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
             {
                 Compute();
                 if (_statisticsArray[0].Count == 0) return;
-                _hybridSsvepClassifier._predictor = new StatisticsPredictor(_statisticsArray.Select(stats => new Normal(stats.Mean, stats.StandardDeviation)).ToArray());
+                _hybridSsvepIdentifier._predictor = new StatisticsPredictor(_statisticsArray.Select(stats => new Normal(stats.Mean, stats.StandardDeviation)).ToArray());
             }
         }
 
-        private static readonly Logger Logger = Logger.GetLogger(typeof(HybridSsvepClassifier));
+        private static readonly Logger Logger = Logger.GetLogger(typeof(HybridSsvepIdentifier));
 
         private readonly ParallelPool _parallelPool;
 
-        private readonly SpellerParadigm.Configuration.TestConfig.BandpassFilter[] _filterBank;
+        private readonly IdealBandpassFilterParams[] _filterBank;
 
         private readonly SubBandMixingParams _subBandMixingParams;
-
-        private readonly uint _harmonicsCount;
 
         private readonly HarmonicGroup[] _harmonicGroups;
 
         private IPredictor _predictor;
 
-        public HybridSsvepClassifier([NotNull] IClock clock, uint parallel, [NotNull] CompositeTemporalPattern<SinusoidalPattern>[] patterns,
-            SpellerParadigm.Configuration.TestConfig.BandpassFilter[] filterBank, 
-            SubBandMixingParams subBandMixingParams,
+        public HybridSsvepIdentifier([NotNull] IClock clock, uint parallel, [NotNull] IReadOnlyList<CompositeTemporalPattern<SinusoidalPattern>> patterns,
+            IdealBandpassFilterParams[] filterBank, [NotNull] SubBandMixingParams subBandMixingParams,
             uint harmonicsCount, double ccaThreshold, [NotNull] uint[] channelIndices, double samplingRate, uint trialDurationMs, uint ssvepDelayMs)
-            : base(clock, channelIndices, samplingRate, trialDurationMs, ssvepDelayMs)
+            : base(clock, channelIndices, samplingRate, trialDurationMs, ssvepDelayMs, harmonicsCount)
         {
-            if (patterns.Length == 0)
-                throw new ArgumentException("at least one stimulation pattern is required");
-            if (harmonicsCount <= 0)
-                throw new ArgumentException("at least one harmonic is required");
-            if (channelIndices.Length == 0)
-                throw new ArgumentException("at least one channel is required");
-            if (trialDurationMs <= 0)
-                throw new ArgumentException("trial duration must be positive");
+            if (patterns.Count == 0) throw new ArgumentException("at least one stimulation pattern is required");
+            if (patterns.Count == 0) throw new ArgumentNullException(nameof(subBandMixingParams));
+            if (harmonicsCount <= 0) throw new ArgumentException("at least one harmonic is required");
+            if (channelIndices.Length == 0) throw new ArgumentException("at least one channel is required");
+            if (trialDurationMs <= 0) throw new ArgumentException("trial duration must be positive");
             _parallelPool = new ParallelPool(parallel);
-            _filterBank = (SpellerParadigm.Configuration.TestConfig.BandpassFilter[])filterBank?.Empty2Null()?.Clone();
+            _filterBank = (IdealBandpassFilterParams[])filterBank?.Empty2Null()?.Clone();
             _subBandMixingParams = subBandMixingParams;
-            _harmonicsCount = harmonicsCount;
-            _harmonicGroups = GenerateHarmonicGroups(samplingRate, WindowSize, patterns, harmonicsCount);
+            _harmonicGroups = GenerateHarmonicGroups(samplingRate, WindowSizeInSamples, patterns, harmonicsCount);
             _predictor = new MaxScorePredictor(ccaThreshold);
         }
 
-        ~HybridSsvepClassifier()
+        ~HybridSsvepIdentifier()
         {
             if (_harmonicGroups != null)
                 foreach (var harmonicGroup in _harmonicGroups)
@@ -422,15 +416,12 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         public override Priority Priority => Priority.Lowest;
 
-        public IInitializer CreateInitializer() => new NoOpInitializer();//new DistributionInitializer(this);
-
         public int Predict(double[] frequencyFeatures) => _predictor.Predict(frequencyFeatures);
 
-        /// <returns>-2 - timeout, -1 - no match</returns>
-        public override int Classify()
+        public override IdentificationResult Identify()
         {
-            if (!TryGetSamples(out var samples)) return -2;
-            var array = new double[(int)WindowSize * ChannelIndices.Length];
+            if (!TryGetSamples(out var samples)) return IdentificationResult.Timeout;
+            var array = new double[(int)WindowSizeInSamples * ChannelIndices.Length];
             var offset = 0;
             foreach (var sample in samples)
                 foreach (var channel in sample)
@@ -445,7 +436,8 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
             stopwatch.Start();
             var features = ComputeFeatures(array);
             Logger.Debug("Compute - cca", "features", $"[{features.Select(score => $"{score:F3}").Join(", ")}]", "timeCost", stopwatch.ElapsedMilliseconds);
-            return Predict(features);
+            var idx = Predict(features);
+            return idx < 0 ? IdentificationResult.Missed : new IdentificationResult(idx);
         }
 
         public static void ZScoreInPlace(double[] values)
@@ -483,11 +475,11 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
         {
             // Row: subject(window of signal) x Column: treatment(target frequency)
             var channelNum = ChannelIndices.Length;
-            Debug.Assert(array.Length == WindowSize * channelNum);
+            Debug.Assert(array.Length == WindowSizeInSamples * channelNum);
             var ccaValues = new double[_harmonicGroups.Length];
             if (_filterBank == null)
             {
-                using (var mat = AllocateAndComputeQr(array, WindowSize, (uint)channelNum))
+                using (var mat = AllocateAndComputeQr(array, WindowSizeInSamples, (uint)channelNum))
                 {
                     var x = new CMat { id = mat.Value };
                     _parallelPool.Batch(task =>
@@ -511,14 +503,14 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                             // Filtering
                             for (var i = 0; i < channelNum; i++)
                             {
-                                complexArray = IdealBandpassFilter(array, i, channelNum, (int)WindowSize,
+                                complexArray = IdealBandpassFilter(array, i, channelNum, (int)WindowSizeInSamples,
                                     SamplingRate, bandpassFilter.LowCutOff, bandpassFilter.HighCutOff,
                                     filteredSignal, i, channelNum, complexArray);
                             }
                             Marshal.Copy(filteredSignal, 0, coTaskArray.Ptr, filteredSignal.Length);
 
                             // Calc
-                            using (var xMatId = AllocateAndComputeQr(coTaskArray, WindowSize, (uint)channelNum))
+                            using (var xMatId = AllocateAndComputeQr(coTaskArray, WindowSizeInSamples, (uint)channelNum))
                             {
                                 var x = new CMat { id = xMatId.Value };
                                 for (var h = 0; h < _harmonicGroups.Length; h++)
@@ -541,9 +533,9 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
         {
             // Row: subject(window of signal) x Column: treatment(target frequency)
             var channelNum = ChannelIndices.Length;
-            Debug.Assert(array.Length == WindowSize * channelNum);
+            Debug.Assert(array.Length == WindowSizeInSamples * channelNum);
             var mecValues = new double[_harmonicGroups.Length];
-            using (var mat = AllocateMatrix(array, WindowSize, (uint)channelNum))
+            using (var mat = AllocateMatrix(array, WindowSizeInSamples, (uint)channelNum))
             {
                 var x = new CMat { id = mat.Value };
                 _parallelPool.Batch(task =>
@@ -557,6 +549,8 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
                 mecValues[i] /= sum;
             return mecValues;
         }
+
+        internal IInitializer CreateInitializer() => new NoOpInitializer();//new DistributionInitializer(this);
 
     }
 }
