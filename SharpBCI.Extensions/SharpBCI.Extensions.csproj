@@ -92,6 +92,7 @@
     <Compile Include="Data\AutoParameterizedObject.cs" />
     <Compile Include="Data\ComplexObject.cs" />
     <Compile Include="Data\Dimensions.cs" />
+    <Compile Include="Data\IdealBandpassFilterParams.cs" />
     <Compile Include="Data\TimeInterval.cs" />
     <Compile Include="Data\Range.cs" />
     <Compile Include="Data\Positions.cs" />
