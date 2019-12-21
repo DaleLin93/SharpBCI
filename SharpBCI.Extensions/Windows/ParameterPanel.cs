@@ -188,6 +188,7 @@ namespace SharpBCI.Extensions.Windows
             ContextChanged?.Invoke(this, new ContextChangedEventArgs(_context));
         }
 
+        // ReSharper disable once UnusedMethodReturnValue.Local
         private bool UpdateParamVisibility(IReadonlyContext context, bool initializing)
         {
             var adapter = Adapter;
