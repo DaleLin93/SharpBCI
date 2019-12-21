@@ -89,7 +89,6 @@
   <ItemGroup>
     <Compile Include="MavepCssGenerator.cs" />
     <Compile Include="Messages.cs" />
-    <Compile Include="SsvepDetector.cs" />
     <Compile Include="WebBrowserAssistantEngine.cs" />
     <Compile Include="WebBrowserAssistantParadigm.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

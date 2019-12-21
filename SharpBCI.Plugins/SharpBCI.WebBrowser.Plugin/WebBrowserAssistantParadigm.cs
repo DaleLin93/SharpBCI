@@ -48,7 +48,9 @@ namespace SharpBCI.Paradigms.WebBrowser
 
                 public uint CursorMovementTolerance;
 
-                public uint TrialDuration;
+                public uint NavigatingTrialDuration;
+
+                public uint SpellingTrialDuration;
 
                 public bool TrialCancellable;
 
@@ -96,7 +98,9 @@ namespace SharpBCI.Paradigms.WebBrowser
                 .SetDefaultQuery(":", TypeConverters.Double2Int)
                 .Build();
 
-            private static readonly Parameter<uint> TrialDuration = new Parameter<uint>("Trial Duration", null, null, 4000);
+            private static readonly Parameter<uint> NavigatingTrialDuration = new Parameter<uint>("Trial Duration", null, null, 4000);
+
+            private static readonly Parameter<uint> SpellingTrialDuration = new Parameter<uint>("Trial Duration", null, null, 4000);
 
             private static readonly Parameter<bool> TrialCancellable = new Parameter<bool>("Trial Cancellable", true);
 
@@ -108,7 +112,8 @@ namespace SharpBCI.Paradigms.WebBrowser
 
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new ParameterGroupCollection()
                 .Add("System", DebugInformation, ListeningPort, Channels)
-                .Add("User", HomePage, WebRootDir, DwellSelectionDelay, ConfirmationDelay, EdgeScrollRatio, CursorMovementTolerance, TrialDuration, TrialCancellable, StimulationSize);
+                .Add("User", HomePage, WebRootDir, DwellSelectionDelay, ConfirmationDelay, EdgeScrollRatio, CursorMovementTolerance, 
+                    new ParameterGroup("Trial Duration", NavigatingTrialDuration, SpellingTrialDuration), TrialCancellable, StimulationSize);
 
             public override WebBrowserAssistantParadigm Create(IReadonlyContext context) => new WebBrowserAssistantParadigm(new Configuration
             {
@@ -126,7 +131,8 @@ namespace SharpBCI.Paradigms.WebBrowser
                     ConfirmationDelay = ConfirmationDelay.Get(context),
                     EdgeScrollRatio = EdgeScrollRatio.Get(context, op => op.HasValue ? op.Value : double.NaN),
                     CursorMovementTolerance = CursorMovementTolerance.Get(context),
-                    TrialDuration = TrialDuration.Get(context),
+                    NavigatingTrialDuration = NavigatingTrialDuration.Get(context),
+                    SpellingTrialDuration = SpellingTrialDuration.Get(context),
                     TrialCancellable = TrialCancellable.Get(context),
                     StimulationSize = StimulationSize.Get(context)
                 }

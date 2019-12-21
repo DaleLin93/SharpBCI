@@ -39,6 +39,21 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         }
 
+        public class ClientPropertyChangedEventArgs<T> : ValueChangedEventArgs<T>
+        {
+
+            public ClientPropertyChangedEventArgs(Client client, T oldValue, T newValue, bool isActiveClient) : base(oldValue, newValue)
+            {
+                Client = client;
+                IsActiveClient = isActiveClient;
+            }
+
+            public Client Client { get; }
+
+            public bool IsActiveClient { get; }
+
+        }
+
         public class ClientDimensions
         {
 
@@ -116,7 +131,9 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         public event EventHandler<ValueChangedEventArgs<Client>> ActiveClientChanged;
 
-        public event EventHandler<Client> ActiveClientDimensionsChanged;
+        public event EventHandler<ClientPropertyChangedEventArgs<ClientDimensions>> ClientDimensionsChanged;
+
+        public event EventHandler<ClientPropertyChangedEventArgs<Scene>> ClientSceneChanged;
 
         private readonly object _lock = new object();
 
@@ -257,7 +274,12 @@ namespace SharpBCI.Paradigms.WebBrowser
             var task = SendMessage(client, message);
             if (!async) task.Await();
         }
-        
+
+        private ClientPropertyChangedEventArgs<T> NewClientPropertyChangedEvent<T>(Client client, T oldVal, T newVal)
+        {
+            return new ClientPropertyChangedEventArgs<T>(client, oldVal, newVal, client == ActiveClient);
+        }
+
         private void OnConnectionEstablished(HttpListenerContext context)
         {
             var request = context.Request;
@@ -359,19 +381,32 @@ namespace SharpBCI.Paradigms.WebBrowser
             switch (message.Type)
             {
                 case "Dimensions":
-                    client.Dimensions = new ClientDimensions(
+                {
+                    var oldDims = client.Dimensions;
+                    var newDims = new ClientDimensions(
                         message.WindowPosition ?? default, message.ScrollPosition ?? default,
                         message.WindowOuterSize ?? default, message.WindowInnerSize ?? default,
                         message.DocumentSize ?? default);
-                    if (client == ActiveClient) ActiveClientDimensionsChanged?.Invoke(this, client);
+                    // if (Equals(oldDims, newDims)) return;
+                    client.Dimensions = newDims;
+                    ClientDimensionsChanged?.Invoke(this, NewClientPropertyChangedEvent(client, oldDims, newDims));
                     break;
+                }
+                case "Scene":
+                {
+                    var oldScene = client.Scene;
+                    var newScene = message.Scene ?? Scene.Page;
+                    if (oldScene == newScene) return;
+                    client.Scene = newScene;
+                    ClientSceneChanged?.Invoke(this, NewClientPropertyChangedEvent(client, oldScene, newScene));
+                    break;
+                }
                 case "Focus":
+                {
                     client.IsActive = message.Focused ?? true;
                     UpdateActiveClient();
                     break;
-                case "Scene":
-                    client.Scene = message.Scene ?? Scene.Page;
-                    break;
+                }
             }
         }
 

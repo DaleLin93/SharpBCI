@@ -9,10 +9,13 @@ using MarukoLib.Lang.Exceptions;
 using MarukoLib.Logging;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
+using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.IO.Devices.BiosignalSources;
 using SharpBCI.Extensions.IO.Devices.EyeTrackers;
 using SharpBCI.Extensions.IO.Devices.MarkerSources;
 using SharpBCI.Extensions.Patterns;
+using SharpBCI.Paradigms.Speller;
+using SharpBCI.Paradigms.Speller.SSVEP;
 
 namespace SharpBCI.Paradigms.WebBrowser
 {
@@ -192,7 +195,9 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private readonly DwellTrialController _dwellTrialController;
 
-        private readonly SsvepDetector _ssvepDetector;
+        private readonly ISsvepIdentifier _navigatingSsvepDetector;
+
+        private readonly ISsvepIdentifier _spellingSsvepDetector;
 
         private Mode _mode = Mode.Normal;
 
@@ -218,7 +223,14 @@ namespace SharpBCI.Paradigms.WebBrowser
                     InterruptTrial();
                 }
             };
-            _server.ActiveClientDimensionsChanged += (sender, e) => InterruptTrial();
+            _server.ClientDimensionsChanged += (sender, e) =>
+            {
+                if (e.IsActiveClient) InterruptTrial();
+            };
+            _server.ClientSceneChanged += (sender, e) =>
+            {
+                if (e.IsActiveClient) InterruptTrial();
+            };
 
             _modeOnSetInterceptor = new ModeOnSetInterceptor();
             _modeOnSetInterceptor.ModeOnSet += (sender, e) => Mode = e;
@@ -228,14 +240,18 @@ namespace SharpBCI.Paradigms.WebBrowser
             _dwellTrialController.Triggered += (sender, e) => _trialStartEvent.Set();
             _dwellTrialController.Cancelled += (sender, e) => _trialCancelled.Set();
 
-            _ssvepDetector = new SsvepDetector(session.Clock, 4, Frequencies.Concat(ExtraFrequencies)
-                    .Select(f => new CompositeTemporalPattern<SinusoidalPattern>(new SinusoidalPattern(f))).ToArray(), new[]
-                {
-                    new SsvepDetector.BandpassFilter(12, 90),
-                    new SsvepDetector.BandpassFilter(24, 90)
-                }, new SsvepDetector.FbccaSubBandMixingParams(1.25, 0.25), 2, 0,
-                paradigm.Config.System.Channels.Enumerate(1, _biosignalStreamer.BiosignalSource.ChannelNum).Select(i => (uint)(i - 1)).ToArray(),
-                _biosignalStreamer.BiosignalSource.Frequency, paradigm.Config.User.TrialDuration, 0);
+            var filterBank = new[]
+            {
+                new IdealBandpassFilterParams(12, 90), 
+                new IdealBandpassFilterParams(24, 90)
+            };
+            var frequencyPatterns = Frequencies.Concat(ExtraFrequencies).Select(f => new CompositeTemporalPattern<SinusoidalPattern>(new SinusoidalPattern(f))).ToArray();
+            var bandMixingParams = new SubBandMixingParams(1.25, 0.25);
+            var channels = paradigm.Config.System.Channels.Enumerate(1, _biosignalStreamer.BiosignalSource.ChannelNum).Select(i => (uint) (i - 1)).ToArray();
+            _navigatingSsvepDetector = new HybridSsvepIdentifier(session.Clock, 4, frequencyPatterns, filterBank, bandMixingParams, 2, 0, channels,
+                _biosignalStreamer.BiosignalSource.Frequency, paradigm.Config.User.NavigatingTrialDuration, 0);
+            _spellingSsvepDetector = new HybridSsvepIdentifier(session.Clock, 4, frequencyPatterns, filterBank, bandMixingParams, 2, 0, channels,
+                _biosignalStreamer.BiosignalSource.Frequency, paradigm.Config.User.SpellingTrialDuration, 0);
         }
 
         ~WebBrowserAssistantEngine()
@@ -268,10 +284,12 @@ namespace SharpBCI.Paradigms.WebBrowser
             _server.Start();
             _dwellTrialController.Start();
 
-            _ssvepDetector.Active = true;
+            _navigatingSsvepDetector.IsActive = true;
+            _spellingSsvepDetector.IsActive = true;
 
             _markerStreamer.AttachFilter(_modeOnSetInterceptor);
-            _biosignalStreamer.AttachConsumer(_ssvepDetector);
+            _biosignalStreamer.AttachConsumer(_navigatingSsvepDetector);
+            _biosignalStreamer.AttachConsumer(_spellingSsvepDetector);
             _gazePointStreamer.AttachConsumer(_gazePointProvider);
 
             (_thread = new Thread(RunTrials) {IsBackground = true}).Start();
@@ -285,10 +303,12 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         public void Stop()
         {
-            _ssvepDetector.Active = false;
+            _navigatingSsvepDetector.IsActive = false;
+            _spellingSsvepDetector.IsActive = false;
 
             _markerStreamer.DetachFilter(_modeOnSetInterceptor);
-            _biosignalStreamer.DetachConsumer(_ssvepDetector);
+            _biosignalStreamer.DetachConsumer(_navigatingSsvepDetector);
+            _biosignalStreamer.DetachConsumer(_spellingSsvepDetector);
             _gazePointStreamer.DetachConsumer(_gazePointProvider);
 
             _dwellTrialController.Stop();
@@ -326,6 +346,8 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private void RunTrial([NotNull] WebBrowserAssistantServer.Client client)
         {
+            var scene = client.Scene;
+            var detector = scene == Scene.Keyboard ? _spellingSsvepDetector : _navigatingSsvepDetector;
             var edgeScrollRatio = _paradigm.Config.User.EdgeScrollRatio;
             var edgeScrolling = !double.IsNaN(edgeScrollRatio);
 
@@ -350,13 +372,13 @@ namespace SharpBCI.Paradigms.WebBrowser
             _server.SendMessageToClient(client, new OutgoingMessage { Type = "StartTrial", GazePoint = gazePoint });
 
             /* Waiting for the ending of trial or cancelled by system. */
-            if (!WaitForEndOfTrial(client)) return;
+            if (!WaitForEndOfTrial(client, (int)(detector.WindowSizeInSecs * 1000 + 200))) return;
             _server.SendMessageToClient(client, new OutgoingMessage { Type = "EndTrial" });
 
             /* Send identified frequency index. */
-            var frequencyIndex = _ssvepDetector.Classify();
-            Logger.Info("RunTrial", "identifiedFrequencyIndex", frequencyIndex);
-            SendIdentifiedFrequency(client, frequencyIndex);
+            var result = detector.Identify();
+            SendIdentifiedFrequency(client, result.IsValidResult(Frequencies.Length) ? result.FrequencyIndex : AbsentFrequencyIndex);
+            Logger.Info("RunTrial", "result", result);
         }
 
         private void InterruptTrial() => _thread?.Interrupt();
@@ -385,12 +407,12 @@ namespace SharpBCI.Paradigms.WebBrowser
         private void SendScroll([NotNull] WebBrowserAssistantServer.Client client, Point scrollDistance) => 
             _server.SendMessageToClient(client, new OutgoingMessage {Type = "Scroll", ScrollDistance = scrollDistance });
 
-        private bool WaitForEndOfTrial([NotNull] WebBrowserAssistantServer.Client client)
+        private bool WaitForEndOfTrial([NotNull] WebBrowserAssistantServer.Client client, int waitForTimeMillis)
         {
             var cancelled = true;
             try
             {
-                cancelled = _trialCancelled.WaitOne(TimeSpan.FromMilliseconds((int)(_paradigm.Config.User.TrialDuration + 200)));
+                cancelled = _trialCancelled.WaitOne(waitForTimeMillis);
             }
             finally
             {
