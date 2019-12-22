@@ -234,7 +234,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
 
         private readonly ParallelPool _parallelPool;
 
-        private readonly IdealBandpassFilterParams[] _filterBank;
+        private readonly IReadOnlyList<IdealBandpassFilterParams> _filterBank;
 
         private readonly SubBandMixingParams _subBandMixingParams;
 
@@ -243,7 +243,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
         private IPredictor _predictor;
 
         public HybridSsvepIdentifier([NotNull] IClock clock, uint parallel, [NotNull] IReadOnlyList<CompositeTemporalPattern<SinusoidalPattern>> patterns,
-            IdealBandpassFilterParams[] filterBank, [NotNull] SubBandMixingParams subBandMixingParams,
+            IReadOnlyList<IdealBandpassFilterParams> filterBank, [NotNull] SubBandMixingParams subBandMixingParams,
             uint harmonicsCount, double ccaThreshold, [NotNull] uint[] channelIndices, double samplingRate, uint trialDurationMs, uint ssvepDelayMs)
             : base(clock, channelIndices, samplingRate, trialDurationMs, ssvepDelayMs, harmonicsCount)
         {
@@ -253,7 +253,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
             if (channelIndices.Length == 0) throw new ArgumentException("at least one channel is required");
             if (trialDurationMs <= 0) throw new ArgumentException("trial duration must be positive");
             _parallelPool = new ParallelPool(parallel);
-            _filterBank = (IdealBandpassFilterParams[])filterBank?.Empty2Null()?.Clone();
+            _filterBank = filterBank;
             _subBandMixingParams = subBandMixingParams;
             _harmonicGroups = GenerateHarmonicGroups(samplingRate, WindowSizeInSamples, patterns, harmonicsCount);
             _predictor = new MaxScorePredictor(ccaThreshold);
@@ -391,8 +391,7 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
         {
             if (count <= 0) return EmptyArray<Complex>.Instance;
             var complexArray = (reusableComplexArray == null || reusableComplexArray.Length != count) ? new Complex[count] : reusableComplexArray;
-            for (var i = 0; i < count; i++)
-                complexArray[i] = new Complex(samples[offset + i * stride], 0);
+            for (var i = 0; i < count; i++) complexArray[i] = new Complex(samples[offset + i * stride], 0);
             Fourier.Forward(complexArray);
             var dF = frequency / count;
             for (var i = 0; i < count; i++)
@@ -491,20 +490,20 @@ namespace SharpBCI.Paradigms.Speller.SSVEP
             }
             else
             {
-                var ccaMatrix = new double[_filterBank.Length, _harmonicGroups.Length];
+                var ccaMatrix = new double[_filterBank.Count, _harmonicGroups.Length];
                 _parallelPool.Batch(task =>
                 {
                     Complex[] complexArray = null;
                     var filteredSignal = new double[array.Length];
                     using (var coTaskArray = CoTaskArray<double>.Alloc(filteredSignal.Length))
-                        for (var f = task.TaskIndex; f < _filterBank.Length; f += task.TotalTask)
+                        for (var f = task.TaskIndex; f < _filterBank.Count; f += task.TotalTask)
                         {
-                            var bandpassFilter = _filterBank[f];
+                            var bandpassFilter = _filterBank[(int)f];
                             // Filtering
                             for (var i = 0; i < channelNum; i++)
                             {
                                 complexArray = IdealBandpassFilter(array, i, channelNum, (int)WindowSizeInSamples,
-                                    SamplingRate, bandpassFilter.LowCutOff, bandpassFilter.HighCutOff,
+                                    SamplingRate, bandpassFilter.LowCutoff, bandpassFilter.HighCutoff,
                                     filteredSignal, i, channelNum, complexArray);
                             }
                             Marshal.Copy(filteredSignal, 0, coTaskArray.Ptr, filteredSignal.Length);

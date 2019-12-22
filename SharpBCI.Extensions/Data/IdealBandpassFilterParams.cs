@@ -9,27 +9,27 @@ namespace SharpBCI.Extensions.Data
         public class Factory : ParameterizedObjectFactory<IdealBandpassFilterParams>
         {
 
-            private static readonly Parameter<double> LowCutOffFrequency = new Parameter<double>("Low Cut-off Frequency", 0);
+            private static readonly Parameter<double> LowCutoffFrequency = new Parameter<double>("Low Cut-off Frequency", 0);
 
-            private static readonly Parameter<double> HighCutOffFrequency = new Parameter<double>("Low Cut-off Frequency", 0);
+            private static readonly Parameter<double> HighCutoffFrequency = new Parameter<double>("Low Cut-off Frequency", 0);
 
             public override IdealBandpassFilterParams Create(IParameterDescriptor parameter, IReadonlyContext context) => 
-                new IdealBandpassFilterParams(LowCutOffFrequency.Get(context), HighCutOffFrequency.Get(context));
+                new IdealBandpassFilterParams(LowCutoffFrequency.Get(context), HighCutoffFrequency.Get(context));
 
             public override IReadonlyContext Parse(IParameterDescriptor parameter, IdealBandpassFilterParams idealBandpassFilterParams) => new Context
             {
-                [LowCutOffFrequency] = idealBandpassFilterParams.LowCutOff,
-                [HighCutOffFrequency] = idealBandpassFilterParams.HighCutOff,
+                [LowCutoffFrequency] = idealBandpassFilterParams.LowCutoff,
+                [HighCutoffFrequency] = idealBandpassFilterParams.HighCutoff,
             };
 
         }
 
-        public readonly double LowCutOff, HighCutOff;
+        public readonly double LowCutoff, HighCutoff;
 
-        public IdealBandpassFilterParams(double lowCutOff, double highCutOff)
+        public IdealBandpassFilterParams(double lowCutoff, double highCutoff)
         {
-            LowCutOff = lowCutOff;
-            HighCutOff = highCutOff;
+            LowCutoff = lowCutoff;
+            HighCutoff = highCutoff;
         }
 
         public static IdealBandpassFilterParams[] Parse(MatrixQuery matrixQuery)
@@ -43,7 +43,7 @@ namespace SharpBCI.Extensions.Data
             return bandpassFilters;
         }
 
-        public override string ToString() => $"{LowCutOff:G1}~{HighCutOff:G1}Hz";
+        public override string ToString() => $"{LowCutoff:G1}~{HighCutoff:G1}Hz";
 
     }
 
