@@ -18,12 +18,41 @@ namespace SharpBCI.Extensions.Presenters
     public class SelectablePresenter : IPresenter
     {
 
+        public class NamedValue
+        {
+
+            public readonly string Name;
+
+            public readonly object Value;
+
+            public NamedValue(KeyValuePair<string, object> pair) : this(pair.Key, pair.Value) { }
+
+            public NamedValue(string name, object value)
+            {
+                Name = name;
+                Value = value;
+            }
+
+            public static NamedValue[] Of<T>(IReadOnlyCollection<T> values, Func<T, string> toStringFunc)
+            {
+                var namedValues = new NamedValue[values.Count];
+                var i = 0;
+                foreach (var value in values) namedValues[i++] = new NamedValue(toStringFunc(value), value);
+                return namedValues;
+            }
+
+            public override int GetHashCode() => Name.GetHashCode();
+
+            public override bool Equals(object obj) => obj is NamedValue that && Equals(that.Name, Name) && Equals(that.Value, Value);
+
+            public override string ToString() => Name;
+
+        }
+
         private class ComboBoxAdapter : IPresentedParameterAdapter
         {
 
             private readonly IParameterDescriptor _parameter;
-
-            private readonly Func<object, string> _toStringFunc;
 
             private readonly ComboBox _comboBox;
 
@@ -37,10 +66,9 @@ namespace SharpBCI.Extensions.Presenters
 
             private bool _isValid = true;
 
-            public ComboBoxAdapter(IParameterDescriptor parameter, Func<object, string> toStringFunc, ComboBox comboBox, Action updateCallback)
+            public ComboBoxAdapter(IParameterDescriptor parameter, ComboBox comboBox, Action updateCallback)
             {
                 _parameter = parameter;
-                _toStringFunc = toStringFunc;
                 _comboBox = comboBox;
                 _updateAction = updateCallback;
                 if (comboBox.IsEditable)
@@ -89,10 +117,15 @@ namespace SharpBCI.Extensions.Presenters
                 }
                 set
                 {
-                    if (_comboBox.IsEditable)
-                        _comboBox.Text = value.ToString();
+                    string text;
+                    if (value is NamedValue named)
+                        text = named.Name;
                     else
-                        _comboBox.FindAndSelectFirstByString(_toStringFunc(value), 0);
+                        text = _parameter.ConvertValueToString(value);
+                    if (_comboBox.IsEditable)
+                        _comboBox.Text = text;
+                    else
+                        _comboBox.FindAndSelectFirstByString(text);
                 }
             }
 
@@ -149,7 +182,7 @@ namespace SharpBCI.Extensions.Presenters
             {
                 get
                 {
-                    var value = ToStringOverridenWrapper.TryUnwrap(_radioButtons.First(rb => rb.IsChecked ?? false).Content);
+                    var value = _radioButtons.First(rb => rb.IsChecked ?? false).Tag;
                     if (ReferenceEquals(NullValue, value)) value = null;
                     return _parameter.IsValidOrThrow(value);
                 }
@@ -190,7 +223,10 @@ namespace SharpBCI.Extensions.Presenters
         /// </summary>
         public static readonly NamedProperty<bool> UseRadioGroupProperty = new NamedProperty<bool>("UseRadioGroup", false);
 
-        public static readonly NamedProperty<Orientation> RadioGroupOrientationProperty = 
+        public static readonly NamedProperty<string> DisplayTextOfNullValueProperty = 
+            new NamedProperty<string>("DisplayTextOfNullValue", NullValue);
+
+        public static readonly NamedProperty<Orientation> RadioGroupOrientationProperty =
             new NamedProperty<Orientation>("RadioGroupOrientation", Orientation.Horizontal);
 
         public static readonly NamedProperty<Func<IParameterDescriptor, IEnumerable>> SelectableValuesFuncProperty = 
@@ -198,7 +234,7 @@ namespace SharpBCI.Extensions.Presenters
 
         public static readonly SelectablePresenter Instance = new SelectablePresenter();
 
-        private static IEnumerable GetSelectableValues(IParameterDescriptor param)
+        private static IEnumerable<NamedValue> GetNamedValues(IParameterDescriptor param)
         {
             IEnumerable items;
             if (SelectableValuesFuncProperty.TryGet(param.Metadata, out var selectableValuesFunc))
@@ -207,30 +243,43 @@ namespace SharpBCI.Extensions.Presenters
                 items = param.SelectableValues;
             else if (param.ValueType.IsEnum)
                 items = Enum.GetValues(param.ValueType);
-            else if (param.ValueType.IsNullableType(out var underlyingType) && underlyingType.IsEnum)
-                items = new object[] {NullValue}.Concat(Enum.GetValues(underlyingType).OfType<object>());
             else
                 throw new ProgrammingException("Parameter.SelectableValues or SelectablePresenter.SelectableValuesFuncProperty must be assigned");
-            return items;
+            var list = new LinkedList<NamedValue>();
+            if (items != null)
+            {
+                if (items is IDictionary dictionary)
+                    foreach (var key in dictionary.Keys)
+                    {
+                        var val = dictionary[key];
+                        list.AddLast(new NamedValue(param.ConvertValueToString(key), val));
+                    }
+                else
+                    foreach (var item in items)
+                        if (item != null)
+                            list.AddLast(item is NamedValue named ? named : new NamedValue(param.ConvertValueToString(item), item));
+            }
+            if (param.IsNullable) list.AddFirst(new NamedValue(DisplayTextOfNullValueProperty.Get(param.Metadata), NullValue));
+            return list;
         }
 
         public PresentedParameter Present(IParameterDescriptor param, Action updateCallback)
         {
             return UseRadioGroupProperty.Get(param.Metadata)
-                ? PresentRadioButtons(param, param.ConvertValueToString, updateCallback)
-                : PresentComboBox(param, param.ConvertValueToString, updateCallback);
+                ? PresentRadioButtons(param, updateCallback)
+                : PresentComboBox(param, updateCallback);
         }
 
-        public PresentedParameter PresentComboBox(IParameterDescriptor param, Func<object, string> toStringFunc, Action updateCallback)
+        public PresentedParameter PresentComboBox(IParameterDescriptor param, Action updateCallback)
         {
             var refreshable = RefreshableProperty.Get(param.Metadata);
             var customizable = CustomizableProperty.Get(param.Metadata);
             if (customizable && param.ValueType != typeof(string)) throw new ProgrammingException("customizable feature is only supported for string type");
             var comboBox = new ComboBox();
             comboBox.SelectionChanged += (sender, args) => updateCallback();
-            comboBox.ItemsSource = ToStringOverridenWrapper.Of(GetSelectableValues(param), toStringFunc);
+            comboBox.ItemsSource = GetNamedValues(param);
             comboBox.IsEditable = customizable;
-            var adapter = new ComboBoxAdapter(param, toStringFunc, comboBox, updateCallback);
+            var adapter = new ComboBoxAdapter(param, comboBox, updateCallback);
 
             if (!refreshable) return new PresentedParameter(param, comboBox, adapter);
 
@@ -255,7 +304,7 @@ namespace SharpBCI.Extensions.Presenters
             refreshValuesBtn.Click += (sender, args) =>
             {
                 var selected = comboBox.SelectedItem;
-                comboBox.ItemsSource = ToStringOverridenWrapper.Of(GetSelectableValues(param), toStringFunc);
+                comboBox.ItemsSource = GetNamedValues(param);
                 if (selected != null) adapter.Value = selected;
                 updateCallback();
             };
@@ -265,23 +314,24 @@ namespace SharpBCI.Extensions.Presenters
             return new PresentedParameter(param, grid, adapter);
         }
 
-        public PresentedParameter PresentRadioButtons(IParameterDescriptor param, Func<object, string> toStringFunc, Action updateCallback)
+        public PresentedParameter PresentRadioButtons(IParameterDescriptor param, Action updateCallback)
         {
             if (RefreshableProperty.Get(param.Metadata)) throw new ProgrammingException("refreshable feature not supported for radio button group style");
             if (CustomizableProperty.Get(param.Metadata)) throw new ProgrammingException("customizable feature not supported for radio button group style");
             var guid = Guid.NewGuid().ToString();
-            var radioButtons = (from object item in GetSelectableValues(param)
+            var radioButtons = (from item in GetNamedValues(param)
                 select new RadioButton
                 {
                     GroupName = guid,
-                    Content = ToStringOverridenWrapper.Wrap(item, toStringFunc),
+                    Content = item.Name,
                     Margin = new Thickness
                     {
                         Top = ViewConstants.MinorSpacing / 2.0,
                         Bottom = ViewConstants.MinorSpacing / 2.0,
                         Left = ViewConstants.MinorSpacing / 2.0,
                         Right = ViewConstants.MinorSpacing
-                    }
+                    },
+                    Tag = item.Value
                 }).ToList();
             var grid = new Grid {Margin = new Thickness(0, ViewConstants.MinorSpacing / 2.0, 0, 0)};
 
