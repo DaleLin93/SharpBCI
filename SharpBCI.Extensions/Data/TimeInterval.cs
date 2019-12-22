@@ -28,7 +28,7 @@ namespace SharpBCI.Extensions.Data
                 .Build();
 
             private static readonly Parameter<TimeUnit> Unit = Parameter<TimeUnit>.CreateBuilder("Unit")
-                .SetSelectablesForEnum()
+                .SetSelectableValuesForEnum()
                 .SetDefaultValue(TimeUnit.Millisecond)
                 .SetMetadata(ParameterizedObjectPresenter.ColumnWidthProperty, ViewConstants.Star1GridLength)
                 .Build();
