@@ -186,7 +186,7 @@
     <Compile Include="PersistenceHelper.cs" />
     <Compile Include="Parameter.cs" />
     <Compile Include="Patterns\SquarePattern.cs" />
-    <Compile Include="Patterns\LinearPattern.cs" />
+    <Compile Include="Patterns\TriangularPattern.cs" />
     <Compile Include="Patterns\TemporalPattern.cs" />
     <Compile Include="Patterns\Pattern.cs" />
     <Compile Include="Patterns\SinusoidalPattern.cs" />

@@ -44,7 +44,7 @@ namespace SharpBCI.Extensions.Patterns
         public double Sample(double t) => t * Frequency % 1 > 0.5 ? V2 : V1;
 
         [SuppressMessage("ReSharper", "CompareOfFloatsByEqualityOperator")]
-        public override string ToString() => $"Linear({V1:F2}~{V2:F2}@{Frequency:F1}Hz)";
+        public override string ToString() => $"Square({V1:F2}~{V2:F2}@{Frequency:F1}Hz)";
 
     }
 

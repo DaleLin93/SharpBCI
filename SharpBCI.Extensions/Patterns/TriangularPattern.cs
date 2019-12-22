@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 namespace SharpBCI.Extensions.Patterns
 {
 
-    public struct LinearPattern : ITemporalPattern
+    public struct TriangularPattern : ITemporalPattern
     {
 
         public const string V1Key = "V1";
@@ -20,7 +20,7 @@ namespace SharpBCI.Extensions.Patterns
         [JsonProperty(FrequencyKey)] public readonly double Frequency;
 
         [JsonConstructor]
-        public LinearPattern([JsonProperty(V1Key)] double v1, [JsonProperty(V2Key)] double v2, [JsonProperty(FrequencyKey)] double frequency)
+        public TriangularPattern([JsonProperty(V1Key)] double v1, [JsonProperty(V2Key)] double v2, [JsonProperty(FrequencyKey)] double frequency)
         {
             V1 = v1;
             V2 = v2;
@@ -31,14 +31,14 @@ namespace SharpBCI.Extensions.Patterns
         /// format: v1,v2@frequency
         /// </summary>
         [SuppressMessage("ReSharper", "MemberHidesStaticFromOuterClass")]
-        public static LinearPattern Parse(string expression)
+        public static TriangularPattern Parse(string expression)
         {
             var comma = expression.IndexOf(',');
             var at = expression.IndexOf('@', comma);
             var v1 = double.Parse(expression.Substring(0, comma));
             var v2 = double.Parse(expression.Substring(comma + 1, at - comma));
             var frequency = double.Parse(expression.Substring(0, at + 1));
-            return new LinearPattern(v1, v2, frequency);
+            return new TriangularPattern(v1, v2, frequency);
         }
 
         public double Sample(double t)
