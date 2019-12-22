@@ -669,7 +669,7 @@ namespace SharpBCI.Extensions
     public static class ParameterBuilderExt
     {
 
-        public static Parameter<T>.Builder SetSelectablesForEnum<T>(this Parameter<T>.Builder builder, bool setFirstAsDefault = false) where T : Enum
+        public static Parameter<T>.Builder SetSelectableValuesForEnum<T>(this Parameter<T>.Builder builder, bool setFirstAsDefault = false) where T : Enum
         {
             var values = EnumUtils.GetEnumValues<T>();
             if (values.Length == 0)

@@ -286,7 +286,7 @@ namespace SharpBCI.Paradigms.Speller
                 .Build();
 
             private static readonly Parameter<SpellerControlParadigm> ControlParadigm = Parameter<SpellerControlParadigm>.CreateBuilder("Control Paradigm")
-                .SetSelectablesForEnum(true)
+                .SetSelectableValuesForEnum(true)
                 .SetTypeConverters(SpellerParadigmExt.TypeConverter)
                 .Build();
 
