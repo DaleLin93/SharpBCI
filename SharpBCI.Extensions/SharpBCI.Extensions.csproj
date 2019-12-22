@@ -89,6 +89,7 @@
     <Compile Include="Apps\FileRenamingToolWindow.xaml.cs">
       <DependentUpon>FileRenamingToolWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AutoParameter.cs" />
     <Compile Include="Data\AutoParameterizedObject.cs" />
     <Compile Include="Data\ComplexObject.cs" />
     <Compile Include="Data\Dimensions.cs" />
