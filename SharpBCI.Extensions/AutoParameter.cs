@@ -53,19 +53,6 @@ namespace SharpBCI.Extensions
 
     }
 
-    [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method)]
-    public class AutoConstructorAttribute : Attribute { }
-
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public class AutoInjectAttribute : Attribute
-    {
-
-        [CanBeNull] public string Key { get; set; }
-
-        [CanBeNull] public string Name { get; set; }
-
-    }
-
     internal class AutoParameter : IParameterDescriptor
     {
 
