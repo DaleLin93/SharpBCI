@@ -130,7 +130,7 @@ namespace SharpBCI
                     var session = sessions[i] = new Session(App.Instance.Dispatcher, subject, formattedSessionDescriptors[i], 
                         baseClock, paradigmInstances[i], streamers, App.DataDir);
 
-                    new SessionConfig { Subject = subject, SessionDescriptor = sessionDescriptors[i], Paradigm = paradigms[i], Devices = devices }
+                    new SessionConfig {Subject = subject, SessionDescriptor = sessionDescriptors[i], Paradigm = paradigms[i], Devices = devices}
                         .JsonSerializeToFile(session.GetDataFileName(SessionConfig.FileSuffix), JsonUtils.PrettyFormat, Encoding.UTF8);
 
                     foreach (var entry in deviceConsumerLists)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Windows.Threading;
 using JetBrains.Annotations;
@@ -44,6 +45,8 @@ namespace SharpBCI.Core.Experiment
         public Session(Dispatcher dispatcher, string subject, string descriptor, IClock clock, 
             IParadigm paradigm, StreamerCollection streamerCollection, string dataFolder)
         {
+            var datetime = DateTime.Now.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture);
+            
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Subject = subject.Trim2Null() ?? throw new ArgumentException("'subject' cannot be blank");
             Descriptor = descriptor.Trim2Null() ?? throw new ArgumentException("'descriptor' cannot be blank");
@@ -52,7 +55,7 @@ namespace SharpBCI.Core.Experiment
             StreamerCollection = streamerCollection ?? throw new ArgumentNullException(nameof(streamerCollection));
 
             Screens = ScreenInfo.All;
-            DataFilePrefix = Path.Combine(dataFolder, GetFullSessionName(CreateTimestamp, subject, descriptor));
+            DataFilePrefix = Path.Combine(dataFolder, GetFullSessionName(datetime, subject, descriptor));
         }
 
         /// <summary>
@@ -72,7 +75,7 @@ namespace SharpBCI.Core.Experiment
         ///     Format: baseFolder\time-subject-descriptor
         /// </summary>
         [NotNull] 
-        public static string GetFullSessionName([CanBeNull] long? time, [NotNull] string subject, [NotNull] string descriptor) => 
+        public static string GetFullSessionName([CanBeNull] string time, [NotNull] string subject, [NotNull] string descriptor) => 
             (time == null ? $"{subject}-{descriptor}" : $"{time}-{subject}-{descriptor}").RemoveInvalidCharacterForFileName();
 
         private static void StartSession([NotNull] Session session)

@@ -159,10 +159,10 @@ namespace SharpBCI
 
         }
 
-        public static string GetFullSessionName(this SessionConfig sessionConfig, long? time = null) => 
+        public static string GetFullSessionName(this SessionConfig sessionConfig, string time = null) => 
             GetFullSessionName(sessionConfig.Subject, sessionConfig.SessionDescriptor, sessionConfig.Paradigm, time);
 
-        public static string GetFullSessionName(string subject, string sessionDescriptor, SerializedObject serializedParadigm, long? time = null)
+        public static string GetFullSessionName(string subject, string sessionDescriptor, SerializedObject serializedParadigm, string time = null)
         {
             IReadonlyContext context = null;
             if (serializedParadigm.Args != null && App.Instance.Registries.Registry<ParadigmTemplate>().LookUp(serializedParadigm.Id, out var paradigmTemplate))
@@ -170,7 +170,7 @@ namespace SharpBCI
             return GetFullSessionName(subject, sessionDescriptor, context, time);
         }
 
-        public static string GetFullSessionName(string subject, string sessionDescriptor, IReadonlyContext context, long? time = null)
+        public static string GetFullSessionName(string subject, string sessionDescriptor, IReadonlyContext context, string time = null)
         {
             if (context != null) sessionDescriptor = StringInterpolation(sessionDescriptor, context);
             return Session.GetFullSessionName(time, subject, sessionDescriptor);
