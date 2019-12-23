@@ -73,7 +73,7 @@ namespace SharpBCI.Paradigms.WebBrowser
             public class UserConfig
             {
 
-                public Uri HomePage;
+                public string HomePage;
 
                 public string WebRootDir;
 
@@ -113,11 +113,15 @@ namespace SharpBCI.Paradigms.WebBrowser
             private static readonly Parameter<bool> DebugInformation = new Parameter<bool>("Debug Information", false);
 
             private static readonly Parameter<Uri> HomePage = Parameter<Uri>.CreateBuilder("Home Page")
-                .SetDefaultValue(new Uri("http://www.google.com/"))
-                .SetMetadata(UriPresenter.SupportedSchemesProperty, new[] {"https", "http"})
+                .SetSelectableValues(new[] {new Uri("http://www.google.com/"), new Uri("http://www.baidu.com/"), new Uri("http://www.magi.com/"),}, true)
+                .SetValidator(uri => uri.Scheme.Equals("http") || uri.Scheme.Equals("https"))
+                .SetMetadata(Presenters.PresentTypeConverterProperty, TypeConverters.String2AbsoluteUri.Inverse())
+                .SetMetadata(TypeConvertedPresenter.ConvertedContextProperty, new ContextBuilder()
+                    .SetProperty(SelectablePresenter.CustomizableProperty, true)
+                    .Build())
                 .Build();
 
-            private static readonly Parameter<Path> WebRootDir = Parameter<Path>.CreateBuilder("Web Root Directory")
+            private static readonly Parameter<Path> WebRootDir = Parameter<Path>.CreateBuilder("Web-root Dir")
                 .SetDefaultValue(new Path(".\\"))
                 .SetMetadata(PathPresenter.PathTypeProperty, PathPresenter.PathType.Directory)
                 .SetMetadata(PathPresenter.CheckExistenceProperty, true)
@@ -207,7 +211,7 @@ namespace SharpBCI.Paradigms.WebBrowser
                 },
                 User = new Configuration.UserConfig
                 {
-                    HomePage = HomePage.Get(context),
+                    HomePage = HomePage.Get(context).ToString(),
                     WebRootDir = WebRootDir.Get(context).Value,
                     StimulationScheme = StimulationScheme.Get(context),
                     DwellSelectionDelay = DwellSelectionDelay.Get(context),

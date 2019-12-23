@@ -14,6 +14,8 @@ namespace SharpBCI.Extensions
         public static readonly TypeConverter<Color, uint> SdColor2UInt =
             TypeConverter<Color, uint>.Of(sdColor => sdColor.ToUIntArgb(), uintColor => uintColor.ToSdColor());
 
+        public static readonly ITypeConverter<string, Uri> String2AbsoluteUri = TypeConverter<string, Uri>.Of(str => new Uri(str, UriKind.Absolute), uri => uri.ToString());
+
         public static readonly ITypeConverter<double, float> Double2Float = TypeConverter<double, float>.Of(dVal => (float)dVal, fVal => fVal);
 
         public static readonly ITypeConverter<long, int> Long2Int = TypeConverter<long, int>.Of(lVal => (int)lVal, iVal => iVal);

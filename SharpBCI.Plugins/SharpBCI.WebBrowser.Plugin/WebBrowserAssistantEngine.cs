@@ -436,7 +436,7 @@ namespace SharpBCI.Paradigms.WebBrowser
                     _server.SendMessageToClient(client, new OutgoingMessage
                     {
                         Type = "Handshake", Debug = _paradigm.Config.System.DebugInformation, 
-                        HomePage = _paradigm.Config.User.HomePage?.ToString(),
+                        HomePage = _paradigm.Config.User.HomePage,
                         VisualSchemes = schemes,
                         MaxActiveDistance = _paradigm.Config.User.CursorMovementTolerance,
                         ConfirmationDelay = _paradigm.Config.User.ConfirmationDelay,
