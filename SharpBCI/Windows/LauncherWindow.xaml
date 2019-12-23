@@ -8,15 +8,15 @@
         mc:Ignorable="d"
         Title="SharpBCI Session Launcher" Background="{StaticResource BackgroundBrush}"
         Height="350" Width="600" MinHeight="350" MinWidth="550" ResizeMode="CanResize"
-        Loaded="Window_OnLoaded" LayoutUpdated="Window_OnLayoutUpdated" KeyDown="Window_OnKeyDown" Closing="Window_OnClosing" Closed="Window_OnClosed">
+        Loaded="Window_OnLoaded" LayoutUpdated="Window_OnLayoutUpdated" PreviewKeyDown="Window_OnPreviewKeyDown" Closing="Window_OnClosing" Closed="Window_OnClosed">
     <DockPanel>
         <!-- Menu -->
         <StackPanel DockPanel.Dock="Top">
             <Rectangle Style="{StaticResource HorizontalSeparatorLine}" Fill="#FFE2E2E2" />
             <Menu Background="#88FAFAFA">
                 <MenuItem Header="File" SubmenuOpened="MenuItem_OnSubmenuOpened">
-                    <MenuItem Header="Open Session Config from..." Click="OpenFromMenuItem_OnClick" />
-                    <MenuItem Header="Save Session Config as..." Click="SaveAsMenuItem_OnClick" />
+                    <MenuItem Header="Open Session Config from... (Ctrl+L)" Click="OpenFromMenuItem_OnClick" />
+                    <MenuItem Header="Save Session Config as... (Ctrl+S)" Click="SaveAsMenuItem_OnClick" />
                     <Separator/>
                     <MenuItem Header="New Multi-Session Config" Click="NewMultiSessionConfigMenuItem_OnClick" />
                     <MenuItem Header="Open Multi-Session Config" Click="OpenMultiSessionConfigMenuItem_OnClick" />

@@ -781,9 +781,23 @@ namespace SharpBCI.Windows
             _needResizeWindow = false;
         }
 
-        private void Window_OnKeyDown(object sender, KeyEventArgs e)
+        private void Window_OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyStates == Keyboard.GetKeyStates(Key.Return) && Keyboard.Modifiers == ModifierKeys.Alt) StartSession();
+            if (e.KeyStates == Keyboard.GetKeyStates(Key.Return) && Keyboard.Modifiers == ModifierKeys.Alt)
+            {
+                StartSession();
+                e.Handled = true;
+            }
+            if (e.KeyStates == Keyboard.GetKeyStates(Key.S) && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                SaveAsMenuItem_OnClick(sender, e);
+                e.Handled = true;
+            }
+            if (e.KeyStates == Keyboard.GetKeyStates(Key.L) && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                OpenFromMenuItem_OnClick(sender, e);
+                e.Handled = true;
+            }
         }
 
         private void Window_OnClosing(object sender, EventArgs e)

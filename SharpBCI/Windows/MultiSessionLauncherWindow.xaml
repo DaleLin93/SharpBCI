@@ -45,6 +45,7 @@
                 <GridView>
                     <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Path=SessionDescriptor}" />
                     <GridViewColumn Header="Paradigm Id" DisplayMemberBinding="{Binding Path=Paradigm.ParadigmId}" />
+                    <GridViewColumn Header="File Name" DisplayMemberBinding="{Binding Path=Paradigm.FileName}" />
                 </GridView>
             </ListView.View>
             <ListView.ContextMenu>

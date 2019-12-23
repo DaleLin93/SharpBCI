@@ -40,6 +40,8 @@ namespace SharpBCI.Windows
                 Value = value;
             }
 
+            public string FileName => Path.GetFileName(FilePath);
+
         }
 
         public class ParadigmItem : FileItem<SerializedObject>
@@ -187,11 +189,12 @@ namespace SharpBCI.Windows
 
         private void SaveDeviceConfig(string path) => DeviceConfigPanel.DeviceConfigs.JsonSerializeToFile(path, JsonUtils.PrettyFormat, JsonUtils.DefaultEncoding); 
 
-        private void Clear()
+        private void Clear(bool newFile = false)
         {
             SubjectTextBox.Text = "";
             _sessionListViewItems.Clear();
             DeviceConfigPanel.DeviceConfigs = EmptyArray<DeviceConfig>.Instance;
+            if (newFile) _msCfgFile = null;
         }
 
         private void RunSessions_OnClick(object sender, RoutedEventArgs e) => Start();
@@ -222,7 +225,7 @@ namespace SharpBCI.Windows
             e.Handled = true;
         }
 
-        private void NewMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e) => Clear();
+        private void NewMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e) => Clear(true);
 
         private void OpenMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
