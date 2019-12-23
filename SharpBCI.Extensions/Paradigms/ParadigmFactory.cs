@@ -177,7 +177,7 @@ namespace SharpBCI.Extensions.Paradigms
     public class AutoParadigmFactory : ParadigmFactory
     {
 
-        private interface IInitializer
+        protected interface IInitializer
         {
 
             IDescriptor[] Descriptors { get; }
@@ -186,7 +186,7 @@ namespace SharpBCI.Extensions.Paradigms
 
         }
 
-        private class NullInitializer : IInitializer
+        protected class NullInitializer : IInitializer
         {
 
             internal static readonly NullInitializer Instance = new NullInitializer();
@@ -199,7 +199,7 @@ namespace SharpBCI.Extensions.Paradigms
 
         }
 
-        private class ValueInitializer : IInitializer
+        protected class ValueInitializer : IInitializer
         {
 
             private readonly AutoParameter _parameter;
@@ -224,7 +224,7 @@ namespace SharpBCI.Extensions.Paradigms
 
         }
 
-        private class ObjectInitializer : IInitializer
+        protected class ObjectInitializer : IInitializer
         {
 
             private readonly FieldInfo _field;
@@ -269,7 +269,6 @@ namespace SharpBCI.Extensions.Paradigms
             }
 
         }
-
 
         private readonly IDictionary<Type, IGroupDescriptor[]> _descriptorsDict = new Dictionary<Type, IGroupDescriptor[]>();
 

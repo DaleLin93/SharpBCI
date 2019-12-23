@@ -99,7 +99,7 @@ namespace SharpBCI.Paradigms.WebBrowser
         {
             _clock = clock;
             _gazePointProvider = gazePointProvider;
-            _cancellable = userConfig.TrialCancellable;
+            _cancellable = userConfig.CancelByMovement;
             _cursorMovementTolerance = userConfig.CursorMovementTolerance;
             _dwellToSelectDelay = userConfig.DwellSelectionDelay;
 
@@ -158,9 +158,9 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private const int AbsentFrequencyIndex = -1;
 
-        private static readonly Logger Logger = Logger.GetLogger(typeof(WebBrowserAssistantEngine));
+        private const int SsvepDelayMillis = 140;
 
-        private static readonly float[] Frequencies = { 13, 14, 15, 16 };
+        private static readonly Logger Logger = Logger.GetLogger(typeof(WebBrowserAssistantEngine));
 
         private static readonly string[] IndicatorBorderThicknesses = { "2px" };
 
@@ -168,8 +168,6 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         [SuppressMessage("ReSharper", "StringLiteralTypo")] 
         private static readonly string[] VisualColors = { "deepskyblue", "red", "orange", "lightgreen" };
-
-        private static readonly float[] ExtraFrequencies = {13.5F, 14.5F, 15.5F};
 
         private readonly object _modeLock = new object();
 
@@ -198,6 +196,8 @@ namespace SharpBCI.Paradigms.WebBrowser
         private readonly ISsvepIdentifier _navigatingSsvepDetector;
 
         private readonly ISsvepIdentifier _spellingSsvepDetector;
+
+        private readonly int _frequencyCount;
 
         private Mode _mode = Mode.Normal;
 
@@ -240,18 +240,19 @@ namespace SharpBCI.Paradigms.WebBrowser
             _dwellTrialController.Triggered += (sender, e) => _trialStartEvent.Set();
             _dwellTrialController.Cancelled += (sender, e) => _trialCancelled.Set();
 
-            var filterBank = new[]
-            {
-                new IdealBandpassFilterParams(12, 90), 
-                new IdealBandpassFilterParams(24, 90)
-            };
-            var frequencyPatterns = Frequencies.Concat(ExtraFrequencies).Select(f => new CompositeTemporalPattern<SinusoidalPattern>(new SinusoidalPattern(f))).ToArray();
+            var stimulationScheme = paradigm.Config.User.StimulationScheme;
+            var samplingRate = _biosignalStreamer.BiosignalSource.Frequency;
+            var frequencies = stimulationScheme.Frequencies;
+            var interFrequencies = new float[frequencies.Count - 1];
+            for (var i = 0; i < interFrequencies.Length; i++) interFrequencies[i] = (frequencies[i] + frequencies[i + 1]) / 2;
+            var frequencyPatterns = frequencies.Concat(interFrequencies).Select(f => new CompositeTemporalPattern<SinusoidalPattern>(new SinusoidalPattern(f))).ToArray();
             var bandMixingParams = new SubBandMixingParams(1.25, 0.25);
             var channels = paradigm.Config.System.Channels.Enumerate(1, _biosignalStreamer.BiosignalSource.ChannelNum).Select(i => (uint) (i - 1)).ToArray();
-            _navigatingSsvepDetector = new HybridSsvepIdentifier(session.Clock, 4, frequencyPatterns, filterBank, bandMixingParams, 2, 0, channels,
-                _biosignalStreamer.BiosignalSource.Frequency, paradigm.Config.User.NavigatingTrialDuration, 0);
-            _spellingSsvepDetector = new HybridSsvepIdentifier(session.Clock, 4, frequencyPatterns, filterBank, bandMixingParams, 2, 0, channels,
-                _biosignalStreamer.BiosignalSource.Frequency, paradigm.Config.User.SpellingTrialDuration, 0);
+            _navigatingSsvepDetector = new HybridSsvepIdentifier(session.Clock, 4, frequencyPatterns, stimulationScheme.FilterBank, bandMixingParams,
+                stimulationScheme.HarmonicCount, 0, channels, samplingRate, paradigm.Config.User.StimulationDuration.Navigating, 0);
+            _spellingSsvepDetector = new HybridSsvepIdentifier(session.Clock, 4, frequencyPatterns, stimulationScheme.FilterBank, bandMixingParams, 
+                stimulationScheme.HarmonicCount, 0, channels, samplingRate, paradigm.Config.User.StimulationDuration.Spelling, 0);
+            _frequencyCount = stimulationScheme.Frequencies.Count;
         }
 
         ~WebBrowserAssistantEngine()
@@ -284,8 +285,8 @@ namespace SharpBCI.Paradigms.WebBrowser
             _server.Start();
             _dwellTrialController.Start();
 
-            _navigatingSsvepDetector.IsActive = true;
-            _spellingSsvepDetector.IsActive = true;
+            _navigatingSsvepDetector.IsActive = false;
+            _spellingSsvepDetector.IsActive = false;
 
             _markerStreamer.AttachFilter(_modeOnSetInterceptor);
             _biosignalStreamer.AttachConsumer(_navigatingSsvepDetector);
@@ -337,19 +338,18 @@ namespace SharpBCI.Paradigms.WebBrowser
                 }
                 catch (ThreadAbortException) { return; }
                 catch (ThreadInterruptedException) { }
-                catch (Exception e)
-                {
-                    Logger.Error("RunTrials", e);
-                }
+                catch (Exception e) { Logger.Error("RunTrials", e); }
             }
         }
 
         private void RunTrial([NotNull] WebBrowserAssistantServer.Client client)
         {
             var scene = client.Scene;
+            var dimensions = client.Dimensions;
             var detector = scene == Scene.Keyboard ? _spellingSsvepDetector : _navigatingSsvepDetector;
-            var edgeScrollRatio = _paradigm.Config.User.EdgeScrollRatio;
-            var edgeScrolling = !double.IsNaN(edgeScrollRatio);
+            var edgeScrolling = _paradigm.Config.User.EnableEdgeScrolling && dimensions != null;
+            var edgeScrollHotAreaSize = _paradigm.Config.User.EdgeScrollingHotAreaSize;
+            var edgeScrollSpeed = _paradigm.Config.User.EdgeScrollingSpeed;
 
             /* Initialize signals. */
             _dwellTrialController.Reset();
@@ -362,36 +362,47 @@ namespace SharpBCI.Paradigms.WebBrowser
                 while (!_trialStartEvent.WaitOne(TimeSpan.FromMilliseconds(20)))
                 {
                     if (!_gazePointProvider.TryGetCurrentPosition(out gazePoint)) continue;
-                    var area = GetGazeArea(client, edgeScrollRatio, gazePoint);
+                    var area = GetGazeArea(dimensions, edgeScrollHotAreaSize, gazePoint);
                     if (area == 0) continue;
-                    SendScroll(client, new Point {X = 0, Y = area * 20});
+                    var verticalScrollDistance = dimensions.WindowInnerSize.Height * edgeScrollSpeed;
+                    SendScroll(client, new Point {X = 0, Y = area * verticalScrollDistance});
                 }
             else
                 _trialStartEvent.WaitOne();
             if (!_gazePointProvider.TryGetCurrentPosition(out gazePoint)) return;
             _server.SendMessageToClient(client, new OutgoingMessage { Type = "StartTrial", GazePoint = gazePoint });
-
-            /* Waiting for the ending of trial or cancelled by system. */
-            if (!WaitForEndOfTrial(client, (int)(detector.WindowSizeInSecs * 1000 + 200))) return;
-            _server.SendMessageToClient(client, new OutgoingMessage { Type = "EndTrial" });
+            
+            var cancelled = true;
+            detector.IsActive = true;
+            try
+            {
+                /* Waiting for the ending of trial or cancelled by system. */
+                var stimulationMillis = (int) (detector.WindowSizeInSecs * 1000);
+                cancelled = _trialCancelled.WaitOne(stimulationMillis + SsvepDelayMillis);
+                if (cancelled) return;
+                _server.SendMessageToClient(client, new OutgoingMessage {Type = "EndTrial"});
+            }
+            finally
+            {
+                detector.IsActive = false;
+                if (cancelled) SendIdentifiedFrequency(client, AbsentFrequencyIndex);
+            }
 
             /* Send identified frequency index. */
             var result = detector.Identify();
-            SendIdentifiedFrequency(client, result.IsValidResult(Frequencies.Length) ? result.FrequencyIndex : AbsentFrequencyIndex);
+            SendIdentifiedFrequency(client, result.State == IdentificationState.Success ? result.FrequencyIndex : AbsentFrequencyIndex);
             Logger.Info("RunTrial", "result", result);
         }
 
         private void InterruptTrial() => _thread?.Interrupt();
 
-        private int GetGazeArea([NotNull] WebBrowserAssistantServer.Client client, double edgeScrollRatio, Point gazePoint)
+        private int GetGazeArea(WebBrowserAssistantServer.ClientDimensions dimensions, Rectangle hotAreaSize, Point gazePoint)
         {
-            var dimensions = client.Dimensions;
-            if (dimensions == null) return 0;
             var x = gazePoint.X - dimensions.WindowPosition.X;
             var y = gazePoint.Y - dimensions.WindowPosition.Y;
-            var horizontalSpacing = dimensions.WindowOuterSize.Width / 4.0;
+            var horizontalSpacing = dimensions.WindowOuterSize.Width * (1 - hotAreaSize.Width) / 2;
             if (x < horizontalSpacing || x >= dimensions.WindowOuterSize.Width - horizontalSpacing) return 0;
-            var contentOffset = dimensions.WindowOuterSize.Height * edgeScrollRatio;
+            var contentOffset = dimensions.WindowOuterSize.Height * hotAreaSize.Height;
             var contentHeight = dimensions.WindowOuterSize.Height - contentOffset * 2;
             if (y >= contentOffset && y <= contentHeight + contentOffset) return 0;
             dimensions.IsReachBounds(3, out _, out var topReached, out _, out var bottomReached);
@@ -400,37 +411,24 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private void SendIdentifiedFrequency([NotNull] WebBrowserAssistantServer.Client client, int frequencyIndex)
         {
-            if (frequencyIndex < 0 || frequencyIndex >= Frequencies.Length) frequencyIndex = AbsentFrequencyIndex;
-            _server.SendMessageToClient(client, new OutgoingMessage { Type = "Frequency", FrequencyIndex = frequencyIndex });
+            if (frequencyIndex < 0 || frequencyIndex >= _frequencyCount) frequencyIndex = AbsentFrequencyIndex;
+            _server.SendMessageToClient(client, new OutgoingMessage {Type = "Frequency", FrequencyIndex = frequencyIndex});
         }
 
-        private void SendScroll([NotNull] WebBrowserAssistantServer.Client client, Point scrollDistance) => 
-            _server.SendMessageToClient(client, new OutgoingMessage {Type = "Scroll", ScrollDistance = scrollDistance });
-
-        private bool WaitForEndOfTrial([NotNull] WebBrowserAssistantServer.Client client, int waitForTimeMillis)
-        {
-            var cancelled = true;
-            try
-            {
-                cancelled = _trialCancelled.WaitOne(waitForTimeMillis);
-            }
-            finally
-            {
-                if (cancelled) SendIdentifiedFrequency(client, AbsentFrequencyIndex);
-            }
-            return !cancelled;
-        }
-
+        private void SendScroll([NotNull] WebBrowserAssistantServer.Client client, Point scrollDistance) =>
+            _server.SendMessageToClient(client, new OutgoingMessage {Type = "Scroll", ScrollDistance = scrollDistance});
+        
         void WebBrowserAssistantServer.IClientMessageHandler.Handle(WebBrowserAssistantServer.Client client, IncomingMessage message)
         {
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (message.Type)
             {
                 case "Handshake":
-                    var schemes = new OutgoingMessage.VisualScheme[Frequencies.Length];
-                    for (var i = 0; i < Frequencies.Length; i++)
+                    var frequencies = _paradigm.Config.User.StimulationScheme.Frequencies;
+                    var schemes = new OutgoingMessage.VisualScheme[frequencies.Count];
+                    for (var i = 0; i < frequencies.Count; i++)
                     {
-                        schemes[i].Frequency = Frequencies[i];
+                        schemes[i].Frequency = frequencies[i];
                         schemes[i].BorderThickness = IndicatorBorderThicknesses[i % IndicatorBorderThicknesses.Length];
                         schemes[i].BorderStyle = IndicatorBorderStyles[i % IndicatorBorderStyles.Length];
                         schemes[i].Color = VisualColors[i % VisualColors.Length];
@@ -442,7 +440,7 @@ namespace SharpBCI.Paradigms.WebBrowser
                         VisualSchemes = schemes,
                         MaxActiveDistance = _paradigm.Config.User.CursorMovementTolerance,
                         ConfirmationDelay = _paradigm.Config.User.ConfirmationDelay,
-                        EdgeScrolling = !double.IsNaN(_paradigm.Config.User.EdgeScrollRatio),
+                        EdgeScrolling = _paradigm.Config.User.EnableEdgeScrolling,
                         StimulationSize = new Point
                         {
                             X = _paradigm.Config.User.StimulationSize.Width,

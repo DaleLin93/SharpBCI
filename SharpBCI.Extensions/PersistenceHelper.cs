@@ -17,8 +17,14 @@ namespace SharpBCI.Extensions
 
         public static ContextProperty<ITypeConverter> PersistentTypeConverterProperty = new ContextProperty<ITypeConverter>();
 
-        public static bool TryGetPersistentTypeConverter(this IParameterDescriptor parameter, out ITypeConverter converter) => 
-            PersistentTypeConverterProperty.TryGet(parameter.Metadata, out converter) && converter != null;
+        public static bool TryGetPersistentTypeConverter(this IParameterDescriptor parameter, out ITypeConverter converter)
+        {
+            var flag = PersistentTypeConverterProperty.TryGet(parameter.Metadata, out converter) && converter != null;
+            if (!flag) return false;
+            if (!converter.InputType.IsAssignableFrom(parameter.ValueType)) 
+                throw new ArgumentException($"invalid type converter ({converter.InputType.Name}<==>{converter.OutputType.Name}) for parameter '{parameter.Key}'.");
+            return true;
+        }
 
         public static IDictionary<string, string> SerializeArgs(this IEnumerable<IParameterDescriptor> parameters, IReadonlyContext context)
         {
@@ -70,7 +76,8 @@ namespace SharpBCI.Extensions
                 var context = new Context();
                 var strParams = JsonUtils.Deserialize<Dictionary<string, string>>(value);
                 foreach (var p in factory.GetParameters(parameter))
-                    context.Set(p, DeserializeParam(p, strParams[p.Key]));
+                    if (strParams.TryGetValue(p.Key, out var val))
+                        context.Set(p, DeserializeParam(p, val));
                 return factory.Create(parameter, context);
             }
             return value == null ? null : JsonUtils.Deserialize(value, parameter.ValueType);

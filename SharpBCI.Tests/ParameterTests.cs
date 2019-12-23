@@ -30,11 +30,11 @@ namespace SharpBCI.Tests
 
             var p0 = Parameter<NodeType>.OfEnum("Node Type");
             var p1 = Parameter<NodeType>.CreateBuilder("Node Type")
-                .SetSelectablesForEnum(true)
+                .SetSelectableValuesForEnum(true)
                 .SetTypeConverters(typeConverter1)
                 .Build();
             var p2 = Parameter<NodeType>.CreateBuilder("Node Type")
-                .SetSelectablesForEnum(true)
+                .SetSelectableValuesForEnum(true)
                 .SetTypeConverters(typeConverter2)
                 .Build();
 

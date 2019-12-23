@@ -11,14 +11,14 @@ namespace SharpBCI.Extensions.Data
     public sealed class AutoParameterizedObjectFactory : IParameterizedObjectFactory
     {
 
-        private struct AutoParameterizedObjectMeta
+        private struct ParameterMeta
         {
 
             [NotNull] public readonly Func<IParameterizedObject> Constructor;
 
             [NotNull] public readonly AutoParameter[] Parameters;
 
-            public AutoParameterizedObjectMeta([NotNull] Func<IParameterizedObject> constructor, [NotNull] AutoParameter[] parameters)
+            public ParameterMeta([NotNull] Func<IParameterizedObject> constructor, [NotNull] AutoParameter[] parameters)
             {
                 Constructor = constructor;
                 Parameters = parameters;
@@ -26,10 +26,10 @@ namespace SharpBCI.Extensions.Data
 
         }
 
-        private readonly IDictionary<Type, AutoParameterizedObjectMeta> _autoParameters = new Dictionary<Type, AutoParameterizedObjectMeta>();
+        private readonly IDictionary<Type, ParameterMeta> _autoParameters = new Dictionary<Type, ParameterMeta>();
 
         // ReSharper disable once SuggestBaseTypeForParameter
-        private AutoParameterizedObjectMeta GetMeta(IParameterDescriptor parameter)
+        private ParameterMeta GetMeta(IParameterDescriptor parameter)
         {
             if (_autoParameters.TryGetValue(parameter.ValueType, out var result)) return result;
             if (!typeof(IParameterizedObject).IsAssignableFrom(parameter.ValueType)) throw new ArgumentException("IParameterizedObject interface is required");
@@ -49,7 +49,7 @@ namespace SharpBCI.Extensions.Data
                 if (attribute == null) continue;
                 parameters.AddLast(new AutoParameter(field, attribute));
             }
-            return _autoParameters[parameter.ValueType] = new AutoParameterizedObjectMeta(constructor, parameters.ToArray());
+            return _autoParameters[parameter.ValueType] = new ParameterMeta(constructor, parameters.ToArray());
         }
 
         public IReadOnlyCollection<IParameterDescriptor> GetParameters(IParameterDescriptor parameter) => GetMeta(parameter).Parameters.ToArray<IParameterDescriptor>();

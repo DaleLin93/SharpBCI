@@ -18,37 +18,6 @@ namespace SharpBCI.Extensions.Presenters
     public class SelectablePresenter : IPresenter
     {
 
-        public class NamedValue
-        {
-
-            public readonly string Name;
-
-            public readonly object Value;
-
-            public NamedValue(KeyValuePair<string, object> pair) : this(pair.Key, pair.Value) { }
-
-            public NamedValue(string name, object value)
-            {
-                Name = name;
-                Value = value;
-            }
-
-            public static NamedValue[] Of<T>(IReadOnlyCollection<T> values, Func<T, string> toStringFunc)
-            {
-                var namedValues = new NamedValue[values.Count];
-                var i = 0;
-                foreach (var value in values) namedValues[i++] = new NamedValue(toStringFunc(value), value);
-                return namedValues;
-            }
-
-            public override int GetHashCode() => Name.GetHashCode();
-
-            public override bool Equals(object obj) => obj is NamedValue that && Equals(that.Name, Name) && Equals(that.Value, Value);
-
-            public override string ToString() => Name;
-
-        }
-
         private class ComboBoxAdapter : IPresentedParameterAdapter
         {
 
@@ -111,14 +80,14 @@ namespace SharpBCI.Extensions.Presenters
             {
                 get
                 {
-                    var value = _comboBox.IsEditable ? _comboBox.Text : ToStringOverridenWrapper.TryUnwrap(_comboBox.SelectedValue);
+                    var value = _comboBox.IsEditable ? _comboBox.Text : ((INamedObject)_comboBox.SelectedValue)?.Value;
                     if (ReferenceEquals(NullValue, value)) value = null;
                     return _parameter.IsValidOrThrow(value);
                 }
                 set
                 {
                     string text;
-                    if (value is NamedValue named)
+                    if (value is INamed named)
                         text = named.Name;
                     else
                         text = _parameter.ConvertValueToString(value);
@@ -229,12 +198,12 @@ namespace SharpBCI.Extensions.Presenters
         public static readonly NamedProperty<Orientation> RadioGroupOrientationProperty =
             new NamedProperty<Orientation>("RadioGroupOrientation", Orientation.Horizontal);
 
-        public static readonly NamedProperty<Func<IParameterDescriptor, IEnumerable>> SelectableValuesFuncProperty = 
+        public static readonly NamedProperty<Func<IParameterDescriptor, IEnumerable>> SelectableValuesFuncProperty =
             new NamedProperty<Func<IParameterDescriptor, IEnumerable>>("SelectableValuesFunc");
 
         public static readonly SelectablePresenter Instance = new SelectablePresenter();
 
-        private static IEnumerable<NamedValue> GetNamedValues(IParameterDescriptor param)
+        private static IEnumerable<INamedObject> GetNamedValues(IParameterDescriptor param)
         {
             IEnumerable items;
             if (SelectableValuesFuncProperty.TryGet(param.Metadata, out var selectableValuesFunc))
@@ -245,21 +214,32 @@ namespace SharpBCI.Extensions.Presenters
                 items = Enum.GetValues(param.ValueType);
             else
                 throw new ProgrammingException("Parameter.SelectableValues or SelectablePresenter.SelectableValuesFuncProperty must be assigned");
-            var list = new LinkedList<NamedValue>();
+            var list = new LinkedList<INamedObject>();
             if (items != null)
             {
                 if (items is IDictionary dictionary)
                     foreach (var key in dictionary.Keys)
                     {
                         var val = dictionary[key];
-                        list.AddLast(new NamedValue(param.ConvertValueToString(key), val));
+                        list.AddLast(new NamedObject(key.ConvertToString(), val));
                     }
                 else
                     foreach (var item in items)
                         if (item != null)
-                            list.AddLast(item is NamedValue named ? named : new NamedValue(param.ConvertValueToString(item), item));
+                            switch (item)
+                            {
+                                case INamedObject namedObject:
+                                    list.AddLast(namedObject);
+                                    break;
+                                case INamed named:
+                                    list.AddLast(new NamedObject(named.Name, named));
+                                    break;
+                                default:
+                                    list.AddLast(new NamedObject(param.ConvertValueToString(item), item));
+                                    break;
+                            }
             }
-            if (param.IsNullable) list.AddFirst(new NamedValue(DisplayTextOfNullValueProperty.Get(param.Metadata), NullValue));
+            if (param.IsNullable) list.AddFirst(new NamedObject(DisplayTextOfNullValueProperty.Get(param.Metadata), NullValue));
             return list;
         }
 

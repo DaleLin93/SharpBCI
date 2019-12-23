@@ -269,6 +269,8 @@ namespace SharpBCI.Extensions.Presenters
             throw new Exception("unreachable statement");
         }
 
+        public static string ConvertToString(this object value) => value == null ? NullPlaceholder : ConvertValueToString(value.GetType(), value);
+
         public static string ConvertValueToString(this IParameterDescriptor parameter, object val)
         {
             if (TryGetPresentTypeConverter(parameter, out var converter)) val = converter.ConvertForward(val);
