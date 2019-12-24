@@ -11,6 +11,7 @@ using MarukoLib.Persistence;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions.IO.Devices;
+using SharpBCI.Extensions.IO.Devices.MarkerSources;
 using SharpBCI.Plugins;
 
 namespace SharpBCI
@@ -18,6 +19,8 @@ namespace SharpBCI
 
     public class Bootstrap
     {
+
+        public static readonly DeviceType MarkerSourceDeviceType = DeviceType.Of(typeof(IMarkerSource));
 
         public interface ISessionListener
         {
@@ -85,38 +88,34 @@ namespace SharpBCI
                 formattedSessionDescriptors[i] = SessionConfigExt.StringInterpolation(sessionDescriptors[i], paradigmContext);
             }
 
-            var deviceTypes = App.Instance.Registries.Registry<DeviceTypeAddOn>().Registered.Select(pdt => pdt.DeviceType).ToArray();
+            var deviceTypeMap = App.Instance.Registries.Registry<DeviceTypeAddOn>().Registered.Select(pdt => pdt.DeviceType).ToDictionary(dt => dt.Name);
 
-            /* Constructs device map. */
-            var deviceMap = new Dictionary<string, DeviceConfig>();
-            if (devices != null)
-                foreach (var device in devices)
-                    if (!deviceMap.ContainsKey(device.DeviceType))
-                        deviceMap[device.DeviceType] = device;
-
-            /* Parse consumer configurations. */
+            /* Constructs device map and consumers map. */
+            var deviceMap = new Dictionary<DeviceType, DeviceConfig>();
             var deviceConsumerLists = new Dictionary<DeviceType, IList<TemplateWithArgs<ConsumerTemplate>>>();
-            foreach (var deviceType in deviceTypes)
-            {
-                if (!deviceMap.TryGetValue(deviceType.Name, out var deviceArgs)) continue;
-                var list = new List<TemplateWithArgs<ConsumerTemplate>>();
-                deviceConsumerLists[deviceType] = list;
-                foreach (var consumerConf in deviceArgs.Consumers)
-                {
-                    if (consumerConf.Id == null) continue;
-                    if (!App.Instance.Registries.Registry<ConsumerTemplate>().LookUp(consumerConf.Id, out var consumerTemplate))
-                        throw new ArgumentException($"Cannot find specific consumer by id: {consumerConf.Id}");
-                    list.Add(new TemplateWithArgs<ConsumerTemplate>(consumerTemplate, consumerTemplate.DeserializeArgs(consumerConf.Args)));
-                }
-            }
+            if (devices != null)
+                foreach (var deviceConf in devices)
+                    if (deviceTypeMap.TryGetValue(deviceConf.DeviceType, out var deviceType) && !deviceMap.ContainsKey(deviceType))
+                    {
+                        deviceMap[deviceType] = deviceConf;
+                        var list = new List<TemplateWithArgs<ConsumerTemplate>>();
+                        deviceConsumerLists[deviceType] = list;
+                        if (deviceConf.Consumers == null) continue;
+                        foreach (var consumerConf in deviceConf.Consumers)
+                        {
+                            if (consumerConf.Id == null) continue;
+                            if (!App.Instance.Registries.Registry<ConsumerTemplate>().LookUp(consumerConf.Id, out var consumerTemplate))
+                                throw new ArgumentException($"Cannot find specific consumer by id: {consumerConf.Id}");
+                            list.Add(new TemplateWithArgs<ConsumerTemplate>(consumerTemplate, consumerTemplate.DeserializeArgs(consumerConf.Args)));
+                        }
+                    }
 
             /* IMPORTANT: ALL PARADIGM RELATED CONFIG SHOULD BE CHECKED BEFORE STEAMERS WERE INITIALIZED */
-
-            var deviceInstances = InitiateDevices(deviceTypes, deviceMap);
+            var deviceInstances = InitiateDevices(deviceTypeMap.Values, deviceMap);
 
             var sessions = new Session[sessionNum];
             var baseClock = Clock.SystemMillisClock;
-            var streamers = CreateStreamerCollection(deviceTypes, deviceInstances, baseClock, out var deviceStreamers);
+            var streamers = CreateStreamerCollection(deviceTypeMap.Values, deviceInstances, baseClock, out var deviceStreamers);
 
             sessionListener?.BeforeAllSessionsStart();
 
@@ -174,12 +173,12 @@ namespace SharpBCI
             sessionListener?.AfterAllSessionsCompleted(sessions);
         }
 
-        public static IDictionary<DeviceType, IDevice> InitiateDevices(IReadOnlyCollection<DeviceType> deviceTypes, IDictionary<string, DeviceConfig> devices)
+        public static IDictionary<DeviceType, IDevice> InitiateDevices(IEnumerable<DeviceType> deviceTypes, IDictionary<DeviceType, DeviceConfig> devices)
         {
             var deviceLookups = new Dictionary<DeviceType, TemplateWithArgs<DeviceTemplate>>();
             foreach (var deviceType in deviceTypes)
             {
-                if (!devices.TryGetValue(deviceType.Name, out var entity) || entity.Device.Id == null)
+                if (!devices.TryGetValue(deviceType, out var entity) || entity.Device.Id == null)
                 {
                     if (deviceType.IsRequired) throw new ArgumentException($"Device type '{deviceType.DisplayName}' is required.");
                     continue;
@@ -212,7 +211,7 @@ namespace SharpBCI
         /// <summary>
         /// Create streamer collection by given device params.
         /// </summary>
-        public static StreamerCollection CreateStreamerCollection(DeviceType[] deviceTypes, IDictionary<DeviceType, IDevice> devices, IClock clock,
+        public static StreamerCollection CreateStreamerCollection(IEnumerable<DeviceType> deviceTypes, IDictionary<DeviceType, IDevice> devices, IClock clock,
             out IDictionary<DeviceType, IStreamer> deviceStreamers)
         {
             deviceStreamers = new Dictionary<DeviceType, IStreamer>();
@@ -224,6 +223,8 @@ namespace SharpBCI
                 var streamer = deviceType.StreamerFactory?.Create(instance, clock);
                 if (streamer != null) streamers.Add(deviceStreamers[deviceType] = streamer);
             }
+            if (!deviceStreamers.TryGetValue(MarkerSourceDeviceType, out _))
+                streamers.Add(deviceStreamers[MarkerSourceDeviceType] = new MarkerStreamer(null, clock));
             return streamers;
         }
 

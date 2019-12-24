@@ -63,6 +63,11 @@ namespace SharpBCI.Windows
 
         public const int DeviceRowHeight = ViewConstants.DefaultRowHeight;
 
+        internal enum DeviceState
+        {
+            Unset, Error, Warning, Ok
+        }
+
         internal class DeviceTypeViewModel
         {
 
@@ -81,6 +86,8 @@ namespace SharpBCI.Windows
             [NotNull] public readonly Rectangle ConsumerStateRectangle;
 
             [NotNull] public readonly Button ConfigButton, PreviewButton;
+
+            [CanBeNull] private TemplateWithArgs<DeviceTemplate> _currentDevice;
 
             [CanBeNull] private TemplateWithArgs<ConsumerTemplate>[] _currentConsumers;
 
@@ -119,7 +126,7 @@ namespace SharpBCI.Windows
 
                 IsShowConsumerState = true;
                 IsShowPreviewButton = true;
-                SetConsumerState(null, false);
+                UpdateState();
             }
 
             public bool IsShowConsumerState
@@ -144,28 +151,65 @@ namespace SharpBCI.Windows
                 }
             }
 
-            [CanBeNull] public TemplateWithArgs<DeviceTemplate> CurrentDevice { get; set; }
-
-            public TemplateWithArgs<ConsumerTemplate>[] CurrentConsumers
+            [CanBeNull]
+            public TemplateWithArgs<DeviceTemplate> CurrentDevice
             {
-                get => _currentConsumers ?? EmptyArray<TemplateWithArgs<ConsumerTemplate>>.Instance;
+                get => _currentDevice;
                 set
                 {
-                    _currentConsumers = value;
-                    UpdateConsumerState(_currentConsumers);
+                    _currentDevice = value;
+                    UpdateState();
                 }
             }
 
-            public void SetConsumerState(string message, bool available)
+            public TemplateWithArgs<ConsumerTemplate>[] CurrentConsumers
             {
-                ConsumerStateRectangle.Fill = available ? Brushes.SeaGreen : Brushes.DimGray;
-                ConsumerStateRectangle.ToolTip = message ?? (available ? "Consumer attached" : "No consumer attached");
+                [NotNull]
+                get => _currentConsumers ?? EmptyArray<TemplateWithArgs<ConsumerTemplate>>.Instance;
+                [CanBeNull]
+                set
+                {
+                    _currentConsumers = value;
+                    UpdateState();
+                }
             }
 
-            private void UpdateConsumerState(IReadOnlyCollection<TemplateWithArgs<ConsumerTemplate>> consumers)
+            public void SetState(DeviceState state, string message)
             {
-                var hasConsumers = consumers != null && consumers.Any();
-                SetConsumerState(hasConsumers ? consumers.Select(c => c.Template.Identifier).Join("\n") : null, hasConsumers);
+                Brush brush;
+                switch (state)
+                {
+                    case DeviceState.Unset:
+                        brush = Brushes.DimGray;
+                        break;
+                    case DeviceState.Error:
+                        brush = Brushes.Red;
+                        break;
+                    case DeviceState.Warning:
+                        brush = Brushes.Orange;
+                        break;
+                    case DeviceState.Ok:
+                        brush = Brushes.SeaGreen;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(state), state, null);
+                }
+                ConsumerStateRectangle.Fill = brush;
+                ConsumerStateRectangle.ToolTip = message;
+            }
+
+            private void UpdateState()
+            {
+                var hasDevice = _currentDevice != null;
+                var hasConsumers = _currentConsumers?.Any() ?? false;
+                if (hasDevice && hasConsumers)
+                    SetState(DeviceState.Ok, _currentConsumers.Select(c => c.Template.Identifier).Join("\n"));
+                else if (hasDevice)
+                    SetState(DeviceState.Warning, "No consumers attached");
+                else if (hasConsumers)
+                    SetState(DeviceState.Warning, "No device selected");
+                else
+                    SetState(DeviceState.Unset, null);
             }
 
         }
@@ -218,8 +262,9 @@ namespace SharpBCI.Windows
         {
             get
             {
-                if (!_deviceControlGroups.TryGetValue(deviceType, out var controlGroup) || controlGroup.CurrentDevice == null) return default;
-                var device = controlGroup.CurrentDevice.Serialize();
+                if (!_deviceControlGroups.TryGetValue(deviceType, out var controlGroup) 
+                    || controlGroup.CurrentDevice == null && controlGroup.CurrentConsumers.IsEmpty()) return default;
+                var device = controlGroup.CurrentDevice?.Serialize() ?? default;
                 var consumers = controlGroup.CurrentConsumers.Select(c => c?.Serialize() ?? default);
                 return new DeviceConfig(deviceType.Name, device, consumers.ToArray());
             }

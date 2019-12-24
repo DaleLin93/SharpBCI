@@ -40,7 +40,7 @@
             </StackPanel>
         </StackPanel>
 
-        <ListView x:Name="SessionListView" Margin="2 3 2 3" >
+        <ListView x:Name="SessionListView" Margin="2 3 2 3" ContextMenuOpening="SessionListView_OnContextMenuOpening" >
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Path=SessionDescriptor}" />
@@ -50,10 +50,10 @@
             </ListView.View>
             <ListView.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Remove" Click="RemoveSessionMenuItem_OnClick"/>
+                    <MenuItem x:Name="RemoveSessionMenuItem" Header="Remove" Click="RemoveSessionMenuItem_OnClick"/>
                     <Separator/>
-                    <MenuItem Header="Move Up" Click="MoveSessionUpMenuItem_OnClick"/>
-                    <MenuItem Header="Move Down" Click="MoveSessionDownMenuItem_OnClick"/>
+                    <MenuItem x:Name="MoveUpSessionMenuItem" Header="Move Up" Click="MoveSessionUpMenuItem_OnClick"/>
+                    <MenuItem x:Name="MoveDownSessionMenuItem" Header="Move Down" Click="MoveSessionDownMenuItem_OnClick"/>
                 </ContextMenu>
             </ListView.ContextMenu>
         </ListView>

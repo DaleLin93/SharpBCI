@@ -210,7 +210,7 @@ namespace SharpBCI.Windows
             }
             catch (Exception ex)
             {
-                Logger.Error("StartSessions", ex);
+                Logger.Error("StartSession", ex);
                 App.ShowErrorMessage(ex);
             }
             finally

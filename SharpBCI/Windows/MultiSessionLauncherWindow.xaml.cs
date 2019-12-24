@@ -5,10 +5,12 @@ using System.Windows;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Windows.Controls;
 using JetBrains.Annotations;
 using MarukoLib.IO;
 using MarukoLib.Lang;
 using MarukoLib.Lang.Exceptions;
+using MarukoLib.Logging;
 using MarukoLib.Persistence;
 using Microsoft.Win32;
 using SharpBCI.Core.Experiment;
@@ -26,6 +28,8 @@ namespace SharpBCI.Windows
     {
 
         public const string DeviceFileSuffix = ".dcfg";
+
+        public static Logger Logger = Logger.GetLogger(typeof(MultiSessionLauncherWindow));
 
         public class FileItem<T>
         {
@@ -97,7 +101,7 @@ namespace SharpBCI.Windows
         private static SessionListViewItem ReadSessionConfig(string path, string alternativeDirectory)
         {
             if (!App.FindFile(alternativeDirectory, path, out var paradigmFilePath))
-                throw new UserException($"Paradigm config file not found: {paradigmFilePath}");
+                throw new UserException($"Paradigm config file not found: {path}");
             if (path.EndsWith(SessionConfig.FileSuffix, StringComparison.OrdinalIgnoreCase))
             {
                 if (!JsonUtils.TryDeserializeFromFile<SessionConfig>(paradigmFilePath, out var config))
@@ -130,16 +134,42 @@ namespace SharpBCI.Windows
 
         public void Start()
         {
-            if (_sessionListViewItems.IsEmpty())
+            if (string.IsNullOrWhiteSpace(SubjectTextBox.Text))
             {
-                MessageBox.Show("Cannot start with no sessions.");
+                MessageBox.Show("Subject name cannot be empty.");
                 return;
             }
-            Close();
-            Bootstrap.StartSessions(SubjectTextBox.Text,
-                _sessionListViewItems.Select(session => session.SessionDescriptor).ToArray(),
-                _sessionListViewItems.Select(session => session.Paradigm.Value).ToArray(), 
-                DeviceConfigPanel.DeviceConfigs, this);
+            if (_sessionListViewItems.IsEmpty())
+            {
+                MessageBox.Show("Cannot start without sessions.");
+                return;
+            }
+            try
+            {
+                lock (RunSessionsBtn)
+                {
+                    if (!RunSessionsBtn.IsEnabled) return;
+                    RunSessionsBtn.IsEnabled = false;
+                    Visibility = Visibility.Hidden;
+                }
+                Bootstrap.StartSessions(SubjectTextBox.Text,
+                    _sessionListViewItems.Select(session => session.SessionDescriptor).ToArray(),
+                    _sessionListViewItems.Select(session => session.Paradigm.Value).ToArray(),
+                    DeviceConfigPanel.DeviceConfigs, this);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Start", ex);
+                App.ShowErrorMessage(ex);
+            }
+            finally
+            {
+                lock (RunSessionsBtn)
+                {
+                    RunSessionsBtn.IsEnabled = true;
+                    Visibility = Visibility.Visible;
+                }
+            }
         }
 
         private void UpdateTitle() => Title = string.IsNullOrWhiteSpace(_msCfgFile) 
@@ -223,6 +253,18 @@ namespace SharpBCI.Windows
         {
             e.Effects = DragDropEffects.Move;
             e.Handled = true;
+        }
+
+        private void SessionListView_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (SessionListView.SelectedItems.Count == 0)
+            {
+                e.Handled = true;
+                return;
+            }
+            var multipleSelection = SessionListView.SelectedItems.Count > 1;
+            MoveUpSessionMenuItem.IsEnabled = !multipleSelection;
+            MoveDownSessionMenuItem.IsEnabled = !multipleSelection;
         }
 
         private void NewMultiSessionConfigMenuItem_OnClick(object sender, RoutedEventArgs e) => Clear(true);
@@ -321,11 +363,8 @@ namespace SharpBCI.Windows
 
         private void SystemVariablesMenuItem_OnClick(object sender, RoutedEventArgs e) => App.ConfigSystemVariables();
 
-        private void RemoveSessionMenuItem_OnClick(object sender, RoutedEventArgs e)
-        {
-            if (SessionListView.SelectedItem is SessionListViewItem)
-                _sessionListViewItems.RemoveAt(SessionListView.SelectedIndex);
-        }
+        private void RemoveSessionMenuItem_OnClick(object sender, RoutedEventArgs e) => 
+            _sessionListViewItems.RemoveAll(SessionListView.SelectedItems.OfType<SessionListViewItem>().ToList());
 
         private void MoveSessionUpMenuItem_OnClick(object sender, RoutedEventArgs e)
         {
