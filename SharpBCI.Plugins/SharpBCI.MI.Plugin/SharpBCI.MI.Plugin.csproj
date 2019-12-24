@@ -95,7 +95,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DirectShowVideoSource.cs" />
-    <Compile Include="MediaFoundationPlayer.cs" />
     <Compile Include="MiParadigm.cs" />
     <Compile Include="MiRemoteStageProvider.cs" />
     <Compile Include="MiStage.cs" />
