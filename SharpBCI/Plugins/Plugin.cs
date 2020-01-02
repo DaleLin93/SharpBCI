@@ -126,11 +126,14 @@ namespace SharpBCI.Plugins
         private void LoadMarkers()
         {
             var globalMarkers = MarkerDefinitions.GlobalMarkers;
-            var markers = new Dictionary<int, MarkerDefinition>(globalMarkers);
+            var markers = new Dictionary<int, MarkerDefinition>(globalMarkers.AsDictionary());
             foreach (var type in Assembly.GetExportedTypes())
-            foreach (var pair in MarkerDefinitions.GetDefinedMarkers(type))
-                if (markers.ContainsKey(pair.Key)) throw new Exception($"Duplicated marker in type: {type.FullName}, {markers[pair.Key]} and {pair.Value}");
-                else markers[pair.Key] = pair.Value;
+            {
+                MarkerDefinitions.GetDefinedMarkers(type, out var namespacesFromType, out var markersFromType);
+                foreach (var pair in markersFromType)
+                    if (markers.ContainsKey(pair.Key)) throw new Exception($"Duplicated marker in type: {type.FullName}, {markers[pair.Key]} and {pair.Value}");
+                    else markers[pair.Key] = pair.Value;
+            }
             Markers = new ReadOnlyDictionary<int, MarkerDefinition>(markers);
             var customMarkers = new Dictionary<int, MarkerDefinition>(markers);
             foreach (var globalMarker in globalMarkers.Keys)

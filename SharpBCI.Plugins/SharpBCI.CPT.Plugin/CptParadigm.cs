@@ -215,16 +215,16 @@ namespace SharpBCI.Paradigms.CPT
 
         private const string CptGroupName = "cpt";
 
-        [MarkerDefinition(CptGroupName)]
+        [Marker(CptGroupName)]
         public const int TargetDisplayMarker = MarkerDefinitions.CustomMarkerBase + 10;
 
-        [MarkerDefinition(CptGroupName)]
+        [Marker(CptGroupName)]
         public const int NonTargetDisplayMarker = MarkerDefinitions.CustomMarkerBase + 11;
 
-        [MarkerDefinition(CptGroupName)]
+        [Marker(CptGroupName)]
         public const int IntervalMarker = MarkerDefinitions.CustomMarkerBase + 20;
 
-        [MarkerDefinition(CptGroupName)]
+        [Marker(CptGroupName)]
         public const int UserActionMarker = MarkerDefinitions.CustomMarkerBase + 30;
 
         public readonly Configuration Config;

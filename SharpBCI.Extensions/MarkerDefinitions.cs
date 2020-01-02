@@ -14,6 +14,8 @@ namespace SharpBCI.Extensions
     public struct MarkerDefinition : IRegistrable
     {
 
+        public const uint DefaultColor = 0xFF000000;
+
         private const string CodeKey = nameof(Code);
 
         private const string OwnerKey = nameof(Owner);
@@ -61,47 +63,95 @@ namespace SharpBCI.Extensions
 
     }
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field, Inherited = false)]
-    public class MarkerDefinitionAttribute : Attribute
+    [JsonObject(MemberSerialization.OptIn)]
+    public struct MarkerNamespaceDefinition : IRegistrable
     {
 
-        public const uint DefaultColor = 0xFF000000;
+        public const uint DefaultColor = 0xFF2F4F4F;
 
-        public MarkerDefinitionAttribute([NotNull] string groupName) : this(groupName, null, DefaultColor) { }
+        private const string PathKey = nameof(Path);
 
-        public MarkerDefinitionAttribute([NotNull] string groupName, [CanBeNull] string name) : this(groupName, name, DefaultColor) { }
+        private const string OwnerKey = nameof(Owner);
 
-        public MarkerDefinitionAttribute([NotNull] string groupName, uint color) : this(groupName, null, color) { }
+        private const string ColorKey = nameof(Color);
 
-        public MarkerDefinitionAttribute([NotNull] string groupName, [CanBeNull] string name, uint color)
+        [JsonConstructor]
+        internal MarkerNamespaceDefinition(
+            [JsonProperty(PathKey), NotNull] string path,
+            [JsonProperty(OwnerKey), NotNull] string owner,
+            [JsonProperty(ColorKey)] uint color)
         {
-            GroupName = groupName.Trim2Null() ?? throw new ArgumentException($"'{nameof(groupName)}' cannot be blank or null");
+            Path = path;
+            Owner = owner;
+            Color = color;
+        }
+
+        [JsonProperty(PathKey), NotNull]
+        public string Path { get; }
+
+        [JsonProperty(OwnerKey), NotNull]
+        public string Owner { get; }
+
+        [JsonProperty(ColorKey)]
+        public uint Color { get; }
+
+        public override string ToString() => Path;
+
+        string IRegistrable.Identifier => Path;
+
+    }
+
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field, Inherited = false)]
+    public class MarkerNamespaceAttribute : Attribute
+    {
+
+        public MarkerNamespaceAttribute(uint color = MarkerNamespaceDefinition.DefaultColor) => Color = color;
+
+        public uint Color { get; }
+
+    }
+
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field, Inherited = false)]
+    public class MarkerAttribute : Attribute
+    {
+
+        public MarkerAttribute([NotNull] string @namespace) : this(@namespace, null) { }
+
+        public MarkerAttribute([NotNull] string @namespace, uint color) : this(@namespace, null, color) { }
+
+        public MarkerAttribute([NotNull] string @namespace, [CanBeNull] string name, uint color = MarkerDefinition.DefaultColor)
+        {
+            Namespace = @namespace.Trim2Null() ?? throw new ArgumentException($"'{nameof(@namespace)}' cannot be blank or null");
             Name = name?.Trim2Null();
             Color = color;
         }
 
-        [NotNull] public string GroupName { get; }
+        [NotNull] public string Namespace { get; }
 
         [CanBeNull] public string Name { get; set; }
 
-        public uint Color { get; set; }
+        public uint Color { get; }
 
     }
 
     public static class MarkerDefinitions
     {
 
-        private const string GlobalGroupName = "global";
+        private const string GroupSeparator = ":";
+
+        public static readonly IRegistry<MarkerNamespaceDefinition> NamespaceRegistry;
 
         public static readonly IRegistry<MarkerDefinition> MarkerRegistry;
 
-        public static readonly IDictionary<int, MarkerDefinition> GlobalMarkers;
+        public static readonly IReadOnlyDictionary<int, MarkerDefinition> GlobalMarkers;
+
+        #region Marker Group Definitions
 
         public const int GlobalMarkerBase = 0;
 
-        public const int SessionMarkerBase = 10;
+        public const int ParadigmMarkerBase = 10;
 
-        public const int ParadigmMarkerBase = 20;
+        public const int SessionMarkerBase = 20;
 
         public const int BlockMarkerBase = 30;
 
@@ -109,76 +159,123 @@ namespace SharpBCI.Extensions
 
         public const int CustomMarkerBase = 100;
 
-        #region Etctera Part
+        [MarkerNamespace(0xFF000000)] public const string GlobalMarkerGroup = "global";
 
-        [MarkerDefinition(GlobalGroupName)] public const int HeartbeatMarker = GlobalMarkerBase + 0;
+        [MarkerNamespace(0xFF888888)] public const string BaselineMarkerGroup = GlobalMarkerGroup + GroupSeparator + "baseline";
 
-        [MarkerDefinition(GlobalGroupName + ":baseline")] public const int BaselineStartMarker = GlobalMarkerBase + 1;
+        [MarkerNamespace(0xFF884444)] public const string ParadigmMarkerGroup = GlobalMarkerGroup + GroupSeparator + "paradigm";
 
-        [MarkerDefinition(GlobalGroupName + ":baseline")] public const int BaselineEndMarker = GlobalMarkerBase + 2;
-        
-        #endregion
+        [MarkerNamespace(0xFF448844)] public const string SessionMarkerGroup = GlobalMarkerGroup + GroupSeparator + "session";
 
-        #region Session Part
+        [MarkerNamespace(0xFF444488)] public const string BlockMarkerGroup = GlobalMarkerGroup + GroupSeparator + "block";
 
-        [MarkerDefinition(GlobalGroupName + ":session", 0xFFCC0000)] public const int SessionStartMarker = SessionMarkerBase + 1;
-
-        [MarkerDefinition(GlobalGroupName + ":session", 0xFFCC0000)] public const int SessionEndMarker = SessionMarkerBase + 2;
-
-        [MarkerDefinition(GlobalGroupName + ":session", 0xFFCC0000)] public const int UserExitMarker = SessionMarkerBase + 9;
+        [MarkerNamespace(0xFF448888)] public const string TrialMarkerGroup = GlobalMarkerGroup + GroupSeparator + "trial";
 
         #endregion
 
-        #region Paradigm Part
+        #region Etctera Marker Definitions
 
-        [MarkerDefinition(GlobalGroupName + ":paradigm")] public const int ParadigmStartMarker = ParadigmMarkerBase + 1;
+        [Marker(GlobalMarkerGroup)] public const int HeartbeatMarker = GlobalMarkerBase + 0;
 
-        [MarkerDefinition(GlobalGroupName + ":paradigm")] public const int ParadigmEndMarker = ParadigmMarkerBase + 2;
+        [Marker(BaselineMarkerGroup)] public const int BaselineStartMarker = GlobalMarkerBase + 1;
 
-        #endregion
-
-        #region Block Part
-
-        [MarkerDefinition(GlobalGroupName + ":block")] public const int BlockStartMarker = BlockMarkerBase + 1;
-
-        [MarkerDefinition(GlobalGroupName + ":block")] public const int BlockEndMarker = BlockMarkerBase + 2;
+        [Marker(BaselineMarkerGroup)] public const int BaselineEndMarker = GlobalMarkerBase + 2;
 
         #endregion
 
-        #region Trial Part
+        #region Paradigm Marker Definitions
 
-        [MarkerDefinition(GlobalGroupName + ":trial", 0xFF008800)] public const int TrialStartMarker = TrialMarkerBase + 1;
+        [Marker(ParadigmMarkerGroup)] public const int ParadigmStartMarker = ParadigmMarkerBase + 1;
 
-        [MarkerDefinition(GlobalGroupName + ":trial", 0xFF880000)] public const int TrialEndMarker = TrialMarkerBase + 2;
+        [Marker(ParadigmMarkerGroup)] public const int ParadigmEndMarker = ParadigmMarkerBase + 2;
+
+        #endregion
+
+        #region Session Marker Definitions
+
+        [Marker(SessionMarkerGroup, 0xFF119922)] public const int SessionStartMarker = SessionMarkerBase + 1;
+
+        [Marker(SessionMarkerGroup, 0xFFBB0000)] public const int SessionEndMarker = SessionMarkerBase + 2;
+
+        [Marker(SessionMarkerGroup, 0xFFFF0000)] public const int UserExitMarker = SessionMarkerBase + 9;
+
+        #endregion
+
+        #region Block Marker Definitions
+
+        [Marker(BlockMarkerGroup, 0xFF119922)] public const int BlockStartMarker = BlockMarkerBase + 1;
+
+        [Marker(BlockMarkerGroup, 0xFFBB0000)] public const int BlockEndMarker = BlockMarkerBase + 2;
+
+        #endregion
+
+        #region Trial Marker Definitions
+
+        [Marker(TrialMarkerGroup, 0xFF119922)] public const int TrialStartMarker = TrialMarkerBase + 1;
+
+        [Marker(TrialMarkerGroup, 0xFFBB0000)] public const int TrialEndMarker = TrialMarkerBase + 2;
 
         #endregion
 
         static MarkerDefinitions()
         {
-            GlobalMarkers = new ReadOnlyDictionary<int, MarkerDefinition>(GetDefinedMarkers(typeof(MarkerDefinitions)));
-            var registry = new Registry(typeof(MarkerDefinition));
-            foreach (var globalMarker in GlobalMarkers.Values)
-                registry.Register(globalMarker);
-            MarkerRegistry = new Registry<MarkerDefinition>(new ComplexRegistry(registry));
+            GetDefinedMarkers(typeof(MarkerDefinitions), out var namespaces, out var markers);
+            GlobalMarkers = new ReadOnlyDictionary<int, MarkerDefinition>(markers);
+            var namespaceRegistry = new Registry(typeof(MarkerNamespaceDefinition));
+            namespaceRegistry.RegisterAll(namespaces.Values);
+            NamespaceRegistry = new ComplexRegistry(namespaceRegistry).OfType<MarkerNamespaceDefinition>();
+            var markerRegistry = new Registry(typeof(MarkerDefinition));
+            markerRegistry.RegisterAll(markers.Values);
+            MarkerRegistry = new ComplexRegistry(markerRegistry).OfType<MarkerDefinition>();
         }
 
-        public static IDictionary<int, MarkerDefinition> GetDefinedMarkers(Type type)
+        public static void GetDefinedMarkers(Type type, out IDictionary<string, MarkerNamespaceDefinition> namespaces, out IDictionary<int, MarkerDefinition> markers)
         {
-            var dict = new Dictionary<int, MarkerDefinition>();
+            namespaces = new Dictionary<string, MarkerNamespaceDefinition>();
+            markers = new Dictionary<int, MarkerDefinition>();
             foreach (var field in type.GetRuntimeFields())
             {
-                var attr = field.GetCustomAttribute<MarkerDefinitionAttribute>();
-                if (attr == null) continue;
-                var marker = (int)field.GetValue(null);
-                var typeFullName = type.FullName ?? "<null>";
-                var groupName = attr.GroupName.TrimEnd(':');
-                var name = attr.Name ?? field.Name.TrimEnd("Marker");
-                if (marker < CustomMarkerBase && !groupName.StartsWith($"{GlobalGroupName}:") && !groupName.Equals(GlobalGroupName))
-                    throw new ProgrammingException($"Marker of {typeFullName}.{groupName}:{name} is reserved(less than {CustomMarkerBase})");
-                if (dict.ContainsKey(marker)) throw new ProgrammingException($"Duplicated marker in type: {typeFullName}, {dict[marker]} and {name}");
-                dict[marker] = new MarkerDefinition(marker, typeFullName, groupName, name, attr.Color);
+                if (TryGetMarkerNamespaceDefinition(field, out var mnd))
+                {
+                    if (namespaces.ContainsKey(mnd.Path))
+                        throw new ProgrammingException($"Duplicated marker in type: {mnd.Owner}, {namespaces[mnd.Path]}");
+                    namespaces[mnd.Path] = mnd;
+                } 
+                if (TryGetMarkerDefinition(field, out var md))
+                {
+                    if (markers.ContainsKey(md.Code))
+                        throw new ProgrammingException($"Duplicated marker in type: {md.Owner}, {markers[md.Code]} and {md.Name}");
+                    markers[md.Code] = md;
+                }
             }
-            return dict;
+        }
+
+        public static bool TryGetMarkerNamespaceDefinition(FieldInfo field, out MarkerNamespaceDefinition definition)
+        {
+            definition = default;
+            var attr = field.GetCustomAttribute<MarkerNamespaceAttribute>();
+            if (attr == null) return false;
+            if (field.FieldType != typeof(string)) throw new ProgrammingException($"Field '{field}' must be defined as type 'string'");
+            var path = (string)field.GetValue(null) ?? throw new ProgrammingException($"Field '{field}' must be a non-null value"); ;
+            var typeFullName = field.DeclaringType?.FullName ?? "<null>";
+            definition = new MarkerNamespaceDefinition(path, typeFullName, attr.Color);
+            return true;
+        }
+
+        public static bool TryGetMarkerDefinition(FieldInfo field, out MarkerDefinition definition)
+        {
+            definition = default;
+            var attr = field.GetCustomAttribute<MarkerAttribute>();
+            if (attr == null) return false;
+            if (field.FieldType != typeof(int)) throw new ProgrammingException($"Field '{field}' must be defined as type 'int'");
+            var marker = (int)field.GetValue(null);
+            var typeFullName = field.DeclaringType?.FullName ?? "<null>";
+            var @namespace = attr.Namespace.TrimEnd(':');
+            var name = attr.Name ?? field.Name.TrimEnd("Marker");
+            if (marker < CustomMarkerBase && !@namespace.StartsWith($"{GlobalMarkerGroup}:") && !@namespace.Equals(GlobalMarkerGroup))
+                throw new ProgrammingException($"Marker of {typeFullName}.{@namespace}:{name} is reserved(less than {CustomMarkerBase})");
+            definition = new MarkerDefinition(marker, typeFullName, @namespace, name, attr.Color);
+            return true;
         }
 
     }

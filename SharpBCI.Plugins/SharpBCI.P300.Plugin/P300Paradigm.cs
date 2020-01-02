@@ -223,10 +223,10 @@ namespace SharpBCI.Paradigms.P300
 
         private const string P300GroupName = "p300";
 
-        [MarkerDefinition(P300GroupName)]
+        [Marker(P300GroupName)]
         public const int SubTrialMarker = MarkerDefinitions.CustomMarkerBase + 1;
 
-        [MarkerDefinition(P300GroupName)]
+        [Marker(P300GroupName)]
         public const int OddBallEventMarker = MarkerDefinitions.CustomMarkerBase + 11;
 
         public readonly Configuration Config;
