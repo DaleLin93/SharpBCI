@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Reflection;
 using MarukoLib.Lang;
+using MarukoLib.Lang.Sequence;
 using MarukoLib.UI;
 using Newtonsoft.Json;
 using SharpBCI.Core.Experiment;

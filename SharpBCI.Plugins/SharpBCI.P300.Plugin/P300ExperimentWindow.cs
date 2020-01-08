@@ -18,6 +18,7 @@ using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
 using Color = SharpDX.Color;
 using RenderForm = SharpDX.Windows.RenderForm;
+using MarukoLib.Lang.Sequence;
 
 namespace SharpBCI.Paradigms.P300
 {
@@ -30,7 +31,7 @@ namespace SharpBCI.Paradigms.P300
 
             public bool Target;
 
-            public IRandomBoolSequence Random;
+            public IRandomBools Random;
             
             public RawVector2 Center;
 

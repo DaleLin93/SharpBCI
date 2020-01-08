@@ -8,6 +8,7 @@ using MarukoLib.Lang;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
+using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Paradigms;
 using SharpBCI.Extensions.StageProviders;
 
@@ -39,9 +40,7 @@ namespace SharpBCI.Paradigms.CPT
 
                 public bool Still;
 
-                public bool PseudoRandom;
-
-                public float TargetRate;
+                public RandomTargetRate TargetRate;
 
                 public ulong LetterDuration;
 
@@ -162,9 +161,7 @@ namespace SharpBCI.Paradigms.CPT
 
             private static readonly Parameter<bool> Still = new Parameter<bool>("Still");
 
-            private static readonly Parameter<bool> PseudoRandom = new Parameter<bool>("Pseudo Random", true);
-
-            private static readonly Parameter<float> TargetRate = new Parameter<float>("Target Rate", "%", null, tr => tr >= 0 && tr <= 100, 70);
+            private static readonly Parameter<RandomTargetRate> TargetRate = new Parameter<RandomTargetRate>("Target Rate", new RandomTargetRate(true, (decimal) 0.7));
 
             private static readonly Parameter<ulong> LetterDuration = new Parameter<ulong>("Letter Duration", unit: "ms", null, 500);
 
@@ -182,7 +179,7 @@ namespace SharpBCI.Paradigms.CPT
 
             public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
             {
-                new ParameterGroup("Experimental", Still, PseudoRandom, TargetRate, LetterDuration, InterStimulusInterval, TotalDuration),
+                new ParameterGroup("Experimental", Still, TargetRate, LetterDuration, InterStimulusInterval, TotalDuration),
                 new ParameterGroup("UI Window", BackgroundColor),
                 new ParameterGroup("UI Font", FontSize, FontColor),
             };
@@ -203,8 +200,7 @@ namespace SharpBCI.Paradigms.CPT
                 Test = new Configuration.TestConfig
                 {
                     Still = Still.Get(context),
-                    PseudoRandom = PseudoRandom.Get(context),
-                    TargetRate = TargetRate.Get(context) / 100.0F,
+                    TargetRate = TargetRate.Get(context),
                     LetterDuration = LetterDuration.Get(context),
                     InterStimulusInterval = InterStimulusInterval.Get(context),
                     TotalDuration = TotalDuration.Get(context) * 60 * 1000,

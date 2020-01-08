@@ -148,7 +148,7 @@ namespace SharpBCI.Paradigms.P300
 
             private static readonly Parameter<Configuration.TestConfig.FlashStrategy> Strategy = Parameter<Configuration.TestConfig.FlashStrategy>.OfEnum("Strategy");
 
-            private static readonly Parameter<RandomTargetRate> TargetRate = new Parameter<RandomTargetRate>("Target Rate", new RandomTargetRate(true, 0.08F));
+            private static readonly Parameter<RandomTargetRate> TargetRate = new Parameter<RandomTargetRate>("Target Rate", new RandomTargetRate(true, (decimal) 0.08));
 
             private static readonly Parameter<uint> TrialCount = new Parameter<uint>("Trial Count", 20);
 

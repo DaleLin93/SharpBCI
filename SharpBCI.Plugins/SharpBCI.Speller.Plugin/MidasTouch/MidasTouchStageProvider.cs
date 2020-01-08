@@ -1,8 +1,8 @@
 ﻿using SharpBCI.Core.Staging;
 using System.Collections.Generic;
-using MarukoLib.Lang;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.StageProviders;
+using MarukoLib.Lang.Sequence;
 
 namespace SharpBCI.Paradigms.Speller.MidasTouch
 {
@@ -12,7 +12,7 @@ namespace SharpBCI.Paradigms.Speller.MidasTouch
 
         private readonly MidasTouchParadigm.Configuration.TestConfig _testConfig;
 
-        private readonly IRandomBoolSequence _randomBoolSequence;
+        private readonly IRandomBools _randomBoolSequence;
 
         private ulong _remainingTrialCount;
 

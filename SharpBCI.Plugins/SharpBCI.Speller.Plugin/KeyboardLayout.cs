@@ -104,8 +104,8 @@ namespace SharpBCI.Paradigms.Speller
             Put(new KeyboardLayout("45-classes Keyboard", 9, KeyDescriptors.NumericKeys, KeyDescriptors.LetterKeys, new []{ KeyDescriptors.SpaceKey }, 
                 KeyDescriptors.CharKeys(",.?!@&#$")));
 
-            Put(new KeyboardLayout("60-classes Keyboard", 10, KeyDescriptors.NumericKeys, KeyDescriptors.LetterKeys,
-                KeyDescriptors.CharKeys(";:,./*-+()\\?\"`~<>{}|=$"), // 22
+            Put(new KeyboardLayout("60-classes Keyboard", 10, KeyDescriptors.NumericKeys, KeyDescriptors.LetterKeys, new[] { KeyDescriptors.SpaceKey },
+                KeyDescriptors.CharKeys(";:,.?!@/*-+()~<>{}|=$"), // 22
                 KeyDescriptors.CommandKeys));
 
             Put(new KeyboardLayout("70-classes Keyboard", 10, KeyDescriptors.NumericKeys, KeyDescriptors.LetterKeys,

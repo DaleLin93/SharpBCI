@@ -87,7 +87,7 @@ namespace SharpBCI.Paradigms.Speller.EyeTracking
                     case MarkerDefinitions.TrialStartMarker:
                     {
                         var trial = new SpellerParadigm.Result.Trial();
-                        var activedButton = _activatedButton = HintedButton ?? UpdateCursor(GazePointHandler.CurrentPosition);
+                        var activedButton = _activatedButton = UpdateCursor(GazePointHandler.CurrentPosition);
                         if (activedButton != null)
                             trial.ActivedButtons = new SpellerParadigm.Result.Button(activedButton.Key).SingletonArray();
                         trial.StartTime = CurrentTime;
