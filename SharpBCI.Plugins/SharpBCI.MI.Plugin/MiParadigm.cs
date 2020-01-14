@@ -9,6 +9,7 @@ using SharpBCI.Core.Staging;
 using SharpBCI.Extensions;
 using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Paradigms;
+using SharpBCI.Extensions.Presenters;
 using SharpBCI.Extensions.StageProviders;
 
 namespace SharpBCI.Paradigms.MI
@@ -126,7 +127,10 @@ namespace SharpBCI.Paradigms.MI
             private static readonly Parameter<float> GazeToFocusDuration = Parameter<float>.CreateBuilder("Gaze To Focus Duration", 2)
                 .SetUnit("s").SetValidator(Predicates.Nonnegative).Build();
 
-            private static readonly Parameter<Path> PreLoadResourceList = Parameter<Path>.CreateBuilder("Pre-load Resource List").SetNullable(true).Build();
+            private static readonly Parameter<Path> PreLoadResourceList = Parameter<Path>.CreateBuilder("Pre-load Resource List")
+                .SetNullable(true)
+                .SetMetadata(PathPresenter.CheckExistenceProperty, false)
+                .Build();
 
             // Communication
 
@@ -140,9 +144,7 @@ namespace SharpBCI.Paradigms.MI
 
             private static readonly Parameter<Color> FontColor = new Parameter<Color>("Font Color", Color.Red);
 
-            private static readonly Parameter<Colors> ProgressBarColor = Parameter<Colors>.CreateBuilder("Progress Bar Color", new Colors(0xFFCCCCCC, 0xFFCC2222))
-                .SetMetadata(ParameterizedObjectExt.PopupProperty, true)
-                .Build();
+            private static readonly Parameter<Colors> ProgressBarColor = new Parameter<Colors>("Progress Bar Color", new Colors(0xFFCCCCCC, 0xFFCC2222));
 
             private static readonly Parameter<Border> ProgressBarBorder = new Parameter<Border>("Progress Bar Border", new Border(0, Color.White));
 

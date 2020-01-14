@@ -19,11 +19,11 @@ namespace SharpBCI
     public struct SerializedObject
     {
 
-        public string Id;
+        [CanBeNull] public string Id;
 
-        public string Version;
+        [CanBeNull] public string Version;
 
-        public IDictionary<string, string> Args;
+        [CanBeNull] public IDictionary<string, string> Args;
 
         public SerializedObject(string id, IDictionary<string, string> args) : this(id, null, args) { }
 
@@ -39,11 +39,11 @@ namespace SharpBCI
     public struct DeviceConfig
     {
 
-        public string DeviceType;
+        [CanBeNull] public string DeviceType;
 
         public SerializedObject Device;
 
-        public SerializedObject[] Consumers;
+        [CanBeNull] public SerializedObject[] Consumers;
 
         public DeviceConfig(string deviceType, SerializedObject device, SerializedObject[] consumers)
         {
@@ -60,19 +60,19 @@ namespace SharpBCI
         public struct SessionItem
         {
 
-            public string SessionDescriptor;
+            [CanBeNull] public string SessionDescriptor;
 
-            public string ParadigmConfigPath;
+            [CanBeNull] public string ParadigmConfigPath;
 
         }
 
         public const string FileSuffix = ".mscfg";
 
-        public string Subject;
+        [CanBeNull] public string Subject;
 
-        public SessionItem[] Sessions;
+        [CanBeNull] public SessionItem[] Sessions;
 
-        public DeviceConfig[] Devices;
+        [CanBeNull] public DeviceConfig[] Devices;
 
     }
 
@@ -81,13 +81,13 @@ namespace SharpBCI
 
         public const string FileSuffix = ".scfg";
 
-        public string Subject;
+        [CanBeNull] public string Subject;
 
-        public string SessionDescriptor;
+        [CanBeNull] public string SessionDescriptor;
 
         public SerializedObject Paradigm;
 
-        public DeviceConfig[] Devices;
+        [CanBeNull] public DeviceConfig[] Devices;
 
     }
 #pragma warning restore 0649

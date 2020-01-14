@@ -27,7 +27,7 @@ namespace SharpBCI.Extensions.IO.Consumers.Sample
 
         public const string FileSuffix = ".dat";
 
-        public const string ConsumerName = "Biosignal ACII File Writer (*" + FileSuffix + ")";
+        public const string ConsumerName = "Biosignal ASCII File Writer (*" + FileSuffix + ")";
 
         public BiosignalAsciiFileWriter([NotNull] string fileName, long baseTime = 0, int bufferSize = 4096) : base(fileName, bufferSize, baseTime) { }
 

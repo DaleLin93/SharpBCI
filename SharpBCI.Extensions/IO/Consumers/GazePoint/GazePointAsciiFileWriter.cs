@@ -28,7 +28,7 @@ namespace SharpBCI.Extensions.IO.Consumers.GazePoint
 
         public const string FileSuffix = ".gaz";
 
-        public const string ConsumerName = "Gaze Point Ascii File Writer (*" + FileSuffix + ")";
+        public const string ConsumerName = "Gaze Point ASCII File Writer (*" + FileSuffix + ")";
 
         public GazePointAsciiFileWriter([NotNull] string fileName, long baseTime = 0, int bufferSize = 2048) : base(fileName, bufferSize, baseTime) { }
 
