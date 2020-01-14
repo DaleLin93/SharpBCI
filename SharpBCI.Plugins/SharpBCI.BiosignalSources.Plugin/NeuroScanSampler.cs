@@ -229,7 +229,7 @@ namespace SharpBCI.BiosignalSources
                 && header.Request == InfoTypeBasicInfo
                 && header.BodySize == SettingsPacket.PacketSize)
                 return new SettingsPacket(headerBuffer, 0);
-            throw new IOException("通信失败");
+            throw new IOException("Failed to handshake with server");
         }
 
         private static IEnumerable<ISample> ReadBlock(Stream stream, SettingsPacket settings, byte[] buffer, long timeout)

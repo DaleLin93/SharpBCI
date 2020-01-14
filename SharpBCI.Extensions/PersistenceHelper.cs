@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using MarukoLib.Lang;
 using MarukoLib.Logging;
 using MarukoLib.Persistence;
@@ -26,7 +27,8 @@ namespace SharpBCI.Extensions
             return true;
         }
 
-        public static IDictionary<string, string> SerializeArgs(this IEnumerable<IParameterDescriptor> parameters, IReadonlyContext context)
+        [CanBeNull]
+        public static IDictionary<string, string> SerializeArgs(this IEnumerable<IParameterDescriptor> parameters, [CanBeNull] IReadonlyContext context)
         {
             if (context == null) return null;
             var @params = new Dictionary<string, string>();
@@ -37,7 +39,8 @@ namespace SharpBCI.Extensions
             return @params;
         }
 
-        public static IContext DeserializeArgs(this IEnumerable<IParameterDescriptor> parameters, IDictionary<string, string> input)
+        [CanBeNull]
+        public static IContext DeserializeArgs(this IEnumerable<IParameterDescriptor> parameters, [CanBeNull] IDictionary<string, string> input)
         {
             if (input == null) return null;
             var context = new Context();
@@ -48,7 +51,8 @@ namespace SharpBCI.Extensions
             return context;
         }
 
-        public static string SerializeParam(this IParameterDescriptor parameter, object value)
+        [CanBeNull]
+        public static string SerializeParam(this IParameterDescriptor parameter, [CanBeNull] object value)
         {
             if (value == null) return null;
             if (TryGetPersistentTypeConverter(parameter, out var converter))
@@ -66,7 +70,8 @@ namespace SharpBCI.Extensions
             return JsonUtils.Serialize(value);
         }
 
-        public static object DeserializeParam(this IParameterDescriptor parameter, string value)
+        [CanBeNull]
+        public static object DeserializeParam(this IParameterDescriptor parameter, [CanBeNull] string value)
         {
             if (TryGetPersistentTypeConverter(parameter, out var converter))
                 return converter.ConvertBackward(JsonUtils.Deserialize(value, converter.OutputType));

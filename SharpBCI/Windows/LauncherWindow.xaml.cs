@@ -240,8 +240,13 @@ namespace SharpBCI.Windows
         {
             _subjectTextBox.Text = config.Subject ?? _subjectTextBox.Text;
             _sessionDescriptorTextBox.Text = config.SessionDescriptor ?? _sessionDescriptorTextBox.Text;
-            if (_paradigmComboBox.FindAndSelectFirstByTag(tag => Equals((tag as ParadigmTemplate)?.Identifier, config.Paradigm.Id), null))
-                ParadigmParamPanel.Context = _currentParadigm.DeserializeArgs(config.Paradigm.Args);
+            if (_paradigmComboBox.FindAndSelectFirstByTag(
+                tag => Equals((tag as ParadigmTemplate)?.Identifier, config.Paradigm.Id), null))
+            {
+                var ctx = _currentParadigm.DeserializeArgs(config.Paradigm.Args);
+                if (ctx != null)
+                    ParadigmParamPanel.Context = ctx;
+            }
             _deviceConfigPanel.DeviceConfigs = config.Devices;
         }
 
