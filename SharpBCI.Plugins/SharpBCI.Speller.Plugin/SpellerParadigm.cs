@@ -307,7 +307,7 @@ namespace SharpBCI.Paradigms.Speller
                 .SetDefaultQuery(":", TypeConverters.Double2Int)
                 .Build();
 
-            private static readonly Parameter<RandomTargetRate> TargetRate = new Parameter<RandomTargetRate>("Target Rate", new RandomTargetRate(true, 0.08F));
+            private static readonly Parameter<RandomTargetRate> TargetRate = new Parameter<RandomTargetRate>("Target Rate", new RandomTargetRate(true, (decimal) 0.08));
 
             private static readonly Parameter<uint> SubTrialCount = new Parameter<uint>("Sub-trial Count", 200);
 

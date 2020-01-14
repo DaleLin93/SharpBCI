@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Reflection;
 using MarukoLib.Lang;
+using MarukoLib.Lang.Sequence;
 using MarukoLib.UI;
 using Newtonsoft.Json;
 using SharpBCI.Core.Experiment;
@@ -140,13 +141,13 @@ namespace SharpBCI.Paradigms.VEP.MAVEP
 
         private const string MavepGroupName = "mavep";
 
-        [MarkerDefinition(MavepGroupName)]
+        [Marker(MavepGroupName)]
         public const int StimClearMarker = MarkerDefinitions.CustomMarkerBase + 10;
 
-        [MarkerDefinition(MavepGroupName)]
+        [Marker(MavepGroupName)]
         public const int LeftStimMarker = MarkerDefinitions.CustomMarkerBase + 11;
 
-        [MarkerDefinition(MavepGroupName)]
+        [Marker(MavepGroupName)]
         public const int RightStimMarker = MarkerDefinitions.CustomMarkerBase + 12;
 
         public readonly Configuration Config;

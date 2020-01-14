@@ -2,8 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MarukoLib.Lang;
 using SharpBCI.Extensions.StageProviders;
+using MarukoLib.Lang.Sequence;
 
 namespace SharpBCI.Paradigms.CPT
 {
@@ -24,7 +24,7 @@ namespace SharpBCI.Paradigms.CPT
 
         private readonly CptParadigm.Configuration.TestConfig _testConfig;
 
-        private readonly IRandomBoolSequence _randomBoolSequence;
+        private readonly IRandomBools _randomBoolSequence;
 
         private ulong _remaining;
 
@@ -33,8 +33,7 @@ namespace SharpBCI.Paradigms.CPT
         public CptStageProvider(CptParadigm.Configuration.TestConfig testConfig) : base(true)
         {
             _testConfig = testConfig;
-            _randomBoolSequence = testConfig.PseudoRandom
-                ? (IRandomBoolSequence) new PseudoRandom(testConfig.TargetRate) : new RandomBools(testConfig.TargetRate);
+            _randomBoolSequence = testConfig.TargetRate.CreateRandomBoolSequence();
             _remaining = testConfig.TotalDuration;
         }
 

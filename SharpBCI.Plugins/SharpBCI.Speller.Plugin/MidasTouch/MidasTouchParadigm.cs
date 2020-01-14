@@ -123,7 +123,7 @@ namespace SharpBCI.Paradigms.Speller.MidasTouch
 
             private static readonly Parameter<ulong> InterStimulusInterval = new Parameter<ulong>("ISI", unit: "ms", description: "Inter-Stimulus Interval", 5000);
 
-            private static readonly Parameter<RandomTargetRate> TargetRate = new Parameter<RandomTargetRate>("Target Rate", new RandomTargetRate(true, 0.08F));
+            private static readonly Parameter<RandomTargetRate> TargetRate = new Parameter<RandomTargetRate>("Target Rate", new RandomTargetRate(true, (decimal) 0.08));
 
             // GUI
 

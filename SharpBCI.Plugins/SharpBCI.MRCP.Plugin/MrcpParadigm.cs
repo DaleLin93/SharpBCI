@@ -67,7 +67,7 @@ namespace SharpBCI.Paradigms.MRCP
 
         }
 
-        [MarkerDefinition("mrcp:lift")]
+        [Marker("mrcp:lift")]
         public const int LiftMarker = MarkerDefinitions.CustomMarkerBase + 1;
 
         public readonly Configuration Config;

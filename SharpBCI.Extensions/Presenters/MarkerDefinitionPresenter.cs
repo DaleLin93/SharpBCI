@@ -228,10 +228,14 @@ namespace SharpBCI.Extensions.Presenters
             var comboBoxItems = new LinkedList<object>();
             if (allowsNull) comboBoxItems.AddLast(ViewHelper.CreateDefaultComboBoxItem(NullPlaceholderTextProperty.Get(param.Metadata), TextAlignment.Center));
             var brushCache = new Dictionary<uint, Brush>();
+            Brush GetSolidColorBrush(uint color) => brushCache.GetOrCreate(color, c => new SolidColorBrush(c.ToSwmColor()));
             foreach (var markerDefinition in markerDefinitions)
             {
-                if (!brushCache.TryGetValue(markerDefinition.Color, out var brush)) 
-                    brushCache[markerDefinition.Color] = brush = new SolidColorBrush(markerDefinition.Color.ToSwmColor());
+                Brush namespaceBrush, nameBrush;
+                namespaceBrush = GetSolidColorBrush(MarkerDefinitions.NamespaceRegistry.LookUp(markerDefinition.Namespace, out var @namespace)
+                    ? @namespace.Color : MarkerNamespaceDefinition.DefaultColor);
+                nameBrush = brushCache.GetOrCreate(markerDefinition.Color, color => new SolidColorBrush(color.ToSwmColor()));
+
                 var itemContainer = new MarkerDefinitionItem(markerDefinition);
                 itemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = GridLength.Auto});
                 itemContainer.ColumnDefinitions.Add(new ColumnDefinition {Width = ViewConstants.Star1GridLength});
@@ -239,14 +243,14 @@ namespace SharpBCI.Extensions.Presenters
                 var namespaceTextBlock = new TextBlock
                 {
                     Text = markerDefinition.Namespace,
-                    Foreground = Brushes.DarkSlateGray,
+                    Foreground = namespaceBrush,
                     FontStyle = FontStyles.Italic
                 };
                 var nameTextBlock = new TextBlock
                 {
                     Margin = new Thickness { Left = 5},
                     Text = markerDefinition.Name,
-                    Foreground = brush,
+                    Foreground = nameBrush,
                     FontWeight = FontWeights.Bold
                 };
                 var codeTextBlock = new TextBlock

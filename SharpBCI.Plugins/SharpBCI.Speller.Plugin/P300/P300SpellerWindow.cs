@@ -11,6 +11,7 @@ using SharpBCI.Core.Experiment;
 using SharpBCI.Extensions;
 using SharpBCI.Core.IO;
 using SharpBCI.Extensions.IO.Devices.BiosignalSources;
+using MarukoLib.Lang.Sequence;
 
 namespace SharpBCI.Paradigms.Speller.P300
 {
@@ -42,7 +43,7 @@ namespace SharpBCI.Paradigms.Speller.P300
 
         private volatile UIButton[] _activatedButtons;
 
-        private volatile IRandomBoolSequence[] _randomBoolSequences;
+        private volatile IRandomBools[] _randomBoolSequences;
 
         private P300Trial _trial;
 

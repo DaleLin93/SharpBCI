@@ -233,10 +233,10 @@ namespace SharpBCI.Paradigms.WebBrowser
 
         private const string WebBrowserAssistantGroupName = "webbrowser";
 
-        [MarkerDefinition(WebBrowserAssistantGroupName)]
+        [Marker(WebBrowserAssistantGroupName)]
         public const int NormalModeOnSetMarker = MarkerDefinitions.CustomMarkerBase + (byte) Mode.Normal;
 
-        [MarkerDefinition(WebBrowserAssistantGroupName)]
+        [Marker(WebBrowserAssistantGroupName)]
         public const int ReadingModeOnSetMarker = MarkerDefinitions.CustomMarkerBase + (byte)Mode.Reading;
 
         private static readonly Icon BrowserIcon;
