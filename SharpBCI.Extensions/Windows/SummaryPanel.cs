@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using JetBrains.Annotations;
@@ -37,20 +36,17 @@ namespace SharpBCI.Extensions.Windows
         public void Update([CanBeNull] IReadonlyContext context, [CanBeNull] IParadigm paradigm)
         {
             context = context ?? EmptyContext.Instance;
-
             if (UpdateSummaryVisibility(context, false))
                 LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
             foreach (var holder in _summaryViewModels.Where(sh => sh.IsVisible))
                 try
                 {
-                    holder.ValueTextBlock.Text = holder.Summary.GetValue(context, paradigm).ToString();
-                    holder.ValueTextBlock.Foreground = SystemColors.WindowTextBrush;
+                    holder.ContentPresenter.Content = holder.Summary.GetValue(context, paradigm);
                 }
                 catch (Exception e)
                 {
                     Logger.Warn("Update - summary", e, "summary", holder.Summary.Name);
-                    holder.ValueTextBlock.Foreground = new SolidColorBrush(Colors.Red);
-                    holder.ValueTextBlock.Text = "Err";
+                    holder.ContentPresenter.Content = new TextBlock {Text = "Err", Foreground = Brushes.Red};
                 }
         }
 
@@ -64,8 +60,7 @@ namespace SharpBCI.Extensions.Windows
                 if (GroupHeader != null) Children.Add(ViewHelper.CreateGroupHeader(GroupHeader, null));
                 foreach (var summary in Summaries)
                 {
-                    var valueTextBlock = new TextBlock { TextAlignment = TextAlignment.Right };
-                    var summaryViewModel = new SummaryViewModel(summary, this.AddLabeledRow(summary.Name, valueTextBlock), valueTextBlock);
+                    var summaryViewModel = this.AddSummaryRow(summary);
                     summaryViewModel.AnimationCompleted += (sender, e) => LayoutChanged?.Invoke(this, LayoutChangedEventArgs.NonInitialization);
                     _summaryViewModels.Add(summaryViewModel);
                 }

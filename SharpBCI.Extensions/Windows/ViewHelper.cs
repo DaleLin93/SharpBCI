@@ -177,7 +177,13 @@ namespace SharpBCI.Extensions.Windows
             var row = new LabeledRow(labelPart, contentPart);
             if (rowHeight > 0) row.Height = rowHeight;
             parent.Children.Add(row);
-            return row; 
+            return row;
+        }
+
+        public static SummaryViewModel AddSummaryRow(this Panel parent, ISummary summary, uint rowHeight = 0) 
+        {
+            var contentPresenter = new ContentPresenter{HorizontalAlignment = HorizontalAlignment.Right};
+            return new SummaryViewModel(summary, AddLabeledRow(parent, summary.Name, contentPresenter, rowHeight), contentPresenter);
         }
 
     }

@@ -238,13 +238,13 @@ namespace SharpBCI.Extensions.Windows
 
         [NotNull] public readonly Grid Container;
 
-        [NotNull] public readonly TextBlock ValueTextBlock;
+        [NotNull] public readonly ContentPresenter ContentPresenter;
 
-        public SummaryViewModel([NotNull] ISummary summary, [NotNull] Grid container, [NotNull] TextBlock valueTextBlock)
+        public SummaryViewModel([NotNull] ISummary summary, [NotNull] Grid container, [NotNull] ContentPresenter contentPresenter)
         {
             Summary = summary ?? throw new ArgumentNullException(nameof(summary));
             Container = container ?? throw new ArgumentNullException(nameof(container));
-            ValueTextBlock = valueTextBlock ?? throw new ArgumentNullException(nameof(valueTextBlock));
+            ContentPresenter = contentPresenter ?? throw new ArgumentNullException(nameof(contentPresenter));
         }
 
         public bool IsVisible { get; private set; } = true;

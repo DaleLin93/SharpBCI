@@ -19,8 +19,8 @@ namespace SharpBCI.Extensions.Data
 
             public override IReadonlyContext Parse(IParameterDescriptor parameter, RandomTargetRate randomTargetRate) => new Context
             {
-                [Pseudo] = (randomTargetRate).Pseudo,
-                [TargetRate] = (uint) Math.Round((randomTargetRate).Probability * 100),
+                [Pseudo] = randomTargetRate.Pseudo,
+                [TargetRate] = Math.Round(randomTargetRate.Probability * 10000) / 100,
             };
 
         }

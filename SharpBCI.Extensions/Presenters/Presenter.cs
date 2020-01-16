@@ -246,8 +246,6 @@ namespace SharpBCI.Extensions.Presenters
                 throw new ArgumentException($"{actualType.Name} value not found by name: '{strVal}'");
             }
 
-            if (!actualType.IsPrimitive) throw new ArgumentException("type is not supported, type: " + type.FullName);
-
             if (strVal?.IsEmpty() ?? true)
                 if (nullableType)
                     return null;
@@ -265,8 +263,7 @@ namespace SharpBCI.Extensions.Presenters
             if (actualType == typeof(float)) return float.Parse(strVal);
             if (actualType == typeof(double)) return double.Parse(strVal);
             if (actualType == typeof(decimal)) return decimal.Parse(strVal);
-
-            throw new Exception("unreachable statement");
+            throw new ArgumentException("type is not supported, type: " + type.FullName);
         }
 
         public static string ConvertToString(this object value) => value == null ? NullPlaceholder : ConvertValueToString(value.GetType(), value);
