@@ -206,7 +206,7 @@ namespace SharpBCI.Extensions
 
         internal TypeOverridenParameter([NotNull] IParameterDescriptor originalParameter,
             [NotNull] Type valueType, [NotNull] IReadonlyContext metadata) 
-            : this(originalParameter, valueType, metadata, Activator.CreateInstance(valueType), null) { }
+            : this(originalParameter, valueType, metadata, TypeUtils.Default(valueType), null) { }
 
         internal TypeOverridenParameter([NotNull] IParameterDescriptor originalParameter,
             [NotNull] Type valueType, [NotNull] IReadonlyContext metadata,

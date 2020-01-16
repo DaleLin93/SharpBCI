@@ -3,6 +3,9 @@
 namespace SharpBCI.Extensions.Data
 {
 
+    /// <summary>
+    /// A struct of bandpass filter params with low and high cut-off frequencies.
+    /// </summary>
     public class IdealBandpassFilterParams : IParameterizedObject
     {
 

@@ -8,6 +8,9 @@ using MarukoLib.Lang;
 namespace SharpBCI.Extensions
 {
 
+    /// <summary>
+    /// The adapter for auto parameter which Will be used to verify the availability of parameters.
+    /// </summary>
     public interface IAutoParamAdapter
     {
 
@@ -15,6 +18,9 @@ namespace SharpBCI.Extensions
 
     }
 
+    /// <summary>
+    /// The field attribute to declare an auto parameter.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
     public class AutoParamAttribute : Attribute
     {

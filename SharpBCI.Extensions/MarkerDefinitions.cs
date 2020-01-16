@@ -43,6 +43,9 @@ namespace SharpBCI.Extensions
         [JsonProperty(CodeKey)]
         public int Code { get; }
 
+        /// <summary>
+        /// The owner (owned class) of the marker.
+        /// </summary>
         [JsonProperty(OwnerKey), NotNull]
         public string Owner { get; }
 
@@ -101,17 +104,28 @@ namespace SharpBCI.Extensions
 
     }
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field, Inherited = false)]
+    /// <summary>
+    /// An attribute to supply extra information for MarkerNamespace. 
+    /// The available target for attribute is the field with type <see cref="string"/>.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
     public class MarkerNamespaceAttribute : Attribute
     {
 
         public MarkerNamespaceAttribute(uint color = MarkerNamespaceDefinition.DefaultColor) => Color = color;
 
+        /// <summary>
+        /// The color of the namespace.
+        /// </summary>
         public uint Color { get; }
 
     }
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field, Inherited = false)]
+    /// <summary>
+    /// An attribute to define markers and provide extra information.
+    /// The available target for attribute is the field with type <see cref="int"/>.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
     public class MarkerAttribute : Attribute
     {
 
@@ -126,10 +140,19 @@ namespace SharpBCI.Extensions
             Color = color;
         }
 
+        /// <summary>
+        /// The namespace of marker.
+        /// </summary>
         [NotNull] public string Namespace { get; }
 
+        /// <summary>
+        /// The name of marker. The field name will be used as marker name if the name is unspecified.
+        /// </summary>
         [CanBeNull] public string Name { get; set; }
 
+        /// <summary>
+        /// The color of the marker.
+        /// </summary>
         public uint Color { get; }
 
     }
