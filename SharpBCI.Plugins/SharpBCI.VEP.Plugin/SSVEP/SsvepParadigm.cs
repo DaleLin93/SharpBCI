@@ -51,9 +51,19 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
                 public Colors BlockColors;
 
+                public bool ShowBlockText;
+
+                public uint BlockFontSize;
+
+                public uint BlockFontColor;
+
+                public string[] BlockText;
+
                 public Fixation BlockFixationPoint;
 
                 public ushort CheckerboardDensity;
+
+                public string GetBlockText(int idx) => !ShowBlockText || BlockText.Length == 0 ? null : BlockText[idx % BlockText.Length]?.Trim2Null();
 
             }
 
@@ -89,7 +99,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         public class Factory : ParadigmFactory<SsvepParadigm>
         {
 
-            // Test Config
+            #region Params
 
             private static readonly Parameter<bool> Debug = new Parameter<bool>("Debug", false);
 
@@ -129,7 +139,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             private static readonly Parameter<Dimensions> BlockLayout = Parameter<Dimensions>.CreateBuilder("Block Layout")
                 .SetDefaultValue(new Dimensions(1, 1))
-                .SetMetadata(Dimensions.Factory.DimensionNamesProperty, new[] { "Rows", "Cols" })
+                .SetMetadata(Dimensions.Factory.DimensionNamesProperty, new[] {"Rows", "Cols"})
                 .SetValidator(dims => dims.Volume < 1024)
                 .Build();
 
@@ -142,9 +152,35 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 .SetMetadata(Colors.Factory.ColorKeysProperty, new []{"Normal", "Flashing"})
                 .Build();
 
+            private static readonly Parameter<bool> ShowBlockText = new Parameter<bool>("Show Block Text", false);
+
+            private static readonly Parameter<uint> BlockFontSize = new Parameter<uint>("Block Font Size", Predicates.Positive, 15);
+
+            private static readonly Parameter<Color> BlockFontColor = new Parameter<Color>("Block Font Color", Color.White);
+
+            private static readonly Parameter<string[]> BlockText = Parameter<string[]>.CreateBuilder("Block Text", null)
+                .SetMetadata(Presenters.PresenterProperty, MultiValuePresenter.Instance)
+                .SetMetadata(MultiValuePresenter.ElementContextProperty, new ContextBuilder()
+                    .SetProperty(Presenters.PresenterProperty, PlainTextPresenter.Instance)
+                    .SetProperty(PlainTextPresenter.TextBoxHeightProperty, 50)
+                    .SetProperty(PlainTextPresenter.MultiLineProperty, true)
+                    .SetProperty(PlainTextPresenter.TextAlignmentProperty, System.Windows.TextAlignment.Center)
+                    .SetProperty(PlainTextPresenter.TextWrappingProperty, System.Windows.TextWrapping.Wrap)
+                    .SetProperty(PlainTextPresenter.MaxLengthProperty, int.MaxValue)
+                    .Build())
+                .Build();
+
             private static readonly Parameter<Fixation> BlockFixationPoint = new Parameter<Fixation>("Block Fixation Point", new Fixation(2, Color.Red));
 
             private static readonly Parameter<ushort> CheckerboardDensity = new Parameter<ushort>("Checkerboard Density", 5);
+
+            #endregion
+
+            #region Groups
+
+            private static readonly ParameterGroup BlockTextGroup = new ParameterGroup("Block Text Config", BlockFontSize, BlockFontColor, BlockText);
+
+            #endregion
 
             private static ITemporalPattern[] ParseMultiple(string expression)
             {
@@ -177,13 +213,12 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 }
             }
 
-            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new[]
-            {
-                new ParameterGroup("Display", Screen),
-                new ParameterGroup("General", Debug, Baseline, Patterns, StimulationType, PressKeyToStartBlock),
-                new ParameterGroup("Trial Params", TrialPreference, ExperimentBlockCount, InterBlockInterval, TrialCountPerBlock),
-                new ParameterGroup("User Interface", BackgroundColor, BlockSize, BlockLayout, BlockPosition, BlockBorder, BlockColors, BlockFixationPoint, CheckerboardDensity),
-            };
+            public override IReadOnlyCollection<IGroupDescriptor> ParameterGroups => new ParameterGroupCollection()
+                .Add("Display", Screen)
+                .Add("General", Debug, Baseline, Patterns, StimulationType, PressKeyToStartBlock)
+                .Add("Trial Params", TrialPreference, ExperimentBlockCount, InterBlockInterval, TrialCountPerBlock)
+                .Add("User Interface", BackgroundColor, BlockSize, BlockLayout, BlockPosition, BlockBorder, BlockColors,
+                    ShowBlockText, BlockTextGroup, BlockFixationPoint, CheckerboardDensity);
 
             public override IReadOnlyCollection<ISummary> Summaries => new ISummary[]
             {
@@ -208,6 +243,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                     var stimulationType = StimulationType.Get(context);
                     return stimulationType == SsvepStimulationType.SquareCheckerboard || stimulationType == SsvepStimulationType.SquareCheckerboardRadical;
                 }
+                if (ReferenceEquals(descriptor, BlockTextGroup)) return ShowBlockText.Get(context);
                 return base.IsVisible(context, descriptor);
             }
 
@@ -222,6 +258,10 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                     BlockPosition = BlockPosition.Get(context),
                     BlockBorder = BlockBorder.Get(context),
                     BlockColors = BlockColors.Get(context),
+                    ShowBlockText = ShowBlockText.Get(context),
+                    BlockFontSize = BlockFontSize.Get(context),
+                    BlockFontColor = BlockFontColor.Get(context, ColorUtils.ToUIntArgb),
+                    BlockText = BlockText.Get(context).Empty2Null(),
                     BlockFixationPoint = BlockFixationPoint.Get(context),
                     CheckerboardDensity = CheckerboardDensity.Get(context)
                 },

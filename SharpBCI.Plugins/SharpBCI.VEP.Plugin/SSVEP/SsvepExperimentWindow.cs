@@ -13,16 +13,14 @@ using SharpBCI.Extensions.Data;
 using SharpBCI.Extensions.Patterns;
 using SharpDX;
 using D2D1 = SharpDX.Direct2D1;
-using D3D11 = SharpDX.Direct3D11;
-using DXGI = SharpDX.DXGI;
+using DW = SharpDX.DirectWrite;
 using SharpDX.Mathematics.Interop;
-using SharpDX.Windows;
 using KeyEventArgs = System.Windows.Forms.KeyEventArgs;
 
 namespace SharpBCI.Paradigms.VEP.SSVEP
 {
 
-    internal class SsvepExperimentWindow : SimpleD2DForm, IDisposable
+    internal class SsvepExperimentWindow : SimpleD2DForm
     {
 
         private interface IStimulationPresenter
@@ -245,11 +243,13 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
             public ITemporalPattern Pattern;
 
+            public string Text;
+
             public RawRectangleF? BorderRect;
 
             public RawRectangleF ContentRect;
 
-            public D2D1.Ellipse? CenterPointEllipse;
+            public D2D1.Ellipse? FixationEllipse;
 
             public object Tag;
 
@@ -277,7 +277,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                     BorderRect = null;
                     ContentRect = outerRect;
                 }
-                CenterPointEllipse = fixationPointSize > 0 ? new D2D1.Ellipse(Center, fixationPointSize, fixationPointSize) : (D2D1.Ellipse?)null;
+                FixationEllipse = fixationPointSize > 0 ? new D2D1.Ellipse(Center, fixationPointSize, fixationPointSize) : (D2D1.Ellipse?)null;
             }
 
         }
@@ -318,11 +318,15 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
 
         private readonly Color _blockFlashingColor;
 
+        private readonly Color _blockFontColor;
+
         private readonly Color _blockFixationPointColor;
 
         /* D3D Resources */
-                    
-        private SharpDX.DirectWrite.TextFormat _textFormat;
+
+        private DW.TextFormat _blockTextFormat;
+
+        private DW.TextFormat _cueTextFormat;
 
         public SsvepExperimentWindow(Session session)
         {
@@ -354,6 +358,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                 var block = _blocks[i] = new Block();
                 block.Size = new RawVector2(_paradigm.Config.Gui.BlockSize.Width, _paradigm.Config.Gui.BlockSize.Height);
                 block.Pattern = _paradigm.Config.Test.Patterns[i];
+                block.Text = _paradigm.Config.Gui.GetBlockText(i);
             }
 
             /* Type conversion */
@@ -362,6 +367,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             _blockBorderColor = _paradigm.Config.Gui.BlockBorder.Color.ToSdColor().ToSdx();
             _blockNormalColor = _paradigm.Config.Gui.BlockColors[0].ToSdColor().ToSdx();
             _blockFlashingColor = _paradigm.Config.Gui.BlockColors[1].ToSdColor().ToSdx();
+            _blockFontColor = _paradigm.Config.Gui.BlockFontColor.ToSdColor().ToSdx();
             _blockFixationPointColor = _paradigm.Config.Gui.BlockFixationPoint.Color.ToSdColor().ToSdx();
 
             /* Initialize presenter */
@@ -388,18 +394,23 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         
         protected override void Draw(D2D1.RenderTarget renderTarget)
         {
+            /* Clear canvas */
             renderTarget.Clear(_backgroundColor);
 
-            if (_paradigmStarted) // Draw blocks
+            /* Draw blocks */
+            if (_paradigmStarted) 
             {
                 var secsPassed = (CurrentTime - _stageUpdatedAt) / 1000.0;
                 foreach (var block in _blocks)
                 {
+                    /* Draw block border */
                     if (block.BorderRect != null)
                     {
                         SolidColorBrush.Color = _blockBorderColor;
                         renderTarget.FillRectangle(block.BorderRect.Value, SolidColorBrush);
                     }
+
+                    /* Fill block content */
                     if (!_trialStarted || block.Pattern == null)
                     {
                         SolidColorBrush.Color = _blockNormalColor;
@@ -408,17 +419,26 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
                     else
                         _presenter.Present(renderTarget, block, secsPassed);
 
-                    if (block.CenterPointEllipse != null)
+                    /* Draw block text */
+                    if (block.Text != null)
+                    {
+                        SolidColorBrush.Color = _blockFontColor;
+                        renderTarget.DrawText(block.Text, _blockTextFormat, block.ContentRect,
+                            SolidColorBrush, D2D1.DrawTextOptions.None);
+                    }
+
+                    /* Draw block fixation */
+                    if (block.FixationEllipse != null)
                     {
                         SolidColorBrush.Color = _blockFixationPointColor;
-                        renderTarget.FillEllipse(block.CenterPointEllipse.Value, SolidColorBrush);
+                        renderTarget.FillEllipse(block.FixationEllipse.Value, SolidColorBrush);
                     }
                 }
             }
-            else if (!(_displayText?.IsBlank() ?? true)) // Draw text
+            else if (_displayText != null) // Draw text
             {
                 SolidColorBrush.Color = _fontColor;
-                renderTarget.DrawText(_displayText, _textFormat, new RawRectangleF(0, 0, Width, Height),
+                renderTarget.DrawText(_displayText, _cueTextFormat, new RawRectangleF(0, 0, Width, Height),
                     SolidColorBrush, D2D1.DrawTextOptions.None);
             }
         }
@@ -426,11 +446,17 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         protected override void InitializeDirectXResources()
         {
             base.InitializeDirectXResources();
-            _textFormat = new SharpDX.DirectWrite.TextFormat(DwFactory, "Arial", SharpDX.DirectWrite.FontWeight.Bold,
-                SharpDX.DirectWrite.FontStyle.Normal, SharpDX.DirectWrite.FontStretch.Normal, 84 * (float)GraphicsUtils.Scale)
+            var guiScale = (float) GraphicsUtils.Scale;
+            _blockTextFormat = new DW.TextFormat(DwFactory, "Arial", _paradigm.Config.Gui.BlockFontSize * guiScale)
             {
-                TextAlignment = SharpDX.DirectWrite.TextAlignment.Center,
-                ParagraphAlignment = SharpDX.DirectWrite.ParagraphAlignment.Center
+                TextAlignment = DW.TextAlignment.Center,
+                ParagraphAlignment = DW.ParagraphAlignment.Center
+            };
+            _cueTextFormat = new DW.TextFormat(DwFactory, "Arial", DW.FontWeight.Bold,
+                DW.FontStyle.Normal, DW.FontStretch.Normal, 84 * guiScale)
+            {
+                TextAlignment = DW.TextAlignment.Center,
+                ParagraphAlignment = DW.ParagraphAlignment.Center
             };
             UpdateResources();
         }
@@ -444,7 +470,8 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
         protected override void DisposeDirectXResources()
         {
             _presenter.Destroy();
-            _textFormat.Dispose();
+            _blockTextFormat.Dispose();
+            _cueTextFormat.Dispose();
             base.DisposeDirectXResources();
         }
 
@@ -550,7 +577,7 @@ namespace SharpBCI.Paradigms.VEP.SSVEP
             _stageUpdatedAt = CurrentTime;
             var stage = e.Stage;
 
-            _displayText = stage.Cue;
+            _displayText = stage.Cue?.Trim2Null();
 
             if (stage.Marker != null)
             {
