@@ -17,9 +17,11 @@ namespace SharpBCI.Extensions.IO.Devices.EyeTrackers
         public sealed class Factory : IStreamerFactory
         {
 
+            public bool IsDeviceDependent => true;
+
             public Type StreamingType => typeof(Timestamped<IGazePoint>);
 
-            public IStreamer Create(IDevice device, IClock clock) => device == null ? null : new GazePointStreamer((IEyeTracker)device, clock);
+            public IStreamer Create(IDevice device, IClock clock) => new GazePointStreamer((IEyeTracker)device ?? throw new ArgumentNullException(nameof(device)), clock);
 
         }
 

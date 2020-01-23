@@ -12,11 +12,17 @@ namespace SharpBCI.Extensions.IO.Devices
     {
 
         /// <summary>
+        /// Gets a value indicating whether the <see cref="IStreamerFactory"/> is device-dependent or not.
+        /// If the <see cref="IStreamerFactory"/> is device-dependent, the device parameter must be not null to create a streamer.
+        /// </summary>
+        bool IsDeviceDependent { get; }
+
+        /// <summary>
         /// The type of streaming value.
         /// </summary>
         [NotNull] Type StreamingType { get; }
 
-        [CanBeNull] IStreamer Create([CanBeNull] IDevice device, [NotNull] IClock clock);
+        [NotNull] IStreamer Create([CanBeNull] IDevice device, [NotNull] IClock clock);
 
     }
 
@@ -54,7 +60,6 @@ namespace SharpBCI.Extensions.IO.Devices
             return DeviceTypes[type] = deviceType;
         }
             
-
         public static bool TryGet(Type type, out DeviceType deviceType)
         {
             var attr = type.GetCustomAttribute<DeviceTypeAttribute>();

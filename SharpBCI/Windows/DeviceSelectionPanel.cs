@@ -63,7 +63,7 @@ namespace SharpBCI.Windows
 
         public const int DeviceRowHeight = ViewConstants.DefaultRowHeight;
 
-        internal enum DeviceState
+        internal enum State
         {
             Unset, Error, Warning, Ok
         }
@@ -83,7 +83,7 @@ namespace SharpBCI.Windows
 
             [NotNull] public readonly ComboBox DeviceComboBox;
 
-            [NotNull] public readonly Rectangle ConsumerStateRectangle;
+            [NotNull] public readonly Rectangle StateRectangle;
 
             [NotNull] public readonly Button ConfigButton, PreviewButton;
 
@@ -106,7 +106,7 @@ namespace SharpBCI.Windows
                 Container.Children.Add(DeviceComboBox = new ComboBox {Tag = this});
                 Grid.SetColumn(DeviceComboBox, 0);
 
-                Container.Children.Add(ConsumerStateRectangle = new Rectangle
+                Container.Children.Add(StateRectangle = new Rectangle
                 {
                     HorizontalAlignment = HorizontalAlignment.Right,
                     VerticalAlignment = VerticalAlignment.Center,
@@ -116,7 +116,7 @@ namespace SharpBCI.Windows
                     RadiusY = ConsumerStateIndicatorSize / 2.0, 
                     Tag = this
                 });
-                Grid.SetColumn(ConsumerStateRectangle, 1);
+                Grid.SetColumn(StateRectangle, 1);
 
                 Container.Children.Add(ConfigButton = CreateConfigButton(this));
                 Grid.SetColumn(ConfigButton, 3);
@@ -174,42 +174,47 @@ namespace SharpBCI.Windows
                 }
             }
 
-            public void SetState(DeviceState state, string message)
+            public State State => (StateRectangle.Tag as State?) ?? State.Unset;
+
+            public string Message => StateRectangle.ToolTip as string;
+
+            public void SetState(State state, string message)
             {
                 Brush brush;
                 switch (state)
                 {
-                    case DeviceState.Unset:
+                    case State.Unset:
                         brush = Brushes.DimGray;
                         break;
-                    case DeviceState.Error:
+                    case State.Error:
                         brush = Brushes.Red;
                         break;
-                    case DeviceState.Warning:
+                    case State.Warning:
                         brush = Brushes.Orange;
                         break;
-                    case DeviceState.Ok:
+                    case State.Ok:
                         brush = Brushes.SeaGreen;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(state), state, null);
                 }
-                ConsumerStateRectangle.Fill = brush;
-                ConsumerStateRectangle.ToolTip = message;
+                StateRectangle.Fill = brush;
+                StateRectangle.ToolTip = message;
+                StateRectangle.Tag = state;
             }
 
             private void UpdateState()
             {
-                var hasDevice = _currentDevice != null;
+                var hasDevice = DeviceType.StreamerFactory != null && (_currentDevice != null || !DeviceType.StreamerFactory.IsDeviceDependent);
                 var hasConsumers = _currentConsumers?.Any() ?? false;
                 if (hasDevice && hasConsumers)
-                    SetState(DeviceState.Ok, _currentConsumers.Select(c => c.Template.Identifier).Join("\n"));
+                    SetState(State.Ok, _currentConsumers.Select(c => c.Template.Identifier).Join("\n"));
                 else if (hasDevice)
-                    SetState(DeviceState.Warning, "No consumers attached");
+                    SetState(State.Warning, "No consumers attached");
                 else if (hasConsumers)
-                    SetState(DeviceState.Warning, "No device selected");
+                    SetState(State.Warning, "No device selected");
                 else
-                    SetState(DeviceState.Unset, null);
+                    SetState(State.Unset, null);
             }
 
         }
@@ -366,6 +371,31 @@ namespace SharpBCI.Windows
                 _deviceControlGroups[deviceType].DeviceComboBox.ItemsSource = list;
                 _deviceControlGroups[deviceType].DeviceComboBox.SelectedIndex = 0;
             }
+        }
+
+        internal IDictionary<DeviceType, string> GetDeviceMessages()
+        {
+            var deviceMessages = new Dictionary<DeviceType, string>();
+            foreach (var deviceType in DeviceTypes)
+            {
+                if (!GetDeviceState(deviceType, out var state, out var msg)) continue;
+                if (state == State.Ok || state == State.Unset) continue;
+                deviceMessages[deviceType] = msg;
+            }
+            return deviceMessages;
+        }
+
+        internal bool GetDeviceState(DeviceType deviceType, out State state, out string message)
+        {
+            if (!_deviceControlGroups.TryGetValue(deviceType, out var viewModel))
+            {
+                state = State.Unset;
+                message = null;
+                return false;
+            }
+            state = viewModel.State;
+            message = viewModel.Message;
+            return true;
         }
         
         private void DeviceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

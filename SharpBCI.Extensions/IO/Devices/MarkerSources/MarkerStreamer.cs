@@ -18,6 +18,8 @@ namespace SharpBCI.Extensions.IO.Devices.MarkerSources
         public sealed class Factory : IStreamerFactory
         {
 
+            public bool IsDeviceDependent => false;
+
             public Type StreamingType => typeof(Timestamped<IMarker>);
 
             public IStreamer Create(IDevice device, IClock clock) => new MarkerStreamer((IMarkerSource)device, clock);

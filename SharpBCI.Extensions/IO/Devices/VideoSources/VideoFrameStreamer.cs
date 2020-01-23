@@ -16,9 +16,11 @@ namespace SharpBCI.Extensions.IO.Devices.VideoSources
         public sealed class Factory : IStreamerFactory
         {
 
+            public bool IsDeviceDependent => true;
+
             public Type StreamingType => typeof(Timestamped<IVideoFrame>);
 
-            public IStreamer Create(IDevice device, IClock clock) => device == null ? null : new VideoFrameStreamer((IVideoSource)device, clock);
+            public IStreamer Create(IDevice device, IClock clock) => new VideoFrameStreamer((IVideoSource)device ?? throw new ArgumentNullException(nameof(device)), clock);
 
         }
 

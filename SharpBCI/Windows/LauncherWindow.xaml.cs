@@ -31,6 +31,7 @@ using MarukoLib.Threading;
 using MarukoLib.UI;
 using SharpBCI.Core.Experiment;
 using ValidationResult = SharpBCI.Extensions.Paradigms.ValidationResult;
+using SharpBCI.Extensions.IO.Devices;
 
 namespace SharpBCI.Windows
 {
@@ -141,7 +142,7 @@ namespace SharpBCI.Windows
 
         private ParadigmComboBox _paradigmComboBox;
 
-        private DeviceSelectionPanel _deviceConfigPanel;
+        private DeviceSelectionPanel _deviceSelectionPanel;
 
         private bool _needResizeWindow;
 
@@ -201,6 +202,7 @@ namespace SharpBCI.Windows
             {
                 lock (StartBtn)
                 {
+                    if (!CheckDeivceConfigs()) return;
                     if (!CheckParadigmArgs()) return;
                     if (!StartBtn.IsEnabled) return;
                     StartBtn.IsEnabled = false;
@@ -232,7 +234,7 @@ namespace SharpBCI.Windows
                 Subject = _subjectTextBox.Text,
                 SessionDescriptor = _sessionDescriptorTextBox.Text,
                 Paradigm = paradigmEntity,
-                Devices = _deviceConfigPanel.DeviceConfigs,
+                Devices = _deviceSelectionPanel.DeviceConfigs,
             };
         }
 
@@ -247,7 +249,7 @@ namespace SharpBCI.Windows
                 if (ctx != null)
                     ParadigmParamPanel.Context = ctx;
             }
-            _deviceConfigPanel.DeviceConfigs = config.Devices;
+            _deviceSelectionPanel.DeviceConfigs = config.Devices;
         }
 
         public void LoadConfig(uint snapshotIdx = 0)
@@ -342,18 +344,18 @@ namespace SharpBCI.Windows
 
         private void InitializeFooterPanel()
         {
-            _deviceConfigPanel = new DeviceSelectionPanel();
-            _deviceConfigPanel.DeviceChanged += (sender, e) =>
+            _deviceSelectionPanel = new DeviceSelectionPanel();
+            _deviceSelectionPanel.DeviceChanged += (sender, e) =>
             {
                 SerializeDeviceConfig(e.OldDevice, e.OldDeviceArgs);
                 e.NewDeviceArgs = DeserializeDeviceConfig(e.NewDevice);
             };
-            _deviceConfigPanel.ConsumerChanged += (sender, e) =>
+            _deviceSelectionPanel.ConsumerChanged += (sender, e) =>
             {
                 SerializeConsumerConfig(e.OldConsumer, e.OldConsumerArgs);
                 e.NewConsumerArgs = DeserializeConsumerConfig(e.NewConsumer);
             };
-            FooterPanel.Children.Add(_deviceConfigPanel);
+            FooterPanel.Children.Add(_deviceSelectionPanel);
         }
 
         private void InitializeParadigmConfigurationPanel(ParadigmTemplate paradigm)
@@ -407,9 +409,9 @@ namespace SharpBCI.Windows
         /// </summary>
         private void SerializeDevicesConfig()
         {
-            foreach (var deviceType in _deviceConfigPanel.DeviceTypes)
+            foreach (var deviceType in _deviceSelectionPanel.DeviceTypes)
             {
-                var deviceArgs = _deviceConfigPanel[deviceType];
+                var deviceArgs = _deviceSelectionPanel[deviceType];
                 using (_configReadWriteLock.AcquireWriteLock())
                 {
                     _config.SelectedDevices[deviceType.Name] = deviceArgs.Device.Id;
@@ -444,9 +446,9 @@ namespace SharpBCI.Windows
         /// </summary>
         private void DeserializeDevicesConfig()
         {
-            foreach (var deviceType in _deviceConfigPanel.DeviceTypes)
+            foreach (var deviceType in _deviceSelectionPanel.DeviceTypes)
                 using (_configReadWriteLock.AcquireReadLock())
-                    _deviceConfigPanel[deviceType] = new DeviceConfig
+                    _deviceSelectionPanel[deviceType] = new DeviceConfig
                     {
                         DeviceType = deviceType.Name,
                         Device = _config.SelectedDevices.TryGetValue(deviceType.Name, out var did) ? _config.GetDevice(did) : default,
@@ -492,7 +494,22 @@ namespace SharpBCI.Windows
         {
             if (consumer == null) return EmptyContext.Instance;
             using (_configReadWriteLock.AcquireReadLock()) 
-                return (IReadonlyContext)consumer.DeserializeArgs(_config.GetConsumer(consumer.Identifier).Args) ?? EmptyContext.Instance; 
+                return (IReadonlyContext)consumer.DeserializeArgs(_config.GetConsumer(consumer.Identifier).Args) ?? EmptyContext.Instance;
+        }
+
+        private bool CheckDeivceConfigs()
+        {
+            var deviceMessages = _deviceSelectionPanel.GetDeviceMessages();
+            if (deviceMessages.Count > 0)
+            {
+                var messageBuilder = new StringBuilder();
+                foreach (var entry in deviceMessages)
+                    messageBuilder.Append(entry.Key.DisplayName).Append(": ").Append(entry.Value).Append('\n');
+                messageBuilder.Append("\nDo you want to continue?");
+                var result = MessageBox.Show(messageBuilder.ToString(), "Incomplete device configuration", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (result == MessageBoxResult.No) return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -541,7 +558,7 @@ namespace SharpBCI.Windows
             }
             var errorMessage = stringBuilder.ToString();
             SetErrorMessage(errorMessage);
-            if (msgBox) MessageBox.Show(errorMessage); 
+            if (msgBox) MessageBox.Show(errorMessage, "Invalid paradigm configuration", MessageBoxButton.OK, MessageBoxImage.Warning); 
             return false;
         }
 
@@ -671,7 +688,7 @@ namespace SharpBCI.Windows
                     var menuItem = new MenuItem { Style = style, Header = plugin.Name};
                     var children = new LinkedList<object>();
 
-                    foreach (var deviceType in _deviceConfigPanel.DeviceTypes)
+                    foreach (var deviceType in _deviceSelectionPanel.DeviceTypes)
                     {
                         var devices = plugin.Devices.Where(d => d.DeviceType == deviceType).ToArray();
                         if (devices.Length <= 0)
@@ -682,7 +699,7 @@ namespace SharpBCI.Windows
                                 var deviceAttribute = device.Attribute;
                                 var menuItemHeader = $"{deviceAttribute.Name} ({deviceAttribute.FullVersionName}) - {device.Clz.FullName}";
                                 var deviceMenuItem = new MenuItem { Style = style, Header = menuItemHeader };
-                                deviceMenuItem.Click += (sender, e) => _deviceConfigPanel.FindAndSelectDevice(deviceType, device.DeviceName, null);
+                                deviceMenuItem.Click += (sender, e) => _deviceSelectionPanel.FindAndSelectDevice(deviceType, device.DeviceName, null);
                                 children.AddLast(deviceMenuItem);
                             }
                         children.AddLast(new Separator());
@@ -767,7 +784,7 @@ namespace SharpBCI.Windows
             RefreshPlatformCapabilityMenuItems();
 
             RefreshParadigmComboboxItems();
-            _deviceConfigPanel.UpdateDevices();
+            _deviceSelectionPanel.UpdateDevices();
 
             LoadConfig();
 

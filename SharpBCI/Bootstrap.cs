@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -141,7 +140,7 @@ namespace SharpBCI
 
                             foreach (var consumerWithParams in consumerListOfDevice)
                             {
-                                Debug.Assert(consumerWithParams.Template != null, "consumerWithParams.Template != null");
+                                System.Diagnostics.Debug.Assert(consumerWithParams.Template != null, "consumerWithParams.Template != null");
                                 var consumer = consumerWithParams.Template.NewInstance(session, consumerWithParams.Args, indexed ? num++ : (byte?)null);
                                 disposablePool.AddIfDisposable(consumer);
                                 deviceStreamer.AttachConsumer(consumer);
@@ -193,7 +192,7 @@ namespace SharpBCI
             {
                 foreach (var entry in deviceLookups)
                 {
-                    Debug.Assert(entry.Value.Template != null, "entry.Value.Template != null");
+                    System.Diagnostics.Debug.Assert(entry.Value.Template != null, "entry.Value.Template != null");
                     deviceInstances[entry.Key] = entry.Value.Template.NewInstance(entry.Value.Args);
                 }
 
@@ -220,8 +219,11 @@ namespace SharpBCI
             {
                 // ReSharper disable once RedundantAssignment
                 if (!devices.TryGetValue(deviceType, out var instance)) instance = null;
-                var streamer = deviceType.StreamerFactory?.Create(instance, clock);
-                if (streamer != null) streamers.Add(deviceStreamers[deviceType] = streamer);
+                if (deviceType.StreamerFactory == null) continue;
+                if (deviceType.StreamerFactory.IsDeviceDependent && instance == null) continue;
+                var streamer = deviceType.StreamerFactory.Create(instance, clock);
+                System.Diagnostics.Debug.Assert(streamer != null);
+                streamers.Add(deviceStreamers[deviceType] = streamer);
             }
             if (!deviceStreamers.TryGetValue(MarkerSourceDeviceType, out _))
                 streamers.Add(deviceStreamers[MarkerSourceDeviceType] = new MarkerStreamer(null, clock));
