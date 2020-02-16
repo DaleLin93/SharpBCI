@@ -18,11 +18,21 @@
 
             <TextBlock Text="Options" FontSize="9" Margin="5 6 5 2" />
             <StackPanel Margin="5 0 5 2">
-                <CheckBox x:Name="GroupingCheckBox" Content="Grouping" FontSize="9" IsChecked="True" VerticalContentAlignment="Center"
-                          Checked="GroupingCheckBox_OnIsCheckedChanged" Unchecked="GroupingCheckBox_OnIsCheckedChanged" />
+                <CheckBox x:Name="CaseInsensitiveCheckBox" Content="Case Insensitive" FontSize="9" IsChecked="True" VerticalContentAlignment="Center"
+                          Checked="CaseInsensitiveCheckBox_OnIsCheckedChanged" Unchecked="CaseInsensitiveCheckBox_OnIsCheckedChanged" />
+                <CheckBox x:Name="FileGroupingCheckBox" Content="File Grouping" FontSize="9" IsChecked="True" VerticalContentAlignment="Center"
+                          Checked="FileGroupingCheckBox_OnIsCheckedChanged" Unchecked="FileGroupingCheckBox_OnIsCheckedChanged" />
             </StackPanel>
 
-            <TextBlock Text="Files" FontSize="9" Margin="5 6 5 2" />
+            <Grid Margin="5 6 5 2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Files" FontSize="9" />
+                <TextBlock Grid.Column="2" x:Name="FileItemCountTextBlock" Text="(0 items)" FontSize="7" VerticalAlignment="Center" />
+            </Grid>
         </StackPanel>
         <StackPanel DockPanel.Dock="Bottom">
             <TextBlock Text="New Name" FontSize="9" Margin="5 6 5 2" />
