@@ -8,8 +8,10 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using JetBrains.Annotations;
 using MarukoLib.IO;
 using MarukoLib.Lang;
+using MarukoLib.Windows;
 
 namespace SharpBCI.Extensions.Apps
 {
@@ -66,32 +68,83 @@ namespace SharpBCI.Extensions.Apps
         {
 
             public FileNode(string parent, string name, IEnumerable<string> extensions) : base(parent, name) => 
-                Extensions = new ReadOnlyCollection<string>(extensions.Distinct().ToArray());
+                Suffixes = new ReadOnlyCollection<string>(extensions.Distinct().ToArray());
 
-            internal IReadOnlyList<string> Extensions { get; }
+            internal IReadOnlyList<string> Suffixes { get; }
 
             public override string ToString()
             {
                 var nameWithExt = Name;
-                if (Extensions.Count > 1) nameWithExt += $".* ({Extensions.Count})";
-                else if (Extensions.Count == 1 && !string.IsNullOrWhiteSpace(Extensions[0])) nameWithExt += Extensions[0];
+                if (Suffixes.Count > 1) nameWithExt += $".* ({Suffixes.Count})";
+                else if (Suffixes.Count == 1 && !string.IsNullOrWhiteSpace(Suffixes[0])) nameWithExt += Suffixes[0];
                 return nameWithExt;
             }
+
         }
 
         private Regex _regex;
 
         public FileRenamingToolWindow() => InitializeComponent();
 
+        /// <summary>
+        /// Example of <see cref="Path.GetFileNameWithoutExtension"/>: 
+        /// <![CDATA[C:\Abc.txt => Abc]]>
+        /// Examples of <see cref="GetFileNameWithoutSuffix"/>: 
+        /// <![CDATA[C:\Abc.txt => Abc]]>
+        /// <![CDATA[C:\Abc#12.txt => Abc]]>
+        /// </summary>
+        /// <param name="path">File path</param>
+        /// <returns>Path without suffix</returns>
         public static string GetFileNameWithoutSuffix(string path)
         {
             if (path == null) return null;
+            /* Remove suffix (including '.') */
             int length;
             if ((length = path.LastIndexOf('.')) == -1) length = path.Length;
             if (length == 0) return string.Empty;
+            /* Remove numbering (including '#') */
             var sharpAt = path.LastIndexOf('#', length - 1);
-            if (sharpAt >= 0 && int.TryParse(path.Substring(sharpAt + 1, length - sharpAt - 1), out _)) return path.Substring(0, sharpAt);
+            if (sharpAt >= 0 && int.TryParse(path.Substring(sharpAt + 1, length - sharpAt - 1), out _)) 
+                return path.Substring(0, sharpAt);
             return path.Substring(0, length);
+        }
+
+        public static void Rename([ItemNotNull] params FileUtils.RenamePair[] input) => Rename((IEnumerable<FileUtils.RenamePair>)input);
+
+        public static void Rename([ItemNotNull] IEnumerable<FileUtils.RenamePair> input)
+        {
+            var items = input.AsReadonlyCollection();
+
+            /* Preconditions */
+            if (items.Count <= 0)
+            {
+                MessageBoxUtils.InfoOk("No file will be renamed!");
+                return;
+            }
+
+            try
+            {
+                /* Rename confirmation */
+                var msgBuilder = new StringBuilder(256);
+                msgBuilder.Append("Are you sure to rename following ").Append(items.Count).Append(" files?\n");
+                foreach (var item in items) msgBuilder.Append(" ").Append(item).Append('\n');
+                if (!MessageBoxUtils.WarningYesNo(msgBuilder.ToString(), "Rename Files").IsYes()) return;
+
+                /* Do rename */
+                FileUtils.Rename(items, out var renameFailedList);
+
+                /* Display failures */
+                if (renameFailedList.Count > 0)
+                {
+                    msgBuilder.Clear().Append("Failed to rename following ").Append(renameFailedList.Count).Append(" files:\n");
+                    foreach (var failedItem in renameFailedList) msgBuilder.Append(" ").Append(failedItem).Append('\n');
+                    MessageBoxUtils.ErrorOk(msgBuilder.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBoxUtils.ErrorOk(ex.Message);
+            }
         }
 
         private void UpdateFilter()
@@ -108,16 +161,16 @@ namespace SharpBCI.Extensions.Apps
             }
             if (regex == _regex) return;
             _regex = regex;
-            UpdateFileList();
+            UpdateItemList();
         }
 
-        private void UpdateFileList()
+        private void UpdateItemList()
         {
             if (!IsLoaded) return;
             var searchingDirectory = DirectoryTextBox.Text;
             if (!Directory.Exists(searchingDirectory))
             {
-                FilesListBox.ItemsSource = new[] { "<Invalid Directory>" };
+                ItemsListBox.ItemsSource = new[] { "<Invalid Directory>" };
                 return;
             }
 
@@ -151,18 +204,21 @@ namespace SharpBCI.Extensions.Apps
                 foreach (var file in filePaths)
                     list.AddLast(new FileNode(searchingDirectory, Path.GetFileNameWithoutExtension(file), new[] { Path.GetExtension(file) }));
             }
-            FileItemCountTextBlock.Text = $"({list.Count} items)";
-            FilesListBox.ItemsSource = list;
+            ItemCountTextBlock.Text = $"({list.Count} items)";
+            ItemsListBox.ItemsSource = list;
         }
 
         private void UpdateNewName()
         {
-            if (FilesListBox.SelectedItem is FileNode fileNode)
+            if (ItemsListBox.SelectedItem is FileNode fileNode)
                 NewNameTextBox.Text = _regex == null || string.IsNullOrWhiteSpace(RenamePatternTextBox.Text)
                     ? fileNode.Name : _regex.Replace(fileNode.Name, RenamePatternTextBox.Text);
+            if (ItemsListBox.SelectedItem is DirectoryNode directoryNode)
+                NewNameTextBox.Text = _regex == null || string.IsNullOrWhiteSpace(RenamePatternTextBox.Text)
+                    ? directoryNode.Name : _regex.Replace(directoryNode.Name, RenamePatternTextBox.Text);
             else
                 NewNameTextBox.Text = "";
-            NewNameTextBox.Text = NewNameTextBox.Text.RemoveInvalidCharacterForFileName();
+            NewNameTextBox.Text = FileUtils.RemoveInvalidCharsForFileName(NewNameTextBox.Text);
         }
 
         private void Window_OnLoaded(object sender, RoutedEventArgs e) => DirectoryTextBox.Text = FileUtils.ExecutableDirectory;
@@ -171,17 +227,28 @@ namespace SharpBCI.Extensions.Apps
 
         private void RenamePatternTextBox_OnTextChanged(object sender, TextChangedEventArgs e) => UpdateNewName();
 
-        private void DirectoryTextBox_OnTextChanged(object sender, TextChangedEventArgs e) => UpdateFileList();
+        private void DirectoryTextBox_OnTextChanged(object sender, TextChangedEventArgs e) => UpdateItemList();
 
         private void CaseInsensitiveCheckBox_OnIsCheckedChanged(object sender, RoutedEventArgs e) => UpdateFilter();
 
-        private void FileGroupingCheckBox_OnIsCheckedChanged(object sender, RoutedEventArgs e) => UpdateFileList();
+        private void FileGroupingCheckBox_OnIsCheckedChanged(object sender, RoutedEventArgs e) => UpdateItemList();
 
-        private void FilesListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateNewName();
+        private void FilesListBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var showRenameGrid = !(ItemsListBox.SelectedItem is FileNode
+                || (RenameDirectoriesCheckBox.IsChecked ?? false && ItemsListBox.SelectedItem is DirectoryNode));
+            if (!showRenameGrid)
+            {
+                SingleItemRenameGrid.Visibility = Visibility.Collapsed;
+                return;
+            }
+            SingleItemRenameGrid.Visibility = Visibility.Visible;
+            UpdateNewName();
+        }
 
         private void FilesListBox_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            switch (FilesListBox.SelectedItem)
+            switch (ItemsListBox.SelectedItem)
             {
                 case DirectoryNode directoryNode:
                     DirectoryTextBox.Text = Path.Combine(directoryNode.Parent, directoryNode.Name);
@@ -192,102 +259,84 @@ namespace SharpBCI.Extensions.Apps
             }
         }
 
-        private void RenameSelectedFileButton_OnClick(object sender, RoutedEventArgs e)
+        private void RenameSelectedButton_OnClick(object sender, RoutedEventArgs e)
         {
-            if (!(FilesListBox.SelectedItem is FileNode fileNode)) return;
-            if (string.IsNullOrWhiteSpace(NewNameTextBox.Text))
+            /* Preconditions */
+            if (!(ItemsListBox.SelectedItem is Node node)) return; 
+            if (!(ItemsListBox.SelectedItem is FileNode
+                || (RenameDirectoriesCheckBox.IsChecked ?? false && ItemsListBox.SelectedItem is DirectoryNode))) return;
+            var srcName = node.Name;
+            var dstName = NewNameTextBox.Text;
+            if (string.IsNullOrWhiteSpace(dstName))
             {
-                MessageBox.Show("New name cannot be empty!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBoxUtils.ErrorOk("New name cannot be empty!");
                 return;
             }
-            var fileCount = fileNode.Extensions.Count;
-            if (fileCount <= 0 || Equals(fileNode.Name, NewNameTextBox.Text)) return;
-            var namePairs = new LinkedList<Pair<string>>();
-            foreach (var fileNodeExtension in fileNode.Extensions)
-            {
-                var filePath = fileNode.Name;
-                var newPath = NewNameTextBox.Text;
-                if (fileNodeExtension != null)
+            if (Equals(srcName, dstName)) return;
+
+            /* List items to be renamed */
+            var renamePairs = new LinkedList<FileUtils.RenamePair>();
+            if (ItemsListBox.SelectedItem is FileNode fileNode)
+                foreach (var suffix in fileNode.Suffixes)
                 {
-                    filePath += fileNodeExtension;
-                    newPath += fileNodeExtension;
+                    var srcPath = Path.Combine(node.Parent, srcName);
+                    var dstPath = Path.Combine(node.Parent, dstName);
+                    if (suffix != null)
+                    {
+                        srcPath += suffix;
+                        dstPath += suffix;
+                    }
+                    renamePairs.AddLast(new FileUtils.RenamePair(srcPath, dstPath, false));
                 }
-                namePairs.AddLast(new Pair<string>(filePath, newPath));
-            }
-            var stringBuilder = new StringBuilder(256).Append("Are you sure to rename following ").Append(namePairs.Count).Append(" files?\n");
-            foreach (var namePair in namePairs)
-                stringBuilder.Append(" ").Append(namePair.Left).Append(" => ").Append(namePair.Right).Append('\n');
-            var result = MessageBox.Show(stringBuilder.ToString(), "Rename Files",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (result != MessageBoxResult.Yes) return;
-            foreach (var namePair in namePairs)
-                try
-                {
-                    File.Move(Path.Combine(fileNode.Parent, namePair.Left), Path.Combine(fileNode.Parent, namePair.Right));
-                }
-                catch (Exception)
-                {
-                    /* Message box */
-                    break;
-                }
-                finally
-                {
-                    UpdateFileList();
-                }
+            else if (ItemsListBox.SelectedItem is DirectoryNode)
+                renamePairs.AddLast(new FileUtils.RenamePair(node.Parent, srcName, dstName, true));
+
+            /* Do rename */
+            Rename(renamePairs);
+            UpdateItemList();
         }
 
-        private void RenameAllListedFilesButton_OnClick(object sender, RoutedEventArgs e)
+        private void RenameAllButton_OnClick(object sender, RoutedEventArgs e)
         {
+            /* Preconditions */
             if (string.IsNullOrWhiteSpace(FilterPatternTextBox.Text) || string.IsNullOrWhiteSpace(RenamePatternTextBox.Text))
             {
-                MessageBox.Show("Filter pattern and rename pattern cannot be empty!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBoxUtils.ErrorOk("Filter pattern and rename pattern cannot be empty!");
                 return;
             }
-            var renameList = new LinkedList<Tuple<string, Pair<string>>>();
-            foreach (var fileNode in FilesListBox.ItemsSource.OfType<FileNode>())
-            {
-                var fileCount = fileNode.Extensions.Count;
-                var fileName = fileNode.Name;
-                var newName = _regex.Replace(fileName, RenamePatternTextBox.Text);
-                if (fileCount <= 0 || Equals(fileName, newName)) continue;
-                foreach (var fileNodeExtension in fileNode.Extensions)
+
+            /* List items to be renamed */
+            var renamePairs = new LinkedList<FileUtils.RenamePair>();
+            if (RenameDirectoriesCheckBox.IsChecked ?? false) 
+                foreach (var directoryNode in ItemsListBox.ItemsSource.OfType<DirectoryNode>())
                 {
-                    if (fileNodeExtension != null)
+                    var dstName = _regex.Replace(directoryNode.Name, RenamePatternTextBox.Text);
+                    if (Equals(directoryNode.Name, dstName)) continue;
+                    renamePairs.AddLast(new FileUtils.RenamePair(directoryNode.Parent, directoryNode.Name, dstName, true));
+                }
+            foreach (var fileNode in ItemsListBox.ItemsSource.OfType<FileNode>())
+            {
+                var fileCount = fileNode.Suffixes.Count;
+                if (fileCount <= 0) continue;
+                var srcName = fileNode.Name;
+                var dstName = _regex.Replace(srcName, RenamePatternTextBox.Text);
+                if (Equals(srcName, dstName)) continue;
+                foreach (var suffix in fileNode.Suffixes)
+                {
+                    var srcPath = Path.Combine(fileNode.Parent, srcName);
+                    var dstPath = Path.Combine(fileNode.Parent, dstName);
+                    if (suffix != null)
                     {
-                        fileName += fileNodeExtension;
-                        newName += fileNodeExtension;
+                        srcPath += suffix;
+                        dstPath += suffix;
                     }
-                    renameList.AddLast(new Tuple<string, Pair<string>>(fileNode.Parent, new Pair<string>(fileName, newName)));
+                    renamePairs.AddLast(new FileUtils.RenamePair(srcPath, dstPath, false));
                 }
             }
-            if (renameList.Count <= 0)
-            {
-                MessageBox.Show("No file will be renamed!", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-            var stringBuilder = new StringBuilder(256).Append("Are you sure to rename following ").Append(renameList.Count).Append(" files?\n");
-            foreach (var item in renameList)
-                stringBuilder.Append(" ").Append(item.Item2.Left).Append(" => ").Append(item.Item2.Right).Append('\n');
-            var result = MessageBox.Show(stringBuilder.ToString(), "Rename Files",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (result != MessageBoxResult.Yes) return;
-            var renameFailedList = new LinkedList<Tuple<string, Pair<string>>>();
-            foreach (var item in renameList)
-                try
-                {
-                    File.Move(Path.Combine(item.Item1, item.Item2.Left), Path.Combine(item.Item1, item.Item2.Right));
-                }
-                catch (Exception)
-                {
-                    renameFailedList.AddLast(item);
-                }
-            if (renameFailedList.Count > 0) {
-                var failedMessageBuilder = new StringBuilder(256).Append("Failed to rename following ").Append(renameFailedList.Count).Append(" files:\n");
-                foreach (var failedItem in renameFailedList)
-                    failedMessageBuilder.Append(" ").Append(failedItem.Item2.Left).Append(" => ").Append(failedItem.Item2.Right).Append('\n');
-                MessageBox.Show(failedMessageBuilder.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            UpdateFileList();
+
+            /* Do rename */
+            Rename(renamePairs);
+            UpdateItemList();
         }
 
     }

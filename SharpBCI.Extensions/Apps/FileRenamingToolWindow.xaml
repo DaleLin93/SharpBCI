@@ -4,50 +4,73 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="File Renaming Tool" Height="350" Width="300" Loaded="Window_OnLoaded">
+        Title="File Renaming Tool" MinWidth="300" MinHeight="450" Width="300" Height="450" Loaded="Window_OnLoaded">
+    <Window.Resources>
+        <Style x:Key="HeaderStyle" TargetType="FrameworkElement">
+            <Setter Property="Margin" Value="5 6 5 2"/>
+        </Style>
+        <Style x:Key="ContentStyle" TargetType="FrameworkElement">
+            <Setter Property="Margin" Value="5 0 5 2"/>
+        </Style>
+    </Window.Resources>
+
     <DockPanel>
+
+        <!-- Top -->
+        
         <StackPanel DockPanel.Dock="Top">
-            <TextBlock Text="Filter Pattern" FontSize="9" Margin="5 6 5 2" />
-            <TextBox x:Name="FilterPatternTextBox" Margin="5 0 5 2" TextChanged="FilterPatternTextBox_OnTextChanged" />
+            <TextBlock Text="Directory" FontSize="9" Style="{StaticResource HeaderStyle}" />
+            <TextBox x:Name="DirectoryTextBox" Style="{StaticResource ContentStyle}" TextChanged="DirectoryTextBox_OnTextChanged" />
 
-            <TextBlock Text="Rename Pattern" FontSize="9" Margin="5 6 5 2" />
-            <TextBox x:Name="RenamePatternTextBox" Margin="5 0 5 2" TextChanged="RenamePatternTextBox_OnTextChanged" />
+            <TextBlock Text="Filter Pattern" FontSize="9" Style="{StaticResource HeaderStyle}" />
+            <TextBox x:Name="FilterPatternTextBox" Style="{StaticResource ContentStyle}" TextChanged="FilterPatternTextBox_OnTextChanged" />
 
-            <TextBlock Text="Directory" FontSize="9" Margin="5 6 5 2" />
-            <TextBox x:Name="DirectoryTextBox" Margin="5 0 5 2" TextChanged="DirectoryTextBox_OnTextChanged" />
+            <TextBlock Text="Rename Pattern" FontSize="9" Style="{StaticResource HeaderStyle}" />
+            <TextBox x:Name="RenamePatternTextBox" Style="{StaticResource ContentStyle}" TextChanged="RenamePatternTextBox_OnTextChanged" />
 
-            <TextBlock Text="Options" FontSize="9" Margin="5 6 5 2" />
-            <StackPanel Margin="5 0 5 2">
-                <CheckBox x:Name="CaseInsensitiveCheckBox" Content="Case Insensitive" FontSize="9" IsChecked="True" VerticalContentAlignment="Center"
+            <TextBlock Text="Options" FontSize="9" Style="{StaticResource HeaderStyle}" />
+            <StackPanel Style="{StaticResource ContentStyle}">
+                <CheckBox x:Name="CaseInsensitiveCheckBox" Content="Case Insensitive Filter" FontSize="9" IsChecked="True" VerticalContentAlignment="Center"
                           Checked="CaseInsensitiveCheckBox_OnIsCheckedChanged" Unchecked="CaseInsensitiveCheckBox_OnIsCheckedChanged" />
                 <CheckBox x:Name="FileGroupingCheckBox" Content="File Grouping" FontSize="9" IsChecked="True" VerticalContentAlignment="Center"
                           Checked="FileGroupingCheckBox_OnIsCheckedChanged" Unchecked="FileGroupingCheckBox_OnIsCheckedChanged" />
+                <CheckBox x:Name="RenameDirectoriesCheckBox" Content="Rename Directories" FontSize="9" IsChecked="True" VerticalContentAlignment="Center"
+                          Checked="FileGroupingCheckBox_OnIsCheckedChanged" Unchecked="FileGroupingCheckBox_OnIsCheckedChanged" />
             </StackPanel>
+        </StackPanel>
+        
+        <!-- Bottom -->
+        
+        <StackPanel DockPanel.Dock="Bottom">
+            <Grid x:Name="SingleItemRenameGrid" Visibility="Collapsed">
+                <TextBlock Text="New Name" FontSize="9" Style="{StaticResource HeaderStyle}" />
+                <TextBox x:Name="NewNameTextBox" Style="{StaticResource ContentStyle}" />
+                <Button Grid.Column="0" Content="Rename Selected" FontSize="10" Style="{StaticResource ContentStyle}"
+                    Click="RenameSelectedButton_OnClick" />
+            </Grid>
+            <Button Grid.Column="2" Content="Rename All" FontSize="14" FontWeight="Bold" Height="30" Style="{StaticResource ContentStyle}" 
+                    Click="RenameAllButton_OnClick" />
+        </StackPanel>
 
-            <Grid Margin="5 6 5 2">
+        <!-- Body -->
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Style="{StaticResource HeaderStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="5"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="Files" FontSize="9" />
-                <TextBlock Grid.Column="2" x:Name="FileItemCountTextBlock" Text="(0 items)" FontSize="7" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" x:Name="ItemCountTextBlock" Text="(0 items)" FontSize="7" VerticalAlignment="Center" />
             </Grid>
-        </StackPanel>
-        <StackPanel DockPanel.Dock="Bottom">
-            <TextBlock Text="New Name" FontSize="9" Margin="5 6 5 2" />
-            <TextBox x:Name="NewNameTextBox" Margin="5 0 5 2" />
+            <ListBox Grid.Row="1" x:Name="ItemsListBox" Style="{StaticResource ContentStyle}"
+                 SelectionChanged="FilesListBox_OnSelectionChanged" MouseDoubleClick="FilesListBox_OnMouseDoubleClick" />
+        </Grid>
 
-            <Grid Margin="5 6 5 6">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="5"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="Rename Selected File" FontSize="10" Click="RenameSelectedFileButton_OnClick" />
-                <Button Grid.Column="2" Content="Rename All Listed Files" FontSize="10" Click="RenameAllListedFilesButton_OnClick" />
-            </Grid>
-        </StackPanel>
-        <ListBox x:Name="FilesListBox" Margin="5 0 5 2" SelectionChanged="FilesListBox_OnSelectionChanged" MouseDoubleClick="FilesListBox_OnMouseDoubleClick" />
     </DockPanel>
 </Window>
